@@ -1,0 +1,72 @@
+git:
+echo # contactGroups >> README.md
+git init
+git add *.py
+git commit -m "first commit"
+
+git remote add origin https://github.com/jkjium/contactGroups.git
+git push -u origin master
+
+git clone https://github.com/jkjium/contactGroups.git
+
+dataset:
+
+Cath:
+http://www.biomedcentral.com/1472-6807/9/23
+Four major levels of CATH are class, architecture, topology and homologous superfamily.
+If there is sufficient evidence that a set of domains share a clear common ancestor, they are grouped together into a single homologous superfamily. 
+When homologous superfamilies (‘H’ level in CATH) share the same fold, but do not have sufficient evidence to suggest a clear evolutionary relationship, they are placed in the same topology (‘T’ level). 
+Topologies that share a roughly similar spatial arrangement of secondary structures are grouped in the same architecture (‘A’ level). 
+The 40 architectures in CATH are arranged into one of four main classes (‘C’ level) based on the content of secondary structure (mainly alpha, mainly beta, mixed alpha-beta, few secondary structures).
+
+CATH List File (CLF) Format 2.0
+-------------------------------
+This file format has an entry for each structural entry in CATH.
+
+Column 1:  CATH domain name (seven characters)
+Column 2:  Class number
+Column 3:  Architecture number
+Column 4:  Topology number
+Column 5:  Homologous superfamily number
+Column 6:  S35 sequence cluster number
+Column 7:  S60 sequence cluster number
+Column 8:  S95 sequence cluster number
+Column 9:  S100 sequence cluster number
+Column 10: S100 sequence count number
+Column 11: Domain length
+Column 12: Structure resolution (Angstroms)
+           (999.000 for NMR structures and 1000.000 for obsolete PDB entries)
+
+Comment lines start with a '#' character.
+
+Example:
+--------
+1oaiA00     1    10     8    10     1     1     1     1     1    59 1.000
+1go5A00     1    10     8    10     1     1     1     1     2    69 999.000
+1oksA00     1    10     8    10     2     1     1     1     1    51 1.800
+1t6oA00     1    10     8    10     2     1     2     1     1    49 2.000
+1cuk003     1    10     8    10     3     1     1     1     1    48 1.900
+1hjp003     1    10     8    10     3     1     1     2     1    44 2.500
+1c7yA03     1    10     8    10     3     1     1     2     2    48 3.100
+1p3qQ00     1    10     8    10     4     1     1     1     1    43 1.700
+1mn3A00     1    10     8    10     4     1     2     1     1    52 2.300
+1nv8B01     1    10     8    10     5     1     1     1     1    71 2.200
+
+CATH Domain Names
+-----------------
+CHARACTERS 1-4: PDB Code
+CHARACTER 5: Chain Character
+	Chain characters of zero ('0') indicate that the PDB file has no chain field.
+CHARACTER 6-7: Domain Number
+
+ftp://ftp.biochem.ucl.ac.uk/pub/cath/latest_release/README.file_formats
+
+pipline:
+# get cath domain list
+wget ftp://ftp.biochem.ucl.ac.uk/pub/cath/latest_release/CathDomainList.v4.0.0
+
+wget -O 1tgx.pdb "http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=1TGX"
+
+awk '{print "wget -O "substr($0,0,4)".pdb \"http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId="substr($0,0,4)"\""}' pdb_1.10.8.10.list > download.sh
+
+
