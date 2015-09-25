@@ -322,6 +322,8 @@ class protein(object):
                 key='%s-%s' % (idxArray[i],idxArray[j])
                 dist+=self.pairwiseDict[key]
         #print 'clusterMeanDist:: ', dist/count
+        if count==0:
+            return 0.0
         return dist/count
 
                     
