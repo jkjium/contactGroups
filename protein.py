@@ -131,8 +131,8 @@ class protein(object):
         isDone = 0
         for i in xrange(0,len(self.atoms)):
             a = self.atoms[i]
-            if a.chainID!='A':
-                continue
+            #if a.chainID!='A':
+            #    continue
             if a.resName not in AAtipDict:
                 print '%s:: non AA atom %s %d [%s]]' % (self.pdb, a.resName, a.resSeq, a.name.strip())
                 continue
@@ -181,7 +181,7 @@ class protein(object):
         
         # for the last residue (there is no residue number change for it)
         if matchCount!=len(AAtipDict[lastAtom.resName]):
-            #print "%s:: Tip atom not found for [%d] [%s], use last atom [%s] instead" % (self.pdb, lastAtom.resSeq, lastAtom.resName, lastAtom.name)
+            print "%s:: Tip atom not found for [%d] [%s]" % (self.pdb, lastAtom.resSeq)
             #fd.write(a.writeAtom())
         if outputCount==0:
             print "No atom written from [%s]!" % (filename)            
