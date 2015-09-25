@@ -23,7 +23,8 @@ class protein(object):
         self.clusters=[]
         
         #pdb, top, pfam, str, pdbidx, seqheader, alignstr, alignidx, center, cutoff, scutoff, flag, desc
-        self.pdb = pdbname[len(pdbname)-8:len(pdbname)-4]
+        #self.pdb = pdbname[len(pdbname)-8:len(pdbname)-4]
+        self.pdb = pdbname[:-4]
         self.top = top
         self.pfam = pfam
         self.center = center
