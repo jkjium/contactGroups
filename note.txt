@@ -62,11 +62,34 @@ CHARACTER 6-7: Domain Number
 ftp://ftp.biochem.ucl.ac.uk/pub/cath/latest_release/README.file_formats
 
 pipline:
+cut -c1-4 pdb_1.10.8.10.list |sort|uniq > pdb_1.10.8.10_uniq.list
+
 # get cath domain list
 wget ftp://ftp.biochem.ucl.ac.uk/pub/cath/latest_release/CathDomainList.v4.0.0
-
 wget -O 1tgx.pdb "http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=1TGX"
 
-awk '{print "wget -O "substr($0,0,4)".pdb \"http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId="substr($0,0,4)"\""}' pdb_1.10.8.10.list > download.sh
+download CATH pdbs
 
+
+# generate download script
+awk '{print "wget -O "substr($0,0,4)".pdb \"http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId="substr($0,0,4)"\""}' pdb_1.10.8.10_uniq.list > download.sh
+
+# generate pymol script
+awk '{ if (substr($0,5,1) != '0') print "load "substr($0,0,4)".pdb\nremove !chain "substr($0,5,1)"\nremove het\nsave a"substr($0,0,4)"_"substr($0,5,1)".pdb\ndelete all\n"}' pdb_1.10.8.10.list > extract_pdb.pml
+
+# execute pymol w/o gui
+pymol -c -u extract_pdb.pml
+output a1a5t_A.pdb
+
+
+# generate pdblist.txt (without extention .pdb)
+# generate tip files
+python proc_getTip.py
+
+#
+sh spectral.sh
+output: tip_clusters.txt
+
+# check cluster length distribution
+awk -F ',' '{print length($3)}' tip_clusters.txt | sort -g |uniq -c
 
