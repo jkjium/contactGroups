@@ -16,12 +16,13 @@ def main():
 		tip_filename = strArr[0]
 		start = int(strArr[1])
 		end = int(strArr[2])
-
+		
+		print tip_filename+'.domain'
 		fo = open(tip_filename+'.domain', 'w')
-		p = protein(tip_filename, 'alpha',center='TIP') 
+		p = protein('a'+tip_filename+'.tip', 'alpha',center='TIP') 
 
 		for a in p.atoms:
-			if a.resSeq >= start && a.resSeq <= end:
+			if a.resSeq >= start and a.resSeq <= end:
 				fo.write(a.writeAtom())
 
 		fo.close()
