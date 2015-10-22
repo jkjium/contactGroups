@@ -7,26 +7,28 @@ Created on Thu Oct 01 00:40:27 2015
 
 # -*- coding: utf-8 -*-
 from cgroup import cgroup
+from protein import protein
 import itertools
 import sys
 
 def main():
     if len(sys.argv)< 3:
-        print "Usage: proc_N-mer.py cluster_file n_merFile n_mer"
+        print "Usage: proc_N-mer.py tip_file cluster_file n_mer dist_cutoff >> n_mer_outfile"
         return 
     infile = sys.argv[1]
-    outfile = sys.argv[2]
+    infile2 = sys.argv[2]
     n_mer = int(sys.argv[3])
-    print n_mer
+    cutoff = float(sys.argv[4])
 
-    fo = open(outfile, 'w')
-    with open(infile) as fp:
+    p = protein(infile, center='TIP')
+    p.initCGResiMap()
+
+    with open(infile2) as fp:
     	for line in fp:
     		cg = cgroup(line.strip())
-    		print cg.getString()
     		if cg.getSize() == n_mer:
-    			fo.write(cg.getString())
-	    		print cg.getString()
+   				if p.cgResiGroupFilter(cg, cutoff) == True:
+ 						print cg.getString()
 	    	elif cg.getSize() < n_mer:
 	    		continue
     		else:	
@@ -34,12 +36,13 @@ def main():
     			for idx in list(itertools.combinations(range(cg.getSize()),n_mer)):
     				sub_cg = cgroup()
     				sub_cg.pdb = cg.pdb
+    				sub_cg.chain = cg.chain
     				for i in idx: # iterate all the tuples
     					sub_cg.AAgroup = sub_cg.AAgroup + cg.AAgroup[i]
     					sub_cg.resi.append(cg.resi[i])
-    				fo.write(sub_cg.getString())
+    				if p.cgResiGroupFilter(sub_cg, cutoff) == True:
+ 						print sub_cg.getString()
   	fp.close()
-    fo.close()
 
 
 if __name__=="__main__":
