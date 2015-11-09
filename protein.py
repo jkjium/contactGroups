@@ -53,6 +53,11 @@ class protein(object):
             if line[0:6]=='ATOM  ' and (line[16]==' ' or line[16]=='A'): # to avoid alternative location
                 self.atoms.append(atom(lines[i]))
         self.seq = self.getSeq()
+
+        self.resCADict={}
+        for a in self.atoms:
+            if 'CA' in a.name:
+                self.resCADict[a.resSeq] = a
     
     # print PDB content
     def printPDB(self):
@@ -254,11 +259,11 @@ class protein(object):
             if len(line)==0:
                 continue  
             strArr = line.split(' ')
-            x = strArr[1]
-            y = strArr[2]
-            z = strArr[3]
+            x = float(strArr[1])
+            y = float(strArr[2])
+            z = float(strArr[3])
             if int(strArr[5])!=a.resSeq:
-                print 'Inconsistent ResID %d - %d in %s' % (int(strArr[5]), a.resSeq)
+                print 'Inconsistent ResID %d - %d in %s' % (int(strArr[5]), a.resSeq, self.pdbfile)
                 return
             v1=np.array((x, y, z))
             for j in xrange(0, len(self.atoms)):
