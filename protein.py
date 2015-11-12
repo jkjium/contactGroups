@@ -7,8 +7,8 @@ from atom import atom
 from AAmap import AAmap
 from cluster import cluster
 
-from sklearn.cluster import spectral_clustering
-from scipy.sparse import coo_matrix
+#from sklearn.cluster import spectral_clustering
+#from scipy.sparse import coo_matrix
 
 __all__=['protein']
 
@@ -194,7 +194,19 @@ class protein(object):
             print "No atom written from [%s]!" % (filename)            
 
 
+    # write concise version of a tip file 
+    # x,y,z,resi,resn
+    # input tip file 
+    # output the concised version
+    def writeSPDB(self):
+        fo = open(self.pdb+'.spdb', 'w')
+        for a in self.atoms:
+            fo.write('%f %f %f %d %s\n' % (a.x, a.y, a.z, a.resSeq, a.resName))
+        fo.close()
+
+
     # use spectral clustering method to find residue contact groups        
+    '''
     def spectralClustering(self, cluster_size):
         rowlist = []
         collist = []
@@ -240,6 +252,7 @@ class protein(object):
             c.pdbResSeq=c.pdbResSeq.lstrip()
             meanDist = self.clusterMeanDist(c)
             print ('%s,%0.2f,%s,%s,%s') % (self.pdb, meanDist, ''.join(sorted(c.str)), ''.join(sorted(c.typeStr)), c.pdbResSeq)
+    '''
 
     # pairwise
     # read all atom XXXX_A.pdb and get pairwise contact within a cutoff and a sequential distance

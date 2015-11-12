@@ -1,3 +1,4 @@
+import sys
 from hc import hc
 
 def checkProximity(h, pdist, cutoff):
@@ -35,27 +36,51 @@ def main():
 	hclist = []
 	existdict = {}
 	pdist = {}
-	N = 59
-	cutoff = 8#7.5
+	resmap = {}
+
+	if len(sys.argv) < 3:
+		print 'python proc_hierachialCG.py preffix cutoff'
+		print 'need .resimap .pdist .hcluster pre-calculated by dendrogram.py'
+		return
+
+	preffix = sys.argv[0]
+	cutoff = float(sys.arg[1])
+
+	# load index -> residue 
+	print 'loading res map ...'
+	fr = open(preffix+'.resimap', 'r')
+	for line in fr.readlines():
+		strArr = line.strip().split(' ')
+		resmap[int(strArr[0])] = (int(strArr[1]), strArr[2])
+	fr.close()
+	N = len(resmap)
+
 
 	# load pairwised distance
-	fd = open('pdist.txt', 'r')
+	print 'loading pairwised distance ...'
+	fd = open(preffix+'.pdist', 'r')
 	for line in fd.readlines():
 		strArr = line.strip().split(' ')
 		pdist[strArr[0]] = float(strArr[2])
 	fd.close()
 
-	fp = open('hcluster.txt', 'r')
+	# load cluster tree
+	print 'loading cluster tree ...'
+	fp = open(preffix+'.hcluster', 'r')
 	for line in fp.readlines():
 		h = hc(line.strip(), N)
 		hcdict[h.clusterID] = h
 		hclist.append(h)
 	fp.close()
 
+	# resolve leaves for each cluster
+	print 'resolving leaves ...'
 	for h in hclist:
 		h.getChildren(hcdict)
 		#h.dump()
 
+
+	print 'iterating clusters for largest proximity contact ...'
 	for i in xrange(0, N):
 		leafstr = '%d %d %d 0.0 1' % (i, i, i)
 		h = hc(leafstr, N)
@@ -139,7 +164,8 @@ def main():
 
 
 	# print out the result
-	fout = open('result.txt', 'w')
+	print 'writing result into %s.cg' % preffix  
+	fout = open(preffix+'.hcg', 'w')
 	count=0
 	for hid in existdict:
 		#if hid >= N and existdict[hid] == True:
