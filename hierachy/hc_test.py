@@ -1,7 +1,7 @@
 from hc import hc
 
 def checkProximity(h, pdist, cutoff):
-	print 'check cluster %d' % (h.clusterID)
+	#print 'check cluster %d' % (h.clusterID)
 	for i in xrange(0, len(h.leaves)):
 		for j in xrange(i+1, len(h.leaves)):
 			if h.leaves[i] < h.leaves[j]:
@@ -16,7 +16,7 @@ def checkProximity(h, pdist, cutoff):
 
 
 def checkProximity2(h1, h2, pdist, cutoff):
-	print 'check c1: %d, c2: %d' % (h1.clusterID, h2.clusterID)
+	#print 'check c1: %d, c2: %d' % (h1.clusterID, h2.clusterID)
 	for i in h1.leaves:
 		for j in h2.leaves:
 			if i < j:
@@ -36,7 +36,7 @@ def main():
 	existdict = {}
 	pdist = {}
 	N = 59
-	cutoff = 7.5
+	cutoff = 8#7.5
 
 	# load pairwised distance
 	fd = open('pdist.txt', 'r')
@@ -61,7 +61,7 @@ def main():
 		h = hc(leafstr, N)
 		h.leaves = [i]
 		hcdict[i] = h
-		hcdict[i].dump()
+		#hcdict[i].dump()
 
 
 	# add single leaf in
@@ -71,7 +71,7 @@ def main():
 	for h in hclist:
 		if h.dist <= cutoff:
 			if h.c1 in existdict and h.c2 in existdict: # both been checked before
-				print '1AA'
+				#print '1AA'
 				if existdict[h.c1] == True and existdict[h.c2] == True:
 					ret = checkProximity2(hcdict[h.c1], hcdict[h.c2], pdist, cutoff)
 					existdict[h.clusterID] = ret
@@ -82,7 +82,7 @@ def main():
 					existdict[h.clusterID] = False
 
 			elif h.c1 in existdict and h.c2 not in existdict:
-				print '1AB'
+				#print '1AB'
 				if existdict[h.c1] == False: # c1 is not a contact; get h
 					existdict[h.clusterID] = False
 					existdict[h.c2] = checkProximity(hcdict[h.c2], pdist, cutoff) # get c2
@@ -99,7 +99,7 @@ def main():
 							existdict[h.c2] = False
 
 			elif h.c1 not in existdict and h.c2 in existdict:
-				print '1BA'
+				#print '1BA'
 				if existdict[h.c2] == False: # c2 is not a contact; get h
 					existdict[h.clusterID] = False
 					existdict[h.c1] = checkProximity(hcdict[h.c1], pdist, cutoff) # get c1
@@ -116,7 +116,7 @@ def main():
 							existdict[h.c2] = False
 
 			elif h.c1 not in existdict and h.c2 not in existdict:
-				print '1BB'
+				#print '1BB'
 				r1 = checkProximity(hcdict[h.c1], pdist, cutoff)
 				existdict[h.c1] = r1
 				r2 = checkProximity(hcdict[h.c2], pdist, cutoff)
@@ -130,7 +130,7 @@ def main():
 						existdict[h.c2] = False
 
 		elif h.dist > cutoff:
-			print '0XX'
+			#print '0XX'
 			existdict[h.clusterID] = False
 			if h.c1 not in existdict:
 				existdict[h.c1] = checkProximity(hcdict[h.c1], pdist, cutoff)
@@ -140,10 +140,13 @@ def main():
 
 	# print out the result
 	fout = open('result.txt', 'w')
+	count=0
 	for hid in existdict:
-		if hid >= N and existdict[hid] == True:
+		#if hid >= N and existdict[hid] == True:
+		if existdict[hid] == True:
 			fout.write('%d: %r, %s' % (hid, existdict[hid], hcdict[hid].writeString()))
-
+			count+=len(hcdict[hid].leaves)
+	print '%d leaves in total\n' % count
 
 
 

@@ -2,6 +2,7 @@ import numpy as np
 from scipy.cluster.hierarchy import dendrogram
 from scipy.cluster.hierarchy import linkage
 #import matplotlib.pyplot as plt
+from ..protein import protein
 
 def augmented_dendrogram(*args, **kwargs):
 	ddata=dendrogram(*args, **kwargs)
@@ -34,7 +35,8 @@ for i in xrange(0,len(x)):
 		fo.write('%d-%d : %f\n' % (i,j,dist))
 fo.close()
 
-linkage_matrix = linkage(x, "single")
+#linkage_matrix = linkage(x, "single")
+linkage_matrix = linkage(x, "complete")
 #ddata = augmented_dendrogram(linkage_matrix, color_threshold=1)
 #plt.show()
 print('writing hcluster file ...')
