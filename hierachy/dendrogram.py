@@ -18,8 +18,9 @@ def augmented_dendrogram(*args, **kwargs):
 
 if len(sys.argv) < 2:
 	print 'python dendrogram.py preffix'
-	return 
+	exit 
 
+preffix = sys.argv[1]
 # get x
 fp = open(preffix+'.spdb', 'r')
 px = []

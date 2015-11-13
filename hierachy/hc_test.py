@@ -43,8 +43,10 @@ def main():
 		print 'need .resimap .pdist .hcluster pre-calculated by dendrogram.py'
 		return
 
-	preffix = sys.argv[0]
-	cutoff = float(sys.arg[1])
+	preffix = sys.argv[1]
+	cutoff = float(sys.argv[2])
+	print 'preffix: [%s]' % preffix
+	print 'cutoff: [%f]' % cutoff
 
 	# load index -> residue 
 	print 'loading res map ...'
