@@ -1,5 +1,4 @@
-# pre-process all atom pdb
-# extract CA in Chain A and save to file
+# extract cath domain from tip file by referening domain_desc_file (pdbname, startRES, endRES)
 import sys
 from protein import protein
 from atom import atom

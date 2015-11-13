@@ -22,6 +22,15 @@ class hc(object):
         outStr=self.writeString()
         print '%s' % outStr
 
+    def writeLeaves(self, resmap):
+        resi = []
+        resn = []
+        for i in self.leaves:
+            resi.append(resmap[i][0])
+            resn.append(resmap[i][1])
+        return '%s,%s' % (''.join(resn), ' '.join(resi))
+
+
     def writeString(self):
 		return ('%d %d %d %f %d [%d]: %s\n') % (self.clusterID, self.c1, self.c2, self.dist, self.clusterLen, len(self.leaves), str(self.leaves))
 

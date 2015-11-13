@@ -199,9 +199,10 @@ class protein(object):
     # input tip file 
     # output the concised version
     def writeSPDB(self):
-        fo = open(self.pdb+'.spdb', 'w')
+        aamap = AAmap()
+        fo = open(self.pdbfile+'.spdb', 'w')
         for a in self.atoms:
-            fo.write('%f %f %f %d %s\n' % (a.x, a.y, a.z, a.resSeq, a.resName))
+            fo.write('%f %f %f %d %s\n' % (a.x, a.y, a.z, a.resSeq, aamap.getAAmap(a.resName)))
         fo.close()
 
 
