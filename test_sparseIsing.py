@@ -4,7 +4,7 @@ def main():
 	#if len(sys.argv) < 2:
 	#	print 'Usage python proc_spdb.py XXXX_A.domain'
 	#	return
-	si = sparseIsing(2.7, 4)
+	si = sparseIsing(2.7, 4, 'test_sparseIsing.data')
 	print 'lambda: %f' % si.la
 	print 'a: %f' % si.a
 	print 't: %f' % 2
@@ -15,7 +15,13 @@ def main():
 	print si.beta
 	#print si.w
 	print 'S_r_t: %f' % si.S_r_t(-3, 2)
-	print si.idict
+	print si.i2jk
+	print si.jk2i
+	print si.data
+	print si.N
+	print si.theta_j_n(0,1)
+	print si.z_j_k(0,1)
+	print si.S_beta_j_k(0,1)
 
 if __name__=="__main__":
 	main()
