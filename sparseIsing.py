@@ -3,21 +3,22 @@ import numpy as np
 
 class sparseIsing(object):
 
-    def __init__(self, la, P, dataFile):
-    	self.P = P # 20A + 20AA + 20AAA
+    def __init__(self, la, dataFile):
+    	self.dataFile = dataFile
+        self.data = {} # boolean value for P variables with key = {0, 1, .... N}
+    	self.N, self.P = self.loadData(dataFile) 
     	self.la = la # lambda 
+    	#self.a = 3.7 # p3 Following Fan and Li (2001) set a=3.7
     	self.a = 3.7 # p3 Following Fan and Li (2001) set a=3.7
 
     	self.beta =  np.random.uniform(-5.0, 5.0, self.P * (self.P - 1) / 2)
-        self.w = []
+        self.w = np.empty_like(self.beta)
 
         # index map between linear index and row, column index
         self.i2jk = {}
         self.jk2i = {}
         self.init_indexMap()
 
-        self.data = {} # boolean value for P variables
-    	self.N = self.loadData(dataFile) 
 
     def loadData(self, filename):
     	fp = open(filename, 'r')
@@ -28,7 +29,8 @@ class sparseIsing(object):
     		strArr = line.strip().split(' ')
     		self.data[i] = [int(k) for k in strArr]
     		i+=1
-    	return i
+    	p = len(strArr)
+    	return i, p
 
     # convert linear index to pairwised indices
     def init_indexMap(self):
@@ -107,15 +109,52 @@ class sparseIsing(object):
     	i = self.jk2i['%d,%d' % (j,k)]
     	r = self.beta[i] + 2 * self.z_j_k(j, k)
     	t = 2 * self.P_lambda_t(abs(self.beta[i]))
-    	print 'r:%f, t:%f' % (r,t)
+    	print 'r:%f, t:%f, S_r_t:%f' % (r,t,self.S_r_t(r,t))
     	return self.S_r_t(r, t)
 
-    #    for i in xrange(0, len(self.beta)):
-    #        r = self.beta[i] + 2 * self.Z_jk()
-    #        t = 2 * self.P_lambda_t(abs(self.beta[i]))
-    #        self.beta[i] = self.S_r_t(r, t)
 
-    #    return 
+    # p6 algorithm 1. sequentially update beta_ij
+    def CMA(self):
+    	count=0
+    	# iterate until converge
+    	while True:
+    		beta_prev = np.empty_like(self.beta)
+    		beta_prev[:] = self.beta
+    		for i in xrange(0, len(self.beta)):
+    			(j, k) = self.i2jk[i]
+    			self.beta[i] = self.S_beta_j_k(j, k)
+    		d = np.linalg.norm(self.beta - beta_prev)
+    		print 'CMA::iter[%d]::d: %f' % (count, d)
+    		count+=1
+    		if d < 1e-4:
+   				#print self.beta
+  				return
 
+  	# p8 main algorithm LLA-CMA		
+    def LLA_CMA(self):
+    	count = 0
+    	# initialize w_jk
+    	for i in xrange(0, len(self.w)):
+    		self.w[i] = self.P_lambda_t(abs(self.beta[i]))
 
+    	# iterate step
+    	while True:
+    		w_prev = np.empty_like(self.w)
+    		w_prev[:] = self.w
+    		self.CMA() # update all beta
+    		for i in xrange(0, len(self.w)):
+    			self.w[i] = self.P_lambda_t(abs(self.beta[i]))
+    		d = np.linalg.norm(self.w - w_prev)
+    		print 'LLA::iter[%d]::d: %f' % (count, d)
+    		count+=1
+    		if d < 1e-4:
+    			#print self.w
+    			return
 
+    # output result
+    def formatResult(self):
+    	fp = open(self.dataFile+'.result', 'w')
+    	for i in xrange(0, len(self.w)):
+    		(j, k) = self.i2jk[i]
+    		fp.write('beta(%d, %d): %f w(%d, %d): %f\n' % (j, k, self.beta[i], j, k, self.w[i])) 
+    		print 'beta(%d, %d): %f w(%d, %d): %f\n' % (j, k, self.beta[i], j, k, self.w[i]) 
