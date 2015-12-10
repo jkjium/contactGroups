@@ -26,7 +26,7 @@ class hc(object):
         resi = []
         resn = []
         for i in self.leaves:
-            resi.append(resmap[i][0])
+            resi.append(str(resmap[i][0]))
             resn.append(resmap[i][1])
         return '%s,%s' % (''.join(resn), ' '.join(resi))
 

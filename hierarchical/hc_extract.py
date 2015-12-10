@@ -173,7 +173,7 @@ def main():
 		#if hid >= N and existdict[hid] == True:
 		if existdict[hid] == True:
 			#fout.write('%d: %r, %s' % (hid, existdict[hid], hcdict[hid].writeString()))
-			fout.write('%s\n' % (hcdict[hid].writeLeaves(resmap)))
+			fout.write('%s,%s\n' % (preffix, hcdict[hid].writeLeaves(resmap)))
 			count+=len(hcdict[hid].leaves)
 	print '%d leaves in total\n' % count
 
