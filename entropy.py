@@ -49,12 +49,15 @@ def entropy_single(X):
 
 def II(varset, data):
 	iiv=0.0
-	n = len(varset)
-	subsets = list(itertools.chain(*[itertools.combinations(range(n), i) for i in range(n+1)]))
+	#n = len(varset)
+	#subsets = list(itertools.chain(*[itertools.combinations(range(n), i) for i in range(n+1)]))
+	subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
 	for s in subsets:
+		#print s
 		if len(s) == 0:
 			continue
 		else:
+			#print data[:,s].T
 			iiv+=math.pow(-1, len(s))*entropy(data[:,s].T)
 	return -iiv
 
@@ -143,23 +146,22 @@ def main():
 	data = np.loadtxt(filename, delimiter=',')
 	print data
 	print '\n\nII: %f' % II([0,1], data)
-
 	'''
 	scorefile = '5A.hcg.score'
+	#scorefile = 'test.score'
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print 'score:\n', score
-	#print 'AD: %f' % II([0,1], score)
+	#print 'AD: %f' % II([2,3], score)
 
 	alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	fout = open(scorefile+'.result', 'w')
-	'''
 	print 'calculating mutual information ...'
 	t0 = time.time()
 	for s in set(itertools.combinations(list(range(20)), 2)): # generate all variable subset with length of 3
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), II(list(s), score)))
-	'''
+
 	t1 = time.time()
-	#print 'MI time: %d seconds' % (t1-t0)
+	print 'MI time: %d seconds' % (t1-t0)
 
 	print 'calculating DeltaK(3) ...'
 	for s in set(itertools.combinations(list(range(20)), 3)): # generate all variable subset with length of 3
