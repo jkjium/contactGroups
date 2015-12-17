@@ -1,14 +1,22 @@
 #!/usr/bin/python
-from protein import protein
-from cluster import cluster
-from msa import msa
-from AAShingle import AAShingle
-from sklearn.cluster import spectral_clustering
+#from protein import protein
+#from cluster import cluster
+#from msa import msa
+#from AAShingle import AAShingle
+#from sklearn.cluster import spectral_clustering
+from cgroup import cgroup
 import sys
 
 def main():
-	graph=''
-	labels = spectral_clustering(graph, n_clusters=4)
+	#cg_str ='2ztc_C.domain,LAAAL,155 188 165 168 192,5'
+	cg_str ='2bwe_D.domain,AALLN,353 364 368 339 350,5'
+	print cg_str
+	cg = cgroup(cg_str)
+	print cg.getString()
+	print cg.scoreboard
+	print cg.scoreboard2str()
+#	graph=''
+#	labels = spectral_clustering(graph, n_clusters=4)
 ####################################### test Tips
 #    p=protein('1x9d.tip', 'alpha',center='TIP')
     #print len(p.atoms)

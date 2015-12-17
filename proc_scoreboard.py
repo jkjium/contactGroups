@@ -1,9 +1,20 @@
 # output contact group in WenZhou's format
 import sys
+from cgroup import cgroup
 def main():
 	if len(sys.argv) < 2:
 		print "Usage python proc_scoreboard.py cluster_file"
 		return
+
+	fin = open(sys.argv[1], 'r')
+	fo = open(sys.argv[1]+'.score', 'w')
+	for line in fin.readlines():
+		cg = cgroup(line.strip())
+		fo.write(cg.scoreboard2str()+'\n')
+	fin.close()
+	fo.close()
+
+	'''
 	#arrSingleVar = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	#arrDoubleVar = ['AA','CC','DD','EE','FF','GG','HH','II','KK','LL','MM','NN','PP','QQ','RR','SS','TT','VV','WW','YY']
 	arrTripleVar = ['AAA','CCC','DDD','EEE','FFF','GGG','HHH','III','KKK','LLL','MMM','NNN','PPP','QQQ','RRR','SSS','TTT','VVV','WWW','YYY']
@@ -34,6 +45,7 @@ def main():
 
 	fin.close()
 	fout.close()
+	'''
 if __name__=="__main__":
 	main()
 
