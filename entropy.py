@@ -124,15 +124,12 @@ def main():
 
 	varset=[0,1]
 	print 'deltaN_bar: %f' % deltaN_bar(varset, data)
-	'''
 
-	'''
 	print 'new subset:'
 	subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
 	for s in subsets:
 		print s
-	'''
-'''
+
 	varset=[0,1]
 	filename = 'test.txt'
 	data = np.loadtxt(filename, delimiter=',')
@@ -141,27 +138,36 @@ def main():
 	#print
 	#print 'Delta K\n'
 	# load score data
-'''
+
+	filename = 'test.txt'
+	data = np.loadtxt(filename, delimiter=',')
+	print data
+	print '\n\nII: %f' % II([0,1], data)
+
+	'''
 	scorefile = '5A.hcg.score'
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print 'score:\n', score
-	#print 'AC: %f' % II([0,1], score)
+	#print 'AD: %f' % II([0,1], score)
 
 	alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	fout = open(scorefile+'.result', 'w')
-	t1 = time.time()
 	'''
+	print 'calculating mutual information ...'
+	t0 = time.time()
 	for s in set(itertools.combinations(list(range(20)), 2)): # generate all variable subset with length of 3
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), II(list(s), score)))
-	t1 = time.time()
-	print 'MI time: %d seconds' % (t1-t0)
 	'''
+	t1 = time.time()
+	#print 'MI time: %d seconds' % (t1-t0)
 
+	print 'calculating DeltaK(3) ...'
 	for s in set(itertools.combinations(list(range(20)), 3)): # generate all variable subset with length of 3
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), deltaN_bar(list(s), score)))
 	t2 = time.time()
 	print 'DeltaK(3) time: %d seconds' % (t2-t1)
 
+	print 'calculating DeltaK(4) ...'
 	for s in set(itertools.combinations(list(range(20)), 4)): # generate all variable subset with length of 3
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), deltaN_bar(list(s), score)))
 	t3 = time.time()
