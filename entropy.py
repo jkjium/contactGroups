@@ -162,7 +162,7 @@ def main():
 	#print 'AD: %f' % II([2,3], score)
 
 	alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
-	fout = open(scorefile+'.result', 'w')
+	fout = open(scorefile+'.entropy', 'w')
 	print 'calculating mutual information ...'
 	t0 = time.time()
 	for s in set(itertools.combinations(list(range(20)), 2)): # generate all variable subset with length of 3
