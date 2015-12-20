@@ -147,7 +147,15 @@ def main():
 	print data
 	print '\n\nII: %f' % II([0,1], data)
 	'''
-	scorefile = '5A.hcg.score'
+
+	if len(sys.argv) < 2:
+		print 'Usage: python entropy score_file'
+		return
+
+	scorefile = sys.argv[1]
+	print 'score file: %s' % scorefile
+
+#	scorefile = '5A.hcg.score'
 	#scorefile = 'test.score'
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print 'score:\n', score
