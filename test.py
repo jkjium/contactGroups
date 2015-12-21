@@ -9,7 +9,7 @@ import sys
 
 def main():
 	#cg_str ='2ztc_C.domain,LAAAL,155 188 165 168 192,5'
-	cg_str ='2bwe_D.domain,AALLN,353 364 368 339 350,5'
+	cg_str ='2bwe_D.domain,ALALN,353 368 364 339 350,5'
 	print cg_str
 	cg = cgroup(cg_str)
 	print cg.getString()
