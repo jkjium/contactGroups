@@ -15,7 +15,7 @@ class cgroup(object):
 		self.sortedAA = []
 		self.sortedResi = []
 		self.sortAAgroup()
-		print self.sortedAA, self.sortedResi
+		#print self.sortedAA, self.sortedResi
 
 		# for AA type: H + - P 'C,G,O'
 		# O for proline
@@ -39,16 +39,16 @@ class cgroup(object):
 
 
 	def getString(self):
-		return ('%s\n' + 
-		 	  '%s\n' +
-		 	  '%s\n' +
-		 	  '%s\n' +
-		 	  '%s\n' +
+		return ('%s,' + 
+		 	  #'%s,' +
+		 	  #'%s,' +
+		 	  '%s,' +
+		 	  '%s,' +
 		 	  '%s\n') % \
 		 	  (
 		 	  	self.pdb,
-		 	  	self.AAgroup,
-		 	  	' '.join(self.resi),
+		 	  	#self.AAgroup,
+		 	  	#' '.join(self.resi),
 		 	  	''.join(self.sortedAA),
 		 	  	' '.join(self.sortedResi),
 		 	  	''.join(self.AAType)
