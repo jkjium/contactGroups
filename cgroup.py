@@ -17,10 +17,19 @@ class cgroup(object):
 		self.sortAAgroup()
 		print self.sortedAA, self.sortedResi
 
+		# for AA type: H + - P 'C,G,O'
+		# O for proline
+		self.AAType = []
+
 		self.alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 		self.scoreboard = {'A':0,'C':0,'D':0,'E':0,'F':0,'G':0,'H':0,'I':0,'K':0,'L':0,'M':0,'N':0,'P':0,'Q':0,'R':0,'S':0,'T':0,'V':0,'W':0,'Y':0}
-		self.fillScoreboard()
 
+	def getType(self, typeMap):
+		for A in self.sortedAA:
+			self.AAType.append(typeMap[A])
+
+
+	# put CG and indices in sorted Alphabet
 	def sortAAgroup(self):
 		sorted_dict = sorted(self.AAdict.items(), key=operator.itemgetter(1))
 		for pair in sorted_dict:
@@ -34,13 +43,15 @@ class cgroup(object):
 		 	  '%s\n' +
 		 	  '%s\n' +
 		 	  '%s\n' +
+		 	  '%s\n' +
 		 	  '%s\n') % \
 		 	  (
 		 	  	self.pdb,
 		 	  	self.AAgroup,
 		 	  	' '.join(self.resi),
 		 	  	''.join(self.sortedAA),
-		 	  	' '.join(self.sortedResi)
+		 	  	' '.join(self.sortedResi),
+		 	  	''.join(self.AAType)
 		 	  )   
 
 	def getSize(self):
@@ -51,6 +62,7 @@ class cgroup(object):
 			self.scoreboard[A]+=1
 
 	def scoreboard2str(self):
+		self.fillScoreboard()
 		Alist = []
 		for A in self.alphabet:
 			Alist.append(str(self.scoreboard[A]))
