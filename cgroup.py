@@ -27,6 +27,7 @@ class cgroup(object):
 	def getType(self, typeMap):
 		for A in self.sortedAA:
 			self.AAType.append(typeMap[A])
+		self.AAType.sort()
 
 
 	# put CG and indices in sorted Alphabet
