@@ -241,7 +241,7 @@ def main():
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print score.shape[0]
 
-	varset = alphabet
+	varset = range(len(alphabet))
 	for i in xrange(2,6):
 		varset_next = forward_selection(score, 0.05, varset, i)
 		if len(varset_next) == 0:
