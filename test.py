@@ -7,14 +7,26 @@
 from cgroup import cgroup
 import sys
 
+def foo(x, y):
+	return (2*x, 3*y)
+
 def main():
 	#cg_str ='2ztc_C.domain,LAAAL,155 188 165 168 192,5'
+
+	print foo(2, 4)[0] == 4
+	print foo(2, 4)[1]
+	(x1, x2) = foo(3,3)
+	print x1, x2	
+
+
+	'''
 	cg_str ='2bwe_D.domain,ALALN,353 368 364 339 350,5'
 	print cg_str
 	cg = cgroup(cg_str)
 	print cg.getString()
 	print cg.scoreboard
 	print cg.scoreboard2str()
+	'''
 #	graph=''
 #	labels = spectral_clustering(graph, n_clusters=4)
 ####################################### test Tips
