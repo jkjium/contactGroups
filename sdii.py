@@ -71,29 +71,31 @@ def deltaN_bar(varset, data):
 	n = len(varset)
 	#print 'deltaN_bar(): varset: \n', varset 
 	#print 'deltaN_bar(): data: \n' , data
-
+	#sym_1 = ''
 	for index in varset:
-		#print '\n\ndeltaN_bar(): index: %d\n' % index
 		deltaX = 0.0
-		#subsets = list(itertools.chain(*[itertools.combinations(range(n), i) for i in range(n+1)]))
 		subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
+		#print 'deltaN_bar()::varset: %s, subsets: %s' % (repr(varset), repr(subsets))
+		# varset = Set([2,4,6])
+		# [(), (2,), (4,), (6,), (2, 4), (2, 6), (4, 6), (2, 4, 6)]		
+		#sym_str=''
 		for tau in subsets:
 			if index in tau:
-				#print '\ndeltaN_bar(): tau in subsets: ' , tau
-				#print 'deltaN_bar(): data[:,tau].T: ' , data[:,tau].T
-				#print 'deltaN_bar(): H(tau): %f' % entropy(data[:,tau].T)
-				# differential interaction information
-				#print 'deltaN_bar(): deltaX: %f' % (math.pow(-1, len(tau)+1)*entropy(data[:,tau].T))
+				#sym_str+='%d*H_%s' % (math.pow(-1, len(tau)+1), (str(tau)))
 				deltaX+=math.pow(-1, len(tau)+1)*entropy(data[:,tau].T)
+				#print 'deltaN_bar()::tau: %s, -1^n*entropy: %f, cumulative deltaX: %f' % (repr(tau), math.pow(-1, len(tau)+1)*entropy(data[:,tau].T), deltaX)
+
 				#print 'deltaN_bar(): cumulative deltaX: %f' % deltaX
+		#sym_1+= ' x ( %s )' % sym_str
 		deltaX_bar*=deltaX
+	#print 'deltaN_bar = %d %s' % (math.pow(-1, n), sym_1)
 	return math.pow(-1, n)*deltaX_bar
 
 
 # integrate deltaN_bar and Interaction information
 def calc_sdii(varset, data):
 	n = len(varset)
-	print 'calc_sdii(): # of variable: %d' % n
+	#print 'calc_sdii(): # of variable: %d' % n
 	if n == 2:
 		return II(varset, data)
 	else:
@@ -101,12 +103,11 @@ def calc_sdii(varset, data):
 
 
 # bootstrap on data
-def bootstrap(data):
-	n = data.shape[0]
+def bootstrap(n):
 	index = np_random.choice(n, n, replace=True)
-	#print index
-	#print data
-	return data[index,:]
+	#print 'bootstrap()::data1: %s' % repr(index[0:10])
+	#return data[index,:]
+	return index
 
 
 # threshold calculation
@@ -114,11 +115,13 @@ def bootstrap(data):
 def T_l(varset, data):
 	deltaX_list = []
 	n = len(varset)
+	#print 'T_l()::data.shape: %d' % data.shape[0]
 
 	# two variables case we use mutual information instead
 	if n==2:
 		mi = II(varset, data)
-		return math.sqrt(data.shape[0])*mi
+		#return math.sqrt(data.shape[0])*mi
+		return mi
 
 	for index in varset:
 		deltaX = 0.0
@@ -138,16 +141,24 @@ def T_l(varset, data):
 # indicator function on bootstrap data*
 # 	count how many T_l >= user input threshold
 # t: user threshold 
-def G_Bn(data, t, varset, order):
-	B = 5 # number of bootstrap
+def G_Bn(data, bootstrap_index, t, varset, order):
+	B = len(bootstrap_index) # number of bootstrap
 	count = 0
+	prev_count = 0
 	for i in range(B):
-		data_1 = bootstrap(data) # sample with replacement 
+		#print 'G_Bn()::bootstrap # %d' % i
+		t0 = time.time()
+		data_1 = data[bootstrap_index[i],:] # sample with replacement 
 		for s in set(itertools.combinations(varset, order)): # generate all variable subset with length of 2
 		# varset = Set([2,4,6]), order = 2
 		# set([(2, 6), (2, 4), (4, 6)])
 			if T_l(list(s), data_1) >= t:
 					count+=1
+		t1 = time.time()
+		#print 'G_Bn: finished in %d seconds' % (t1-t0)
+		#print 'G_Bn()::current count # %d' % (count - prev_count)
+		prev_count = count
+	print 'G_Bn():: # of T >= t : %d, t: %f, count*(1/B): %f' % (count, t, (1.0/B)*count)
 	#print count
 	return (1.0/B)*count
 
@@ -158,30 +169,47 @@ def max_Tl_1(data, t, varset, order):
 	for s in set(itertools.combinations(varset, order)): # generate all variable subset with length of 2
 	# varset = Set([2,4,6]), order = 2
 	# set([(2, 6), (2, 4), (4, 6)])
-		if T_l(list(s), data) >= t:
+		T = T_l(list(s), data)
+		#print 'max_Tl_1()::T: %f' % T
+		if T >= t:
 				count+=1
+
 	if count < 1:
-		return 1
-	else:
-		return count*1.0
+		print 'max_Tl_1():: # of T >= t: %d, change to 1' % count
+		count = 1.0
+		return count
+
+	print 'max_Tl_1():: # of T >= t: %d' % count
+	return count*1.0
 
 
 # find threshold with boostrap
 def threshold_t_B(data, alpha, varset, order):
 	sk = 4
-	pk = binom(len(alphabet), len(varset))
-	top = 2*math.sqrt(sk*math.log(pk))
+	#pk = binom(len(alphabet), len(varset))
+	pk = binom(len(alphabet), order)
+
+	#top = 2*math.sqrt(sk*math.log(pk))
+	top = 0.4 
+	#print 'threshold_t_B()::'
 	#print (len(alphabet), sk, pk, top)
 
 	final_t = 0.0
 	min_diff = sys.float_info.max
 
+
+	# put bootstrap here
+	n = data.shape[0]
+	bootstrap_index = []
+	B = 100
+	for i in xrange(0, B):
+		bootstrap_index.append(np_random.choice(n, n, replace=True))
+
 	# get inf(t<=alpha) from all t 
 	for t in np.linspace(0,top,10):
-		v_G = G_Bn(data, t, varset, order)
+		v_G = G_Bn(data, bootstrap_index, t, varset, order)
 		v_m = max_Tl_1(data, t, varset, order)
-		#print (v_G, v_m, v_G/v_m, t)
-		#rate = G_Bn(data, t, varnum)/max_Tl_1(data, t, varnum)
+		print 'threshold_t_B():: G/Max_T ratio: %f\n' % (v_G/v_m)
 		diff = alpha - (v_G/v_m)
 		if diff > 0 and diff < min_diff:
 			min_diff = diff
@@ -190,6 +218,7 @@ def threshold_t_B(data, alpha, varset, order):
 	if final_t == 0:
 		final_t = top
 
+	print 'threshold_t_B()::final t: %f' % final_t
 	return final_t
 
 
@@ -226,13 +255,13 @@ def forward_selection(data, alpha, varset, order):
 
 
 #alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
-alphabet = ['A','B','C','D']
+alphabet = ['X','Y','Z','U','V','W']
 
 def main():
 	global alphabet
 
 	if len(sys.argv) < 2:
-		print 'Usage: python entropy score_file'
+		print 'Usage: python sdii.py score_file'
 		return
 
 	scorefile = sys.argv[1]
@@ -240,28 +269,32 @@ def main():
 
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print score.shape[0]
+	'''
+	print score[0:10,[0,1]].T
+	print entropy(score[:,[0,1]].T)
+	print entropy(score[:,[0]].T)
+	for s in set(itertools.combinations(list(range(6)), 3)): # generate all variable subset with length of 2
+		print '%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), deltaN_bar(list(s), score))
+	'''
+	varset = range(len(alphabet))
+	varset_next = forward_selection(score, 0.05, varset, 2)
+	print varset_next
+	
 
+	'''
 	varset = range(len(alphabet))
 	for i in xrange(2,6):
 		varset_next = forward_selection(score, 0.05, varset, i)
 		if len(varset_next) == 0:
 			print 'Main()::stop main loop at order [%d]' % i
 			break
+		else:
+			varset = varset_next
+	'''
 
 
 	# test forward_selection
 	#print forward_selection(score, 0.05, Set([0, 2, 3]), 2)
-	
-
-	# test threshold_t_B
-	'''
-	print threshold_t_B(score, 0.05, 2)
-	'''
-
-	# test max_Tl_1
-	'''
-	print max_Tl_1(score, 5, 3)
-	'''
 	
 	# test T_l
 	'''
@@ -269,20 +302,6 @@ def main():
 		print '%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), T_l(list(s), score))
 	'''
 
-	# test G_Bn
-	# set B = 1
-	'''
-	G_Bn(score, 0, 2)
-	'''
-
-	# test bootstrap
-	'''
-	bootstrap(score)
-	'''
-	return
-
-	#print 'score:\n', score
-	#print 'AD: %f' % II([2,3], score)
 	'''
 	alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	fout = open(scorefile+'.sdii', 'w')
