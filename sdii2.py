@@ -64,7 +64,7 @@ def entropy_single(X):
 	#print probs
 	return np.sum(-p * np.log2(p) for p in probs)
 
-def II(varset, data):
+def II(varset, data, hashing):
 	iiv=0.0
 	#n = len(varset)
 	#subsets = list(itertools.chain(*[itertools.combinations(range(n), i) for i in range(n+1)]))
@@ -73,10 +73,12 @@ def II(varset, data):
 		#print s
 		if len(s) == 0:
 			continue
-		else:
+		elif hashing == True:
 			#iiv+=math.pow(-1, len(s))*entropy(data[:,s].T)
 			# change to hashed version
 			iiv+=(-1)*signed_entropy(data[:,s].T, s)
+		else:
+			iiv+=math.pow(-1, len(s))*entropy(data[:,s].T)
 	return -iiv
 
 # dependence calculation
@@ -97,9 +99,7 @@ def deltaN_bar(varset, data):
 		for tau in subsets:
 			if index in tau:
 				#deltaX+=math.pow(-1, len(tau)+1)*entropy(data[:,tau].T)
-				deltaX+=signed_entropy(data[:,tau].T, tau)
-				#print 'deltaN_bar(): cumulative deltaX: %f' % deltaX
-		#sym_1+= ' x ( %s )' % sym_str
+				deltaX+=signed_entropy(data[:,tau].T, tau) # always hash
 		deltaX_bar*=deltaX
 	#print 'deltaN_bar = %d %s' % (math.pow(-1, n), sym_1)
 	return math.pow(-1, n)*deltaX_bar
@@ -108,9 +108,8 @@ def deltaN_bar(varset, data):
 # integrate deltaN_bar and Interaction information
 def calc_sdii(varset, data):
 	n = len(varset)
-	#print 'calc_sdii(): # of variable: %d' % n
 	if n == 2:
-		return II(varset, data)
+		return II(varset, data, True)
 	else:
 		return deltaN_bar(varset, data)
 
@@ -125,14 +124,14 @@ def bootstrap(n):
 
 # threshold calculation
 # for a speicific variable set e.g. (X1, X2, X3)
-def T_l(varset, data):
+def T_l(varset, data, hashing):
 	deltaX_list = []
 	n = len(varset)
 	#print 'T_l()::data.shape: %d' % data.shape[0]
 
 	# two variables case we use mutual information instead
 	if n==2:
-		mi = II(varset, data)
+		mi = II(varset, data, hashing)
 		#return math.sqrt(data.shape[0])*mi
 		return mi
 
@@ -144,35 +143,54 @@ def T_l(varset, data):
 		#print 'T_l()::subsets:'print subsets
 		for tau in subsets:
 			if index in tau:
+				if hashing == True:
 				#deltaX+=math.pow(-1, len(tau)+1)*entropy(data[:,tau].T)
 				# change to hashed version
-				deltaX+=signed_entropy(data[:,tau].T, tau)
+					deltaX+=signed_entropy(data[:,tau].T, tau)
+				else:
+					deltaX+=math.pow(-1, len(tau)+1)*entropy(data[:,tau].T)
 		deltaX_list.append(abs(deltaX))
 
 	#print deltaX_list
 	return math.sqrt(data.shape[0])*min(deltaX_list)
 
+# bootstrap data generation
+# index_list: each elemenet is a sampling with replacement
+def bootstrap_data(data, index_list, nvar):
+	data1 = data[index_list[0], 0]
+	for i in xrange(1, nvar):
+		col = data[index_list[i], i]
+		data1 = np.c_[data1, col]
+	return data1
+
+
 
 # indicator function on bootstrap data*
 # 	count how many T_l >= user input threshold
 # t: user threshold 
-def G_Bn(data, bootstrap_index, t, varset, order):
-	B = len(bootstrap_index) # number of bootstrap
+def G_Bn(data, bootstrap_indexSet, t, varset, order):
+	B = len(bootstrap_indexSet) # number of bootstrap
 	count = 0
-	prev_count = 0
 	for i in range(B):
 		#print 'G_Bn()::bootstrap # %d' % i
 		t0 = time.time()
-		data_1 = data[bootstrap_index[i],:] # sample with replacement 
+		#print 'G_Bn()::bootstrap index[1:10]: %s' % str(bootstrap_index[i][0:10])
+		data_1 = bootstrap_data(data, bootstrap_indexSet[i], len(varset))
+		'''
+		print 'G_Bn()::data_1 shape: %s' % repr(data_1.shape)
+		print 'G_Bn()::data_1 : %s' % repr(data_1)
+		print
+		print 'G_Bn()::data : %s' % repr(data)
+		'''
+		#exit()
+		#data_1 = data[bootstrap_index[i],:] # sample with replacement 
 		for s in set(itertools.combinations(varset, order)): # generate all variable subset with length of 2
 		# varset = Set([2,4,6]), order = 2
 		# set([(2, 6), (2, 4), (4, 6)])
-			if T_l(list(s), data_1) >= t:
+			if T_l(list(s), data_1, False) >= t: # DO NOT hashing for bootstrap data
 					count+=1
 		t1 = time.time()
 		#print 'G_Bn: finished in %d seconds' % (t1-t0)
-		#print 'G_Bn()::current count # %d' % (count - prev_count)
-		prev_count = count
 	print 'G_Bn():: # of T >= t : %d, t: %f, count*(1/B): %f' % (count, t, (1.0/B)*count)
 	#print count
 	return (1.0/B)*count
@@ -184,7 +202,7 @@ def max_Tl_1(data, t, varset, order):
 	for s in set(itertools.combinations(varset, order)): # generate all variable subset with length of 2
 	# varset = Set([2,4,6]), order = 2
 	# set([(2, 6), (2, 4), (4, 6)])
-		T = T_l(list(s), data)
+		T = T_l(list(s), data, True) # hashing for real data
 		#print 'max_Tl_1()::T: %f' % T
 		if T >= t:
 				count+=1
@@ -201,34 +219,42 @@ def max_Tl_1(data, t, varset, order):
 # find threshold with boostrap
 def threshold_t_B(data, alpha, varset, order):
 	sk = 4
-	#pk = binom(len(alphabet), len(varset))
 	pk = binom(len(alphabet), order)
-
 	#top = 2*math.sqrt(sk*math.log(pk))
-	top = 0.4 
+	top = 1.0 
 	#print 'threshold_t_B()::'
 	#print (len(alphabet), sk, pk, top)
 
 	final_t = 0.0
 	min_diff = sys.float_info.max
 
-
-	# put bootstrap here
 	n = data.shape[0]
-	bootstrap_index = []
-	B = 100
-	for i in xrange(0, B):
-		bootstrap_index.append(np_random.choice(n, n, replace=True))
+	B = 300
 
+	# a list of lists
+	bootstrap_indexSet = []
+	for b in xrange(0,B):
+		single_var_idx_list = []
+		# column-wised samepling, for ith variable
+		for i in xrange(0, len(varset)):
+			single_var_idx_list.append(np_random.choice(n, n, replace=True))
+		bootstrap_indexSet.append(single_var_idx_list)
+		#print 'threshold_t_B()::the %dth bootstrap: %s' % (b, repr(single_var_idx_list))
+	
+	#for i in xrange(0, B):
+	#	bootstrap_index.append(np_random.choice(n, n, replace=True))
 	# get inf(t<=alpha) from all t 
-	for t in np.linspace(0,top,10):
-		v_G = G_Bn(data, bootstrap_index, t, varset, order)
+#	for t in np.linspace(0,top,10):
+	for t in np.linspace(0.1,top,10):
+		v_G = G_Bn(data, bootstrap_indexSet, t, varset, order)
+		#print 'threshold_t_B()::data: %s' % repr(data[1:10,:])
 		v_m = max_Tl_1(data, t, varset, order)
 		print 'threshold_t_B():: G/Max_T ratio: %f\n' % (v_G/v_m)
 		diff = alpha - (v_G/v_m)
 		if diff > 0 and diff < min_diff:
 			min_diff = diff
 			final_t = t
+		#break # test sampling
 
 	if final_t == 0:
 		final_t = top
@@ -242,7 +268,7 @@ def threshold_t_B(data, alpha, varset, order):
 def forward_selection(data, alpha, varset, order):
 	global alphabet
 	ret_varset = Set()
-	outfile = 'sdii_%d.txt' % order
+	outfile = 'sdii_test_%d.txt' % order
 	fout = open(outfile, 'w')
 	print 'forward_selection()::varset: %s, order: %d' % (repr(varset), order)
 
@@ -256,7 +282,14 @@ def forward_selection(data, alpha, varset, order):
 			print 'forward_selection()::%s is NOT in %s. skip' % (repr(ss), repr(varset))
 			continue
 		
-		sdii_value = calc_sdii(list(s), data)
+		#print 'forward_selection()::data: %s' % repr(data[1:10,:])
+		sdii_value = calc_sdii(list(s), data) # hasing for real data
+		'''
+		print 'forward_selection()::data: %s' % repr(data[999,:])
+		print 'forward_selection:()::list(s): %s' % repr(list(s))
+		print 'forward_selection:()::sdii: %f' % sdii_value
+		exit()
+		'''
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_value))
 		if sdii_value >= th:
 			for var in s:
@@ -270,14 +303,16 @@ def forward_selection(data, alpha, varset, order):
 
 
 #alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
-alphabet = ['X','Y','Z','U','V','W']
+alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T']
+#alphabet = ['X','Y','Z','U','V','W']
+#alphabet = ['X1','X2','X3','X4','X5']
 entropy_board = {}
 
 def main():
 	global alphabet
 
 	if len(sys.argv) < 2:
-		print 'Usage: python sdii.py score_file'
+		print 'Usage: python sdii2.py score_file'
 		return
 
 	scorefile = sys.argv[1]
@@ -285,6 +320,15 @@ def main():
 
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print score.shape[0]
+
+
+	t1 = time.time()
+	varset = range(len(alphabet))
+	varset_next = forward_selection(score, 0.1, varset, 2)
+	t2 = time.time()
+	print varset_next
+	print 'use %d seconds' % (t2 - t1)
+	
 	'''
 	print score[0:10,[0,1]].T
 	print entropy(score[:,[0,1]].T)
@@ -319,6 +363,7 @@ def main():
 		print '%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), T_l(list(s), score))
 	'''
 
+	'''
 	#alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	fout = open(scorefile+'.sdii_hash', 'w')
 	print 'calculating mutual information ...'
@@ -334,6 +379,7 @@ def main():
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii(list(s), score)))
 	t2 = time.time()
 	print 'DeltaK(3) time: %d seconds' % (t2-t1)
+	'''
 
 	'''
 	print 'calculating DeltaK(4) ...'
