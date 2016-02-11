@@ -99,7 +99,7 @@ def threshold_t_B(sdii_obj, alpha, varset, order, B):
 	
 	# get inf(t<=alpha) from all t 
 	#for t in np.linspace(0.1,top,10):
-	for t in np.linspace(0.0, 0.1, 10):
+	for t in np.linspace(0.0, 0.05, 100):
 		v_G = G_Bn(sdii_obj, bootstrap_indexSet, t, varset, order)
 		#print 'threshold_t_B()::data: %s' % repr(data[1:10,:])
 		v_m = max_Tl_1(sdii_obj, t, varset, order)
@@ -122,14 +122,15 @@ def threshold_t_B(sdii_obj, alpha, varset, order, B):
 def forward_selection(data, alpha, varset, order, B):
 	global alphabet
 	ret_varset = Set()
-	outfile = 'sdii_test_%d.txt' % order
-	fout = open(outfile, 'w')
+	#outfile = 'result_proc_sdii_test_%d.txt' % order
+	#fout = open(outfile, 'w')
 	print 'forward_selection()::varset: %s, order: %d' % (repr(varset), order)
 
 	sdii_core = sdii(data)
 	th = threshold_t_B(sdii_core, alpha, varset, order, B)
 	print 'forward_selection()::threshold of order [%d]: %f' % (order, th)
 
+	'''
 	# generate all variable subset with length of order from varlist
 	for s in set(itertools.combinations(varset, order)):
 		ss = Set(s)
@@ -139,12 +140,7 @@ def forward_selection(data, alpha, varset, order, B):
 			continue
 		
 		sdii_value = sdii_core.calc_sdii(list(s)) 
-		'''
-		print 'forward_selection()::data: %s' % repr(data[999,:])
-		print 'forward_selection:()::list(s): %s' % repr(list(s))
-		print 'forward_selection:()::sdii: %f' % sdii_value
-		exit()
-		'''
+
 		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_value))
 		if sdii_value >= th:
 			for var in s:
@@ -153,6 +149,8 @@ def forward_selection(data, alpha, varset, order, B):
 	print 'forward_selection()::Writing %s' % outfile
 	fout.close()
 	return ret_varset
+	'''
+	return th
 		
 
 
@@ -165,22 +163,23 @@ def main():
 	global alphabet
 
 	if len(sys.argv) < 2:
-		print 'Usage: python sdii2.py score_file'
+		print 'Usage: python proc_sdii.py score_file'
 		return
 
 	scorefile = sys.argv[1]
 	print 'score file: %s' % scorefile
+	outfile = 'result_'+scorefile
 
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print score.shape[0]
-
+	'''
 	t1 = time.time()
 	varset = range(len(alphabet))
-	varset_next = forward_selection(score, 0.1, varset, 2, 300)
+	varset_next = forward_selection(outfile, score, 0.1, varset, 2, 300)
 	t2 = time.time()
 	print varset_next
 	print 'use %d seconds' % (t2 - t1)
-	
+	'''
 
 	'''
 	varset = range(len(alphabet))
@@ -194,23 +193,35 @@ def main():
 	'''
 
 
-	'''
+	t1 = time.time()
+	varset = range(len(alphabet))
+	th2 = forward_selection(score, 0.1, varset, 2, 300)
+	th3 = forward_selection(score, 0.1, varset, 3, 300)
+	t2 = time.time()
+
+	print 'Threshold of order 2: %f' % th2
+	print 'Threshold of order 3: %f' % th3
+	print 'use %d seconds' % (t2 - t1)
+
+	return
+
 	#alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
-	fout = open(scorefile+'.sdii_hash', 'w')
+	sdii_core = sdii(score)
+	fout = open(outfile, 'w')
 	print 'calculating mutual information ...'
 	t0 = time.time()
 	for s in set(itertools.combinations(list(range(len(alphabet))), 2)): # generate all variable subset with length of 2
-		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii(list(s), score)))
+		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_core.calc_sdii(list(s))))
 
 	t1 = time.time()
 	print 'MI time: %d seconds' % (t1-t0)
 
 	print 'calculating DeltaK(3) ...'
 	for s in set(itertools.combinations(list(range(len(alphabet))), 3)): # generate all variable subset with length of 3
-		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii(list(s), score)))
+		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_core.calc_sdii(list(s))))
 	t2 = time.time()
 	print 'DeltaK(3) time: %d seconds' % (t2-t1)
-	'''
+
 
 
 if __name__=="__main__":
