@@ -103,8 +103,12 @@ def threshold_t_B(sdii_obj, alpha, varset, order, B):
 		v_G = G_Bn(sdii_obj, bootstrap_indexSet, t, varset, order)
 		#print 'threshold_t_B()::data: %s' % repr(data[1:10,:])
 		v_m = max_Tl_1(sdii_obj, t, varset, order)
-		print 'threshold_t_B():: G/Max_T ratio: %f\n' % (v_G/v_m)
-		diff = alpha - (v_G/v_m)
+		ratio = v_G/v_m
+		print 'threshold_t_B():: G/Max_T ratio: %f\n' % ratio
+		if ratio < 1e-10:
+			print 'zero ratio reached. break'
+			break
+		diff = alpha - ratio
 		if diff > 0 and diff < min_diff:
 			min_diff = diff
 			final_t = t
@@ -113,7 +117,7 @@ def threshold_t_B(sdii_obj, alpha, varset, order, B):
 	if final_t == 0:
 		final_t = top
 
-	print 'threshold_t_B()::final t: %f' % final_t
+	print 'threshold_t_B()::final t: %f, v_G: %f, v_m: %f' % (final_t, v_G, v_m)
 	return final_t
 
 
