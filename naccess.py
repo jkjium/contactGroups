@@ -67,6 +67,7 @@ class rsa(object):
 					self.AP_ABS, self.AP_REL)
 
 
+
 '''
 class that store a whole ras file information
 '''
@@ -76,6 +77,7 @@ class naccess(object):
 	def __init__(self, nafile):
 		self.pdb = nafile[0:4]
 		self.rsaDict = {}
+		self.alphabet = ['B', 'E']
 
 		lines = [line.strip() for line in open(nafile)]
 		for naline in lines:
@@ -93,5 +95,13 @@ class naccess(object):
 	def dump(self):
 		for key in self.rsaDict:
 			print '[%s - %s]: %s' % (self.pdb, key, self.rsaDict[key].outString())
+
+
+	# alphabet assigning
+	def accessible(self, key):
+		if self.rsaDict[key].AA_REL > 0.2:
+			return 'E'
+		else:
+			return 'B'
 
 

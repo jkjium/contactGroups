@@ -4,7 +4,8 @@
 #from msa import msa
 #from AAShingle import AAShingle
 #from sklearn.cluster import spectral_clustering
-from cgroup import cgroup
+#from cgroup import cgroup
+#import numpy.random as np_random
 import sys
 
 def foo(x, y):
@@ -12,11 +13,42 @@ def foo(x, y):
 
 def main():
 	#cg_str ='2ztc_C.domain,LAAAL,155 188 165 168 192,5'
+	alphabet = [
+		'AE', 'CE', 'DE', 'EE', 'FE', 'GE', 'HE', 'IE', 'KE', 'LE', 'ME', 'NE', 'PE', 'QE', 'RE', 'SE', 'TE', 'VE', 'WE', 'YE',
+		'AB', 'CB', 'DB', 'EB', 'FB', 'GB', 'HB', 'IB', 'KB', 'LB', 'MB', 'NB', 'PB', 'QB', 'RB', 'SB', 'TB', 'VB', 'WB', 'YB'
+	]
 
+	print repr(alphabet)
+	'''
+	AA = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
+	NA = ['E', 'B']
+	for i in NA:
+		for j in AA:
+			print '\'%s\',' % (j+i),
+		print
+	'''
+	'''
+	B = 5
+	varset = [1,2,3]
+	n = 3 
+	# for each bootstrap step save nvar column selections
+	bootstrap_indexSet = []
+	for b in xrange(0,B):
+		idx_list = []
+		for i in xrange(0, len(varset)):
+			idx_list.append(np_random.choice(n, n, replace=True))
+		bootstrap_indexSet.append(idx_list)
+
+	print repr(bootstrap_indexSet)
+	'''
+
+
+	'''
 	print foo(2, 4)[0] == 4
 	print foo(2, 4)[1]
 	(x1, x2) = foo(3,3)
 	print x1, x2	
+	'''
 
 
 	'''

@@ -1,8 +1,9 @@
 # contact group class
 # 2ztc_C.domain,LAAAL,155 188 165 168 192,5
+# 1t3r.tip,LTT,B97 A26 B26
 import operator
 
-class cgroup(object):
+class cg(object):
 	def __init__(self, strline=''):
 		strArray = strline.split(',')
 		self.pdb = strArray[0]
@@ -10,6 +11,7 @@ class cgroup(object):
 		self.resi = strArray[2].split(' ')
 		self.AAdict = {}
 		for i in xrange(0,len(self.AAgroup)):
+			# self.AAdict['B97'] = 'L'
 			self.AAdict[self.resi[i]] = self.AAgroup[i]
 
 		self.sortedAA = []
@@ -21,8 +23,11 @@ class cgroup(object):
 		# O for proline
 		self.AAType = []
 
-		self.alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
-		self.scoreboard = {'A':0,'C':0,'D':0,'E':0,'F':0,'G':0,'H':0,'I':0,'K':0,'L':0,'M':0,'N':0,'P':0,'Q':0,'R':0,'S':0,'T':0,'V':0,'W':0,'Y':0}
+		self.alphabet = []
+		self.scoreboard = {}
+
+		#self.alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
+		#self.scoreboard = {'A':0,'C':0,'D':0,'E':0,'F':0,'G':0,'H':0,'I':0,'K':0,'L':0,'M':0,'N':0,'P':0,'Q':0,'R':0,'S':0,'T':0,'V':0,'W':0,'Y':0}
 
 	# put sorted cg type string
 	def getType(self, typeMap):
