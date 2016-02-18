@@ -54,10 +54,12 @@ class protein(object):
                 self.atoms.append(atom(lines[i]))
         self.seq = self.getSeq()
 
+        '''
         self.resCADict={}
         for a in self.atoms:
             if 'CA' in a.name:
                 self.resCADict[a.resSeq] = a
+        '''
     
     # print PDB content
     def printPDB(self):
@@ -94,6 +96,21 @@ class protein(object):
         fp=open(seqfilename, 'w')
         fp.write(header+seq)
         fp.close()
+
+
+    # extract all the CA atoms from the pdb file
+    def writeCA(self, filename):
+        fd=open(filename, 'w')
+        count=0
+        for i in xrange(0,len(self.atoms)):
+            a=self.atoms[i]
+            #a.dump()
+            if 'CA' in a.name:
+                fd.write(a.writeAtom())
+                count=count+1
+        fd.close()
+        if count==0:
+            print "No atom written in [%s]!" % (filename)      
         
         
     
@@ -110,7 +127,10 @@ class protein(object):
         fd.close()
         if count==0:
             print "No atom written in [%s]!" % (filename)
+
 			
+    # tip atom extraction
+    # not for chain A only
     def writeChainATips(self, profile, filename):
         # loading tip atoms records
         fp=open(profile, 'r')
