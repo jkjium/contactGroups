@@ -23,6 +23,7 @@ TOTAL         13134.9      11364.2       1770.7       7723.4       5411.4
 import numpy as np
 import time
 import sys
+from AAmap import AAmap
 
 __all__=['naccess', 'rsa']
 
@@ -78,13 +79,14 @@ class naccess(object):
 		self.pdb = nafile[0:4]
 		self.rsaDict = {}
 		self.alphabet = ['B', 'E']
+		aamap = AAmap()
 
 		lines = [line.strip() for line in open(nafile)]
 		for naline in lines:
 			head = naline[0:3]
 			if head == 'RES':
 				r = rsa(naline)
-				key = '%s%s%s' % (r.resn, r.chain, r.resi)
+				key = '%s%s%s' % (aamap.getAAmap(r.resn), r.chain, r.resi)
 				self.rsaDict[key] = r
 			elif head == 'TOTAL':
 				key = 'TOTAL'
@@ -94,7 +96,7 @@ class naccess(object):
 	# dump naccess content
 	def dump(self):
 		for key in self.rsaDict:
-			print '[%s - %s]: %s' % (self.pdb, key, self.rsaDict[key].outString())
+			print '[%s]: %s' % (key, self.rsaDict[key].outString())
 
 
 	# alphabet assigning
