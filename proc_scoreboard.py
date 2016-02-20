@@ -9,7 +9,7 @@ def main():
 	fin = open(sys.argv[1], 'r')
 	fo = open(sys.argv[1]+'.score', 'w')
 	for line in fin.readlines():
-		cg = cgroup(line.strip())
+		cg = cgroup(line.strip(), [])
 		fo.write(cg.scoreboard2str()+'\n')
 	fin.close()
 	fo.close()

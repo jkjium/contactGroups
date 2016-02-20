@@ -22,13 +22,15 @@ class cg(object):
 		# for AA type: H + - P 'C,G,O'
 		# O for proline
 		self.AAType = []
+		if len(var_alphabet) == 0:
+			self.alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
+		else:
+			self.alphabet = var_alphabet
 
 		self.scoreboard = {}
-		self.alphabet = var_alphabet
 		for a in self.alphabet:
 			self.scoreboard[a] = 0
 
-		#self.alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 		#self.scoreboard = {'A':0,'C':0,'D':0,'E':0,'F':0,'G':0,'H':0,'I':0,'K':0,'L':0,'M':0,'N':0,'P':0,'Q':0,'R':0,'S':0,'T':0,'V':0,'W':0,'Y':0}
 
 	# output scoreboard for AA + accesibility type contact group

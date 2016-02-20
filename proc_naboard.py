@@ -32,7 +32,8 @@ def main():
 
 	fo = open(outfile, 'w')
 	for c in cgs:
-		fo.write(c.nascore(na))
+		if len(c.AAgroup) > 1:
+			fo.write(c.nascore(na)+'\n')
 	fo.close()
 
 if __name__=="__main__":

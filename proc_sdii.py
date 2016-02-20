@@ -126,77 +126,52 @@ def threshold_t_B(sdii_obj, alpha, varset, order, B):
 def forward_selection(data, alpha, varset, order, B):
 	global alphabet
 	ret_varset = Set()
-	#outfile = 'result_proc_sdii_test_%d.txt' % order
-	#fout = open(outfile, 'w')
+
 	print 'forward_selection()::varset: %s, order: %d' % (repr(varset), order)
 
 	sdii_core = sdii(data)
 	th = threshold_t_B(sdii_core, alpha, varset, order, B)
 	print 'forward_selection()::threshold of order [%d]: %f' % (order, th)
 
-	'''
-	# generate all variable subset with length of order from varlist
-	for s in set(itertools.combinations(varset, order)):
-		ss = Set(s)
-		#print 'forward_selection()::s: %s' % repr(s)
-		if len(ss.intersection(varset)) == 0:
-			print 'forward_selection()::%s is NOT in %s. skip' % (repr(ss), repr(varset))
-			continue
-		
-		sdii_value = sdii_core.calc_sdii(list(s)) 
-
-		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_value))
-		if sdii_value >= th:
-			for var in s:
-				ret_varset.add(var)
-
-	print 'forward_selection()::Writing %s' % outfile
-	fout.close()
-	return ret_varset
-	'''
 	return th
 		
 
 
 #alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
-alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T']
+alphabet = []
 #alphabet = ['X','Y','Z','U','V','W']
 #alphabet = ['X1','X2','X3','X4','X5']
 
 def main():
 	global alphabet
 
-	if len(sys.argv) < 2:
-		print 'Usage: python proc_sdii.py score_file'
+	aa_alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T']
+	na_alphabet = [
+		'AB', 'AE', 'CB', 'CE', 'DB', 'DE', 'EB', 'EE', 'FB', 'FE', 'GB', 'GE', 'HB', 'HE', 'IB', 'IE',
+		'KB', 'KE', 'LB', 'LE', 'MB', 'ME', 'NB', 'NE', 'PB', 'PE', 'QB', 'QE', 'RB', 'RE', 'SB', 'SE', 
+		'TB', 'TE', 'VB', 'VE', 'WB', 'WE', 'YB', 'YE'
+	]
+
+	if len(sys.argv) < 3:
+		print 'Usage: python proc_sdii.py var_type score_file'
 		return
 
-	scorefile = sys.argv[1]
+	vartype = sys.argv[1]
+	if vartype == 'AA':
+		alphabet = aa_alphabet
+		print 'use AA varset : %s' % repr(alphabet)
+	elif vartype == 'NA':
+		alphabet = na_alphabet
+		print 'use NA varset : %s' % repr(alphabet)
+
+	scorefile = sys.argv[2]
 	print 'score file: %s' % scorefile
-	outfile = 'result_'+scorefile
+	outfile = '%s.%s_sdii' % (scorefile, vartype)
 
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print score.shape[0]
-	'''
-	t1 = time.time()
-	varset = range(len(alphabet))
-	varset_next = forward_selection(outfile, score, 0.1, varset, 2, 300)
-	t2 = time.time()
-	print varset_next
-	print 'use %d seconds' % (t2 - t1)
-	'''
 
 	'''
-	varset = range(len(alphabet))
-	for i in xrange(2,6):
-		varset_next = forward_selection(score, 0.05, varset, i)
-		if len(varset_next) == 0:
-			print 'Main()::stop main loop at order [%d]' % i
-			break
-		else:
-			varset = varset_next
-	'''
-
-
 	t1 = time.time()
 	varset = range(len(alphabet))
 	th2 = forward_selection(score, 0.1, varset, 2, 300)
@@ -208,21 +183,21 @@ def main():
 	print 'use %d seconds' % (t2 - t1)
 
 	return
+	'''
 
-	#alphabet = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	sdii_core = sdii(score)
 	fout = open(outfile, 'w')
 	print 'calculating mutual information ...'
 	t0 = time.time()
 	for s in set(itertools.combinations(list(range(len(alphabet))), 2)): # generate all variable subset with length of 2
-		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_core.calc_sdii(list(s))))
+		fout.write('%s %.15f\n' % ('-'.join([(alphabet[i]) for i in s]), sdii_core.calc_sdii(list(s))))
 
 	t1 = time.time()
 	print 'MI time: %d seconds' % (t1-t0)
 
 	print 'calculating DeltaK(3) ...'
 	for s in set(itertools.combinations(list(range(len(alphabet))), 3)): # generate all variable subset with length of 3
-		fout.write('%s %.15f\n' % (''.join([(alphabet[i]) for i in s]), sdii_core.calc_sdii(list(s))))
+		fout.write('%s %.15f\n' % ('-'.join([(alphabet[i]) for i in s]), sdii_core.calc_sdii(list(s))))
 	t2 = time.time()
 	print 'DeltaK(3) time: %d seconds' % (t2-t1)
 
