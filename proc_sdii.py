@@ -166,7 +166,8 @@ def main():
 
 	scorefile = sys.argv[2]
 	print 'score file: %s' % scorefile
-	outfile = '%s.%s_sdii' % (scorefile, vartype)
+	outfile = '%s.sdii' % scorefile
+	print 'write to %s' % outfile
 
 	score = np.loadtxt(scorefile, delimiter=',')
 	#print score.shape[0]

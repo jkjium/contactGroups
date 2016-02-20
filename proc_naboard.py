@@ -26,7 +26,7 @@ def main():
 
 	na = naccess(nafile)
 	alphabet = expandVars([AAlist, na.alphabet])
-	print repr(alphabet)
+	#print repr(alphabet)
 
 	cgs = [cg(line.strip(), alphabet) for line in open(cgfile)]
 

@@ -101,7 +101,7 @@ class naccess(object):
 
 	# alphabet assigning
 	def accessible(self, key):
-		if self.rsaDict[key].AA_REL > 0.2:
+		if self.rsaDict[key].AA_REL > 20.0:
 			return 'E'
 		else:
 			return 'B'
