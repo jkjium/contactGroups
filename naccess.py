@@ -24,6 +24,7 @@ import numpy as np
 import time
 import sys
 from AAmap import AAmap
+from collections import defaultdict
 
 __all__=['naccess', 'rsa']
 
@@ -78,6 +79,7 @@ class naccess(object):
 	def __init__(self, nafile):
 		self.pdb = nafile[0:4]
 		self.rsaDict = {}
+		self.resiDict = defaultdict(lambda: '')
 		self.alphabet = ['B', 'E']
 		aamap = AAmap()
 
@@ -88,6 +90,10 @@ class naccess(object):
 				r = rsa(naline)
 				key = '%s%s%s' % (aamap.getAAmap(r.resn), r.chain, r.resi)
 				self.rsaDict[key] = r
+
+				varkey = '%s%s' % (aamap.getAAmap(r.resn), self.accessible(key))
+				varvalue = '%s%s%s ' % (self.resiDict[varkey], r.chain, r.resi)
+				self.resiDict[varkey] = varvalue
 			elif head == 'TOTAL':
 				key = 'TOTAL'
 				self.rasDict[key] = naline.split()
@@ -106,4 +112,14 @@ class naccess(object):
 		else:
 			return 'B'
 
+	# output residue number according to query variable type
+	def dumpResiMap(self):
+		for key in self.resiDict:
+			print '[%s]: %s' % (key, self.resiDict[key])
 
+
+	# output resi list for varname
+	# example: input 'DB'
+	# return: [DB]: B398 B504 B521 B579
+	def getResiList(self, varname):
+		return self.resiDict[varname]
