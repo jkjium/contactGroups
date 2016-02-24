@@ -52,14 +52,12 @@ class protein(object):
                 continue
             if line[0:6]=='ATOM  ' and (line[16]==' ' or line[16]=='A'): # to avoid alternative location
                 self.atoms.append(atom(lines[i]))
+
+        # map for Chain+Resi : (index in sequence, ResName)
+        # 'B529': (132, 'V')
+        self.resDict = {}
         self.seq = self.getSeq()
 
-        '''
-        self.resCADict={}
-        for a in self.atoms:
-            if 'CA' in a.name:
-                self.resCADict[a.resSeq] = a
-        '''
     
     # print PDB content
     def printPDB(self):
@@ -77,23 +75,38 @@ class protein(object):
     def getSeq(self):
         aamap = AAmap()
         seq=''
+        last_resSeq = -1
+        seqPos = 0
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
-            seq=seq+aamap.getAAmap(a.resName)
+            if last_resSeq != a.resSeq:
+                seq=seq+aamap.getAAmap(a.resName)
+                last_resSeq = a.resSeq
+
+                key = '%s%s' % (a.chainID, a.resSeq)
+                self.resDict[key] = (seqPos, seq[seqPos])
+                seqPos+=1
         return seq       
            
     # print PDB sequence into fasta file
-    def writeSeq(self, seqfilename):
+    def writeFASTA(self):
+        fafile = self.pdb+'.fa'
         aamap = AAmap()
-        header = '>%s/1-%d\n' % (self.pdb, len(self.atoms))
+
         seq=''
+        count = 0
+        last_resSeq = -1
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
-            seq=seq+aamap.getAAmap(a.resName)
+            if last_resSeq != a.resSeq:
+                seq=seq+aamap.getAAmap(a.resName)
+                last_resSeq = a.resSeq
+                count+=1
         seq=seq+'\n'
+        header = '>%s/1-%d\n' % (self.pdb, count)
         print header+seq
 
-        fp=open(seqfilename, 'w')
+        fp=open(fafile, 'w')
         fp.write(header+seq)
         fp.close()
 
