@@ -22,7 +22,10 @@ def main():
 	'''
 
 	# test msaboard
-	msaboard = np.array(m.msaboard())
+	#msaboard = np.array(m.msaboard(0.8))
+	msaboard, varlist = m.msaboard(0.8)
+	print varlist
+	print m.seqlen
 	print msaboard
 	print msaboard.shape
 

@@ -7,7 +7,7 @@ from protein import protein
 
 def main():
 	if len(sys.argv)<4:
-		print 'Usage: utils_naccess.py msafile pdbfile chain+resi'
+		print 'Usage: utils_msa.py msafile pdbfile chain+resi'
 		return
 	msafile = sys.argv[1]
 	pdbfile = sys.argv[2]

@@ -13,6 +13,15 @@ class msa(object):
 							'L': 10,'M': 11,'N': 12,'P': 13,'Q': 14,'R': 15,'S': 16,'T': 17,'V': 18,'W': 19,'Y': 20
 						}
 
+		self.scoreBinary = {
+							'-': 0,'.': 0,'A': 1,'C': 1,'D': 1,'E': 1,'F': 1,'G': 1,'H': 1,'I': 1,'K': 1,
+							'L': 1,'M': 1,'N': 1,'P': 1,'Q': 1,'R': 1,'S': 1,'T': 1,'V': 1,'W': 1,'Y': 1
+						}
+
+		self.seqlen = len(self.msaArray[0][1])
+		self.seqNum = len(self.msaArray)
+
+
 	# given a fasta file yield tuples of header, sequence
 	def fasta_iter(self, fastafile):
 		fh = open(fastafile)
@@ -63,18 +72,25 @@ class msa(object):
 		return idxMap
 
 
-	# generate msa scoreboard
-	def msaboard(self):
+	# generate concised msa scoreboard
+	def msaboard(self, cutoff):
 		scoreboard = []
+		addboard = np.zeros(self.seqlen)
 		for s in self.msaArray:
 			scoreboard.append([self.scoreValue[a.upper()] for a in s[1]])
+			addboard+=np.array([self.scoreBinary[a.upper()] for a in s[1]]) # calculate gap proportion
 
-		return scoreboard
+		# get conserved columns
+		indices = [i for i in xrange(0, self.seqlen) if addboard[i]/self.seqNum  > cutoff]
+		#print np.array(scoreboard)
+		return (np.array(scoreboard)[:,indices], indices)
+
 
 	# write scoreboard
-	def writeScoreboard(self, outfile):
+	def writeScoreboard(self, outfile, cutoff):
 		fout = open(outfile, 'w')
-		score = self.msaboard()
+		score, varlist = self.msaboard(cutoff)
+		fout.write('%s\n' % repr(varlist))
 		for line in score:
 			fout.write('%s\n' % ','.join([str(i) for i in line]))
 		fout.close()
