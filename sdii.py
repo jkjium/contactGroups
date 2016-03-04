@@ -16,7 +16,29 @@ class sdii(object):
 	def __init__(self, data):
 		self.data = data
 		self.entropy_board = {}
+		self.weight = np.ones(self.data.shape[0])
 
+
+	def w_entropy(self, X):
+		#print X.T 
+		#print
+		H = 0
+		#print [set(x) for x in X] 
+		#print
+		for classes in itertools.product(*[set(x) for x in X]):
+		#	print classes
+			v = reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes))).astype(float)
+		#	print v 
+		#	print [v[i]*self.weight[i] for i in xrange(0, len(self.weight))]
+		#	print 
+		##	p = np.mean(v) # should divide effective number, which is the sum of all weights
+		#	print p
+		#	print 
+			p = sum([v[i]*self.weight[i] for i in xrange(0, len(self.weight))])/sum(self.weight)
+		#	print p 
+		#	print 
+			H += -p * np.log2(p) if p > 0 else 0
+		return H
 
     # general information entropy
     # X: varible set in list type
@@ -30,7 +52,8 @@ class sdii(object):
 		if key in self.entropy_board:
 			H = self.entropy_board[key]
 		else:
-			H = math.pow(-1, len(s)+1) * (np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X]))))
+			#H = math.pow(-1, len(s)+1) * (np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X]))))
+			H = math.pow(-1, len(s)+1) * w_entropy(self, X)
 			self.entropy_board[key] = H
 		return H
 
