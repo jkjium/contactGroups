@@ -18,6 +18,33 @@ class sdii(object):
 		self.entropy_board = {}
 		self.weight = np.ones(self.data.shape[0])
 
+	# currently for msa weight
+	def setWeight(self, w):
+		self.weight = w
+
+
+	# weighted entropy test
+	'''
+	20160304 test ok.
+	~/workspace/pdb/test/test_weight/
+	data: 
+		[[1 1 1 1 1 1]
+		 [1 1 1 1 3 3]
+		 [3 3 1 1 1 1]
+		 [2 1 2 2 3 3]
+		 [4 1 2 3 4 4]]
+
+	alphabet sets for column 0 and 1:
+		v = [set([1, 2, 3, 4]), set([1, 3])]
+
+	for joint (1, 1) observation 5 rows in [0,1] columns:
+		[ 1.  1.  0.  0.  0.]
+	weight: [ 0.33333333  0.5         0.5         1.          1.        ]
+		p = (1 * 0.3333 + 1 * 0.5 + 0 * 0.5 + 0 * 1 + 0 * 1)/ 3.33 = 0.25
+	...
+		H = 1.95272419562 vs un-weighted H = 1.92192809489
+
+	'''
 
 	def w_entropy(self, X):
 		#print X.T 

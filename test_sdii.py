@@ -4,12 +4,21 @@ import numpy as np
 
 def main():
 
-	score = np.loadtxt('test_sdii.txt', delimiter=',')
-	print score.shape[0]
+	# test msa weight	
+	'''
+	msafile = 'test_msa.txt'
+	target = '1k2p'
+	m = msa(msafile, target)
+	score, varlist = m.msaboard(0.0, 0.5)
+	print score
 	sdii_core = sdii(score)
-	s = [1,2]
-	print sdii_core.w_entropy(sdii_core.data[:,s].T)
-	#print sdii_core.w_entropy([0,1])
+	print sdii_core.w_entropy(sdii_core.data[:,[0,1]].T)
+	sdii_core.setWeight(m.weight)
+	print sdii_core.w_entropy(sdii_core.data[:,[0,1]].T)
+	print sdii_core.weight
+	print 'sum(weight): %f' % sum(sdii_core.weight)
+	'''
+
 
 if __name__ == '__main__':
 	main()

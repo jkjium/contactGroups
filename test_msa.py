@@ -7,27 +7,34 @@ from msa import msa
 
 def main():
 	#msafile = 'PF07714_seed.txt'
-	msafile = 'test_msa.txt'
-	m = msa(msafile)
-	m.dump()
-
 	# test pos map
 	'''
+	target = '1k2p'
 	msafile = '1k2p_PF07714_seed.txt'
+	m = msa(msafile, target)
+	m.dump()
+
 	p = protein('1k2p.pdb')
-	posmap = m.getPosMap(p)
+	seqi2msai, msai2seqi = m.getPosMap(p)
+
 	s = m.msaArray[0]
 	seq = s[1]
-	print ''.join([seq[posmap[k]] for k in posmap])
+
+	pdbseq = p.seq
+	print ''.join([seq[seqi2msai[k]] for k in seqi2msai])
+	print ''.join([pdbseq[msai2seqi[l]]for l in msai2seqi])
 	'''
 
 	# test msaboard
-	#msaboard = np.array(m.msaboard(0.8))
-	msaboard, varlist = m.msaboard(0.8)
+	msafile = 'test_msa.txt'
+	target = '1k2p'
+	m = msa(msafile, target)
+	msaboard, varlist = m.msaboard(0.0, 0.5)
 	print varlist
 	print m.seqlen
 	print msaboard
 	print msaboard.shape
+	print m.weight
 
 if __name__ == '__main__':
 	main()
