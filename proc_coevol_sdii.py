@@ -17,15 +17,16 @@ alphabet = []
 def main():
 	global alphabet
 
-	if len(sys.argv) < 4:
-		print 'Usage: python proc_coevol_sdii.py msafile cutoff msapos order'
-		print 'Example: python proc_coevol_sdii.py 1k2p_PF07714_seed.txt 0.6 472 2'
+	if len(sys.argv) < 5:
+		print 'Usage: python proc_coevol_sdii.py msafile cutoff target_seq msapos order'
+		print 'Example: python proc_coevol_sdii.py 1k2p_PF07714_seed.txt 0.6 1k2p 3128 2'
 		return
 
 	msafile = sys.argv[1]
-	cutoff = float(sys.argv[2])
-	target = sys.argv[3].lower()
-	order = int(sys.argv[4])
+	drop_cutoff = float(sys.argv[2]) # for reduce columns
+	targetHeader = sys.argv[3]
+	target = sys.argv[4].lower()
+	order = int(sys.argv[5])
 
 	print 'msafile: [%s]' % msafile
 	print 'cutoff: [%f]' % cutoff
@@ -35,10 +36,20 @@ def main():
 	outfile = '%s.%s_%d_sdii' % (msafile, target, order)
 	print 'write to [%s]' % outfile
 
-	m = msa(msafile)
+	m = msa(msafile, targetHeader)
 	print 'original data dimension: (%d, %d)' % (m.seqNum, m.seqlen)
-	score, varlist = m.msaboard(cutoff)
+	weight_cutoff = 0.3 # for weighting msa sequence
+	score, varlist = m.msaboard(drop_cutoff, weight_cutoff) # return a compact score
 	print 'reduced data dimension: %s' % repr(score.shape)
+
+	'''
+	score: A..C..D.EF
+	index: 0123456789
+	# after reduction
+	score: ACDE
+	index: 0123 -> input in sdii calculation
+	index: 0368 = varlist = alphabet
+	'''
 
 	alphabet = [str(i) for i in varlist]
 	#print alphabet
@@ -51,6 +62,8 @@ def main():
 	print 'total calculations: %d' % pk
 	return
 	sdii_core = sdii(score)
+	sdii_core.setWeight(m.weight) # set sequence weight
+
 	fout = open(outfile, 'w')
 	t0 = time.time()
 	count = 0
@@ -58,7 +71,7 @@ def main():
 		if (target == 'all') or (alphabet.index(target) in s):
 			count+=1
 			ret_sdii = sdii_core.calc_sdii(list(s))
-			print ('%d/%d: %s          \n' % (count, pk, '-'.join([(alphabet[i]) for i in s])), end='\r')
+			print '%d/%d: %s          \n' % (count, pk, '-'.join([(alphabet[i]) for i in s]))
 			fout.write('%s %.15f\n' % ('-'.join([(alphabet[i]) for i in s]), ret_sdii))
 
 	fout.close()
