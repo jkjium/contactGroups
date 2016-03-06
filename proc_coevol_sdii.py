@@ -64,7 +64,7 @@ def main():
 	print 'total calculations: %d' % pk
 
 	print 'Loading weight ...'
-	pfam_weight = np.loadtxt(weightFile, dilimiter=',')
+	pfam_weight = np.loadtxt(weightfile, delimiter=',')
 	print 'Weight vector: %s' % repr(pfam_weight.shape)
 
 	sdii_core = sdii(score)
