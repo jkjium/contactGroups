@@ -17,19 +17,21 @@ alphabet = []
 def main():
 	global alphabet
 
-	if len(sys.argv) < 5:
-		print 'Usage: python proc_coevol_sdii.py msafile cutoff target_seq msapos order'
-		print 'Example: python proc_coevol_sdii.py 1k2p_PF07714_seed.txt 0.6 1k2p 3128 2'
+	if len(sys.argv) < 6:
+		print 'Usage: python proc_coevol_sdii.py msafile weightfile cutoff target_seq msapos order'
+		print 'Example: python proc_coevol_sdii.py 1k2p_PF07714_full.fa 1k2p_PF07714_full.fa.weight 0.6 1k2p 3128 2'
 		return
 
 	msafile = sys.argv[1]
-	drop_cutoff = float(sys.argv[2]) # for reduce columns
-	targetHeader = sys.argv[3]
-	target = sys.argv[4].lower()
-	order = int(sys.argv[5])
+	weightfile = sys.argv[2]
+	drop_cutoff = float(sys.argv[3]) # for reduce columns
+	targetHeader = sys.argv[4]
+	target = sys.argv[5].lower()
+	order = int(sys.argv[6])
 
 	print 'msafile: [%s]' % msafile
-	print 'cutoff: [%f]' % cutoff
+	print 'weightfile: [%s]' % weightfile
+	print 'drop_cutoff: [%f]' % drop_cutoff
 	print 'target var: [%s]' % target
 	print 'order: [%d]' % order
 
@@ -60,9 +62,14 @@ def main():
 
 	pk = binom(len(varlist), order)
 	print 'total calculations: %d' % pk
-	return
+
+	print 'Loading weight ...'
+	pfam_weight = np.loadtxt(weightFile, dilimiter=',')
+	print 'Weight vector: %s' % repr(pfam_weight.shape)
+
 	sdii_core = sdii(score)
-	sdii_core.setWeight(m.weight) # set sequence weight
+	print 'Applying weight to sdii data ...'
+	sdii_core.setWeight(pfam_weight) # set sequence weight
 
 	fout = open(outfile, 'w')
 	t0 = time.time()

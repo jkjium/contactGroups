@@ -102,7 +102,8 @@ class msa(object):
 			scoreboard.append([self.scoreValue[a.upper()] for a in s[1]])
 			addboard+=np.array([self.scoreBinary[a.upper()] for a in s[1]]) # calculate gap proportion
 
-		self.calcWeight(scoreboard, weight_cutoff)
+		# too slow to do it in python
+		#self.calcWeight(scoreboard, weight_cutoff)
 
 		# get conserved columns
 		indices = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > cutoff and self.scoreBinary[self.target[1][i]] != 0)]
@@ -121,10 +122,11 @@ class msa(object):
 			for j in xrange(i+1, self.seqNum):
 				pdist[i,j] = (np.array(scoreboard[i])!= np.array(scoreboard[j])).mean() # hamming distance
 				pdist[j,i] = pdist[i,j]
-				#print '%d - %d : %f' % (i, j, pdist[i, j])
+				print '%d/%d' % (33629*i+j, 33629*33629)
 
 		#print sum(pdist<theta)
 		self.weight = 1.0/(1.0+sum(pdist<theta))
+		np.savetxt('1k2p_Pf07714_weight.txt', self.weight)
 
 
 	# write scoreboard
