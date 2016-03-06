@@ -80,7 +80,7 @@ class sdii(object):
 			H = self.entropy_board[key]
 		else:
 			#H = math.pow(-1, len(s)+1) * (np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X]))))
-			H = math.pow(-1, len(s)+1) * w_entropy(self, X)
+			H = math.pow(-1, len(s)+1) * self.w_entropy(X)
 			self.entropy_board[key] = H
 		return H
 
