@@ -3,17 +3,18 @@ import numpy as np
 from itertools import groupby
 
 class msa(object):
-	def __init__(self, msafile, target):
+	def __init__(self, msafile):
 		self.target = ('', '')
 		self.msaArray=[]
 		for s in self.fasta_iter(msafile):
 			self.msaArray.append(s)
+		'''	
 			if target in s[0]:
 				self.target = s
 		if self.target[1] == '':
 			print 'Target: %s not found in MSA.' % target
 			sys.exit(-1)
-
+		'''
 		self.scoreValue = {
 							'X':0,'-': 0,'.': 0,'A': 1,'C': 2,'D': 3,'E': 4,'F': 5,'G': 6,'H': 7,'I': 8,'K': 9,
 							'L': 10,'M': 11,'N': 12,'P': 13,'Q': 14,'R': 15,'S': 16,'T': 17,'V': 18,'W': 19,'Y': 20, 'B': 3
@@ -89,6 +90,14 @@ class msa(object):
 
 		return (seqi2msai, msai2seqi)
 
+	def setTarget(self, t):
+		for s in self.msaArray:
+			if t in s[0]:
+				print 'find target : %s' % s[0]
+				self.target = s
+				return
+		print 'target %s not found!' % t
+		sys.exit(-1)
 
 	# generate concised msa scoreboard
 	# cutoff: 0% ~ 100%, critera for dropping msa columns. how many gaps in the column
@@ -106,6 +115,10 @@ class msa(object):
 		#self.calcWeight(scoreboard, weight_cutoff)
 
 		# get conserved columns
+		if self.target[0] == '':
+			print 'target is empty. Cannot reduce columns'
+			sys.exit(-1)
+
 		indices = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > cutoff and self.scoreBinary[self.target[1][i]] != 0)]
 		#print np.array(scoreboard)
 		return (np.array(scoreboard)[:,indices], indices)
