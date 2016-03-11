@@ -32,6 +32,7 @@ def main():
 	print 'msafile: [%s]' % msafile
 	print 'weightfile: [%s]' % weightfile
 	print 'drop_cutoff: [%f]' % drop_cutoff
+	print 'target msa header: [%s]' % targetHeader
 	print 'target var: [%s]' % target
 	print 'order: [%d]' % order
 
@@ -77,13 +78,14 @@ def main():
 	for s in set(itertools.combinations(list(range(len(alphabet))), order)): 
 		if (target == 'all') or (alphabet.index(target) in s):
 			count+=1
+			print '%d/%d: %s          ' % (count, pk, '-'.join([(alphabet[i]) for i in s]))
 			ret_sdii = sdii_core.calc_sdii(list(s))
-			print '%d/%d: %s          \n' % (count, pk, '-'.join([(alphabet[i]) for i in s]))
+			t1 = time.time()
+			print 'time used: %d seconds\n' % (t1-t0)
 			fout.write('%s %.15f\n' % ('-'.join([(alphabet[i]) for i in s]), ret_sdii))
+			t0 = t1
 
 	fout.close()
-	t1 = time.time()
-	print 'time used: %d seconds' % (t1-t0)
 
 
 if __name__=="__main__":
