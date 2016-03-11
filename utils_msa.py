@@ -2,14 +2,15 @@
 get msa position id 
 '''
 import sys
+import numpy as np
 from msa import msa
 from protein import protein
 
 # given a residue number output the corresponding position in msa file
 def resi2msai():
 	if len(sys.argv) < 5:
-		print 'r2p: given a residue number output the corresponding position in msa'
-		print 'resi2msai()::python utils_msa.py r2p 1k2p_PF07714_full.fa 1k2p.pdb B641'
+		print 'resi2msai: given a residue number output the corresponding position in msa'
+		print 'example:python utils_msa.py resi2msai 1k2p_PF07714_full.fa 1k2p.pdb B641\n'
 		return
 
 	msafile = sys.argv[2]
@@ -60,8 +61,8 @@ def sdiiparse(sdiiline, msai2seqi, pdbseqDict):
 # msai -> seqi -> 'B529(V)'
 def sdii2resi():
 	if len(sys.argv) < 5:
-		print 's2r:	convert msa position to residue number in pdb for a sdii result file' 
-		print 'sdii2resi()::python utils_msa.py s2r 1k2p_PF07714_full.fa.3128_3_sdii 1k2p_PF07714_full.fa 1k2p.pdb'
+		print 'sdii2resi: convert msa position to residue number in pdb for a sdii result file' 
+		print 'example: python utils_msa.py sdii2resi 1k2p_PF07714_full.fa.3128_3_sdii 1k2p_PF07714_full.fa 1k2p.pdb\n'
 		return
 
 	sdiifile = sys.argv[2]
@@ -82,36 +83,133 @@ def sdii2resi():
 
 def getSeqbyName():
 	if len(sys.argv) < 4:
-		print 'getSeqbyName: get msa sequence with fasta name'
-		print 'getSeqbyName():: python utils_msa.py getSeqbyName PF07714_full.fa BTK_HUMAN'
+		print 'getSeqbyName: get msa sequence without gaps by searching fasta name'
+		print 'example: python utils_msa.py getseqbyname PF07714_full.fa BTK_HUMAN\n'
 		return
 
 	msafile = sys.argv[2]
-	msaheader = sys.argv[3]
+	msaheader = sys.argv[3].upper()
+	print 'msa file: %s' % msafile
+	print 'target entry: %s' % msaheader
+
+	msaseq = ''
 	m = msa(msafile)
+	m.setTarget(msaheader)
+
 	for s in m.msaArray:
-		if msaheader.upper() == s[0].upper():
+		if msaheader in s[0]:
+			msaheader = s[0]
+			msaseq = s[1]
+
+	outputSeq = []
+	for a in msaseq:
+		if a in ['.', '-', '_']:
+			continue
+		else:
+			outputSeq.append(a)
+
+	print msaheader
+	print ''.join(outputSeq)
+
+
+def getMsabyName():
+	if len(sys.argv) < 4:
+		print 'getMsabyName: get msa sequence with gaps by searching fasta name'
+		print 'example: python utils_msa.py getmsabyname PF07714_full.fa BTK_HUMAN\n'
+		return
+
+	msafile = sys.argv[2]
+	msaheader = sys.argv[3].upper()
+	print 'msa file: %s' % msafile
+	print 'target entry: %s' % msaheader
+
+	msaseq = ''
+	m = msa(msafile)
+	m.setTarget(msaheader)
+
+	for s in m.msaArray:
+		if msaheader in s[0]:
 			print s[0]
 			print s[1]
+
+
+def reduceByWeight():
+	if len(sys.argv) < 5:
+		print 'reduceByWeight: reduce a msa file by weighing and reduce scale (x%)'
+		print 'example: python utils_msa.py reducebyweight 1k2p_PF07714_full.fa test.weight pdb1k2p 0.5\n'
+		return
+
+	msafile = sys.argv[2]
+	weightfile = sys.argv[3]
+	target = sys.argv[4]
+	scale = float(sys.argv[5])
+	outfile ='%s.r%d' % (msafile, scale*100)
+	print 'msa file: %s' % msafile
+	print 'weight file: %s' % weightfile
+	print 'target: %s' % target
+	print 'reduce scale: %f' % scale
+	print 'output file: %s' % outfile
+
+	weight = np.loadtxt(weightfile, delimiter=',')
+	print 'weight loaded : %s' % repr(weight.shape)
+
+	print 'loading msa file ...'
+	m = msa(msafile)
+	m.setTarget(target)
+
+	rlist=[]
+	for i in xrange(0, len(weight)):
+		rlist.append((i, weight[i]))
+
+	# 0 -> len(weight)
+	# small -> large
+	sort_rlist = sorted(rlist, key=lambda x: x[1])
+
+	#for k in xrange(0, len(sort_rlist)):
+	#	print '[%d]:[%s]' % (k, repr(sort_rlist[k]))
+
+	goal = int(len(weight) * (1-scale))
+
+	target_flag = False
+	fout = open(outfile, 'w')
+	# save msa sequences with large weights
+	print 'Writing output ...'
+	for k in xrange(goal, len(weight)):
+		(index, w) = sort_rlist[k]
+		#print '%d, %f' % (index, w)
+		if m.msaArray[index][0] == m.target[0]:
+			target_flag = True
+		fout.write('%s\n%s\n' % (m.msaArray[index][0], m.msaArray[index][1]))
+	if target_flag == False:
+		print 'Inserting target sequence: %s' % m.target[0]
+		fout.write('%s\n%s\n' % (m.target[0], m.target[1]))
+	fout.close()
+	print 'reduced msa: [%s]\nlen: %d' % (outfile, goal)
+
 
 
 
 def main():
 
 	dispatch = {
-		'r2p': resi2msai, 'p2r':msai2resi,
-		's2r': sdii2resi, 'getSeqbyName': getSeqbyName
+		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
+		'reducebyweight': reduceByWeight
 	}
 
 	if len(sys.argv)<2:
-		print 'Usage: utils_msa.py cmd ...'
+		for k in dispatch:
+			dispatch[k]()
 		return
 
 	cmd = sys.argv[1]
 
+	flag = False
 	for key in dispatch:
 		if key == cmd:
 			dispatch[key]()
+			flag = True
+	if flag == False:
+		print 'No cmd matches'
 
 	'''
 	if len(sys.argv)<4:
