@@ -49,6 +49,18 @@ class msa(object):
 		print '%d sequence in total' % len(self.msaArray)
 
 
+	# given pdb sequence and target in msa
+	# return pdb resi -> msa position map
+	def getResiTargetMap(pdbseq, target):
+		self.setTarget(target)
+		targetseq = self.target[1].replace('-', '').replace('.','')
+		print targetseq
+		startp = pdbseq.find(self.target[1])
+
+
+		pass
+
+
 	# get corresponding map from sequence postion to msa position
 	# idxMap[seq_index] = msa_index
 	def getPosMap(self, p):
@@ -93,7 +105,7 @@ class msa(object):
 	def setTarget(self, t):
 		for s in self.msaArray:
 			if t in s[0]:
-				print 'find target : %s' % s[0]
+				print 'target found: %s' % s[0]
 				self.target = s
 				return
 		print 'target %s not found!' % t

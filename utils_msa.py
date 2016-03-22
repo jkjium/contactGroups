@@ -34,6 +34,22 @@ def msai2resi():
 	pass
 
 
+def resi2target():
+	if len(sys.argv) < 5:
+		print 'resi2target: given a residue number output the corresponding position in target msa'
+		print 'example:python utils_msa.py resi2target PF07714_full.fa.r50 BTK_HUMAN 1k2p.pdb B641\n'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	pdbfile = sys.argv[4]
+	tvar = sys.argv[5]
+
+	print 'msafile: %s\ntarget header: %s\npdbfile: %s\ntarget variable: %s' % (msafile, target, pdbfile, tvar)
+
+
+
+
 
 
 # function for parsing sdii result
@@ -179,10 +195,10 @@ def reduceByWeight():
 		#print '%d, %f' % (index, w)
 		if m.msaArray[index][0] == m.target[0]:
 			target_flag = True
-		fout.write('%s\n%s\n' % (m.msaArray[index][0], m.msaArray[index][1]))
+		fout.write('>%s\n%s\n' % (m.msaArray[index][0], m.msaArray[index][1]))
 	if target_flag == False:
 		print 'Inserting target sequence: %s' % m.target[0]
-		fout.write('%s\n%s\n' % (m.target[0], m.target[1]))
+		fout.write('>%s\n%s\n' % (m.target[0], m.target[1]))
 	fout.close()
 	print 'reduced msa: [%s]\nlen: %d' % (outfile, goal)
 

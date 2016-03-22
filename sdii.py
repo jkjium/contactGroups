@@ -14,13 +14,18 @@ __all__=['sdii']
 class sdii(object):
 
 	def __init__(self, data):
+		print 'version 1049'
 		self.data = data
 		self.entropy_board = {}
 		self.weight = np.ones(self.data.shape[0])
+		self.meff = self.data.shape[0]
+
 
 	# currently for msa weight
 	def setWeight(self, w):
 		self.weight = w
+		self.meff = np.sum(w)
+		print 'set meff: %f' % self.meff
 
 
 	# weighted entropy test
@@ -47,6 +52,7 @@ class sdii(object):
 	'''
 
 	def w_entropy(self, X):
+		'''
 		#print X.T 
 		#print
 		H = 0
@@ -54,18 +60,22 @@ class sdii(object):
 		#print
 		for classes in itertools.product(*[set(x) for x in X]):
 		#	print classes
-			v = reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes))).astype(float)
-		#	print v 
+			v = reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))
+
 		#	print [v[i]*self.weight[i] for i in xrange(0, len(self.weight))]
 		#	print 
 		##	p = np.mean(v) # should divide effective number, which is the sum of all weights
 		#	print p
 		#	print 
-			p = sum([v[i]*self.weight[i] for i in xrange(0, len(self.weight))])/sum(self.weight)
+			#p = sum([v[i]*self.weight[i] for i in xrange(0, len(self.weight))])/self.meff
+			p = sum(v*self.weight)/self.meff
+		#	p = sum([reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))[i]*self.weight[i] for i in xrange(0, len(self.weight))])/self.meff
 		#	print p 
 		#	print 
 			H += -p * np.log2(p) if p > 0 else 0
 		return H
+		'''
+		return np.sum(-p * np.log2(p) if p > 0 else 0 for p in ((sum(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))*self.weight))/self.meff for classes in itertools.product(*[set(x) for x in X])))
 
     # general information entropy
     # X: varible set in list type
@@ -78,10 +88,12 @@ class sdii(object):
 		key = repr(s)
 		if key in self.entropy_board:
 			H = self.entropy_board[key]
+			#print 'found %s' % key
 		else:
 			#H = math.pow(-1, len(s)+1) * (np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X]))))
 			H = math.pow(-1, len(s)+1) * self.w_entropy(X)
 			self.entropy_board[key] = H
+			#print 'put %s' % key
 		return H
 
 
@@ -104,12 +116,13 @@ class sdii(object):
 		deltaX_bar = 1.0
 		n = len(varset)
 
+		subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
+		#print 'deltaN_bar()::varset: %s, subsets: %s' % (repr(varset), repr(subsets))
+		# varset = Set([2,4,6])
+		# [(), (2,), (4,), (6,), (2, 4), (2, 6), (4, 6), (2, 4, 6)]		
 		for index in varset:
 			deltaX = 0.0
-			subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
-			#print 'deltaN_bar()::varset: %s, subsets: %s' % (repr(varset), repr(subsets))
-			# varset = Set([2,4,6])
-			# [(), (2,), (4,), (6,), (2, 4), (2, 6), (4, 6), (2, 4, 6)]		
+			#subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
 			for tau in subsets:
 				if index in tau:
 					# non hashing version

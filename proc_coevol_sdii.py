@@ -19,7 +19,7 @@ def main():
 
 	if len(sys.argv) < 6:
 		print 'Usage: python proc_coevol_sdii.py msafile weightfile cutoff target_seq msapos order'
-		print 'Example: python proc_coevol_sdii.py 1k2p_PF07714_full.fa 1k2p_PF07714_full.fa.weight 0.6 1k2p 3128 2'
+		print 'Example: python proc_coevol_sdii.py PF07714_full.fa.r50 PF07714_full.fa.r50.weight 0.6 BTK_HUMAN 3128 3'
 		return
 
 	msafile = sys.argv[1]
@@ -39,10 +39,12 @@ def main():
 	outfile = '%s.%s_%d_sdii' % (msafile, target, order)
 	print 'write to [%s]' % outfile
 
-	m = msa(msafile, targetHeader)
+	m = msa(msafile)
+	m.setTarget(targetHeader)
 	print 'original data dimension: (%d, %d)' % (m.seqNum, m.seqlen)
-	weight_cutoff = 0.3 # for weighting msa sequence
-	score, varlist = m.msaboard(drop_cutoff, weight_cutoff) # return a compact score
+	#weight_cutoff = 0.3 # for weighting msa sequence # taken care of in matlab
+
+	score, varlist = m.msaboard(drop_cutoff) #, weight_cutoff) # return a compact score
 	print 'reduced data dimension: %s' % repr(score.shape)
 
 	'''
@@ -61,7 +63,11 @@ def main():
 		print 'The alignment for var %s is not significant. exit.' % target
 		return 
 
-	pk = binom(len(varlist), order)
+	if target == 'all':
+		pk = binom(len(varlist), order)
+	else:
+		pk = binom(len(varlist), order-1) - len(varlist) - 1
+
 	print 'total calculations: %d' % pk
 
 	print 'Loading weight ...'

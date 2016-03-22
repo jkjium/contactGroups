@@ -55,8 +55,15 @@ class protein(object):
 
         # map for Chain+Resi : (index in sequence, ResName)
         # 'B529': (132, 'V')
-        self.resDict = {}
+        self.resDict = {} # assigned in self.getSeq() function
         self.seq = self.getSeq()
+
+        # map for sequence index: Chain+Resi(ResName)
+        # 132 : 'B529(V)'
+        self.seqDict = {-1: '.'}
+        for r in self.resDict:
+            self.seqDict[self.resDict[r][0]] = '%s(%s)' % (r, self.resDict[r][1])
+
 
     
     # print PDB content
@@ -71,7 +78,8 @@ class protein(object):
             a=self.atoms[i]
             print a.getCoor()
  
-    # return sequence without pdb id (header)
+    # return sequence extracted from pdb file
+    # assign values for self.resDict['B641'] = (seqpos, 'R')
     def getSeq(self):
         aamap = AAmap()
         seq=''

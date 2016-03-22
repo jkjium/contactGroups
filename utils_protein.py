@@ -11,7 +11,7 @@ def getseq():
 
 	pdbfile = sys.argv[2]
 	p = protein(pdbfile)
-	print p.getSeq()
+	print p.seq
 
 def main():
 	if len(sys.argv)<3:
