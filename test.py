@@ -6,19 +6,50 @@
 #from sklearn.cluster import spectral_clustering
 #from cgroup import cgroup
 #import numpy.random as np_random
+import itertools
 import sys
 
 def foo(x, y):
 	return (2*x, 3*y)
 
 def main():
+	varlist = [11, 22, 33, 44, 55]
+	target  = '22'
+	target  = 'all'
+	order =2
+
+	tasks = []
+	if target == 'all':
+		print 'generating tasks for all ...'
+		for s in set(itertools.combinations(list(range(len(varlist))), order)):
+			tasks.append(list(s))
+		print 'In total %d for order %d.' % (len(tasks),  order)
+	else:
+		print 'generating tasks for variable %s' % target
+		for s in set(itertools.combinations(list(range(len(varlist))), order-1)):
+			target_idx = varlist.index(int(target))
+			if target_idx not in s:
+ 				st = list(s)
+ 				st.append(target_idx)
+ 				tasks.append(st)
+		print 'In total %d for order %d.' % (len(tasks), order)
+	print repr(tasks)
+
+	tasklist = []
+	n = len(tasks)/4 +1
+	for i in xrange(0, len(tasks), n):
+		tasklist.append(tasks[i:i+n])
+	print 'spliting tasks into %d blocks' % len(tasklist)
+	print repr(tasklist)
 	#cg_str ='2ztc_C.domain,LAAAL,155 188 165 168 192,5'
+	'''
 	alphabet = [
 		'AE', 'CE', 'DE', 'EE', 'FE', 'GE', 'HE', 'IE', 'KE', 'LE', 'ME', 'NE', 'PE', 'QE', 'RE', 'SE', 'TE', 'VE', 'WE', 'YE',
 		'AB', 'CB', 'DB', 'EB', 'FB', 'GB', 'HB', 'IB', 'KB', 'LB', 'MB', 'NB', 'PB', 'QB', 'RB', 'SB', 'TB', 'VB', 'WB', 'YB'
 	]
 
 	print repr(alphabet)
+	'''
 	'''
 	AA = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
 	NA = ['E', 'B']

@@ -50,15 +50,55 @@ class msa(object):
 
 
 	# given pdb sequence and target in msa
-	# return pdb resi -> msa position map
-	def getResiTargetMap(pdbseq, target):
+	# return pdb resi -> msa position (with gaps) map
+	# for pdb sequence contained in the msa
+	def getResiTargetMap(self, p, target):
+		midict = {} # midict[resn+seq_pos] = msa_pos 
+		rtdict = {}
+		targetSeqArr = []
+
+		pdbseq = p.seq
 		self.setTarget(target)
-		targetseq = self.target[1].replace('-', '').replace('.','')
-		print targetseq
-		startp = pdbseq.find(self.target[1])
 
+		targetmsa = self.target[1].upper()
 
-		pass
+		index = 0
+		for i in xrange(0, len(targetmsa)):
+			a = targetmsa[i]
+			if a not in ['-', '.']:
+				targetSeqArr.append(a)
+				key = '%s%d' % (a, index) # resn with seq index
+				midict[key] = i # i is the msa index
+				index+=1
+
+		targetseq = ''.join(targetSeqArr)
+
+		print 'pdb seq:\n%s' % (pdbseq)
+		print 'target seq:\n%s' % (targetseq)
+		preffixp = pdbseq.find(targetseq)
+		if preffixp < 0:
+			print 'Cannot match target sequence with pdb sequence'
+			print 'pdb seq:\n%s' % (pdbseq)
+			print 'target seq:\n%s' % (targetseq)
+
+		# p.resDict : (index in sequence, ResName)
+		# 'B529': (132, 'V')
+		for k in p.resDict:
+			(pos, resn) = p.resDict[k]
+			resn = resn.upper()
+			mikey = '%s%d' % (resn, pos - preffixp)
+			if mikey in midict:
+ 				msapos = midict[mikey]
+ 			else:
+ 				continue # skip the key like (k-2)
+
+			if targetmsa[msapos] != resn:
+				print 'msa:getResiTargetMap():: mismatch from pdb to msa'
+				print 'msa: [%s], pdb: [%s]' % (self.target[1][msapos], resn)
+				return {}
+			rtdict[k] =  (midict[mikey], resn)
+
+		return rtdict
 
 
 	# get corresponding map from sequence postion to msa position
@@ -115,7 +155,7 @@ class msa(object):
 	# cutoff: 0% ~ 100%, critera for dropping msa columns. how many gaps in the column
 	# weight_cutoff: 0 ~ 1.0 hamming distance between two sequences in msa. How much similar between two sequences in msa.
 	# 				 within this distance. two sequence are considered to be in a group with the same weight for the frequency calculation
-	def msaboard(self, cutoff, weight_cutoff):
+	def msaboard(self, cutoff): #, weight_cutoff):
 		print 'Converting msa to scoreboard ...'
 		scoreboard = []
 		addboard = np.zeros(self.seqlen)
@@ -131,7 +171,7 @@ class msa(object):
 			print 'target is empty. Cannot reduce columns'
 			sys.exit(-1)
 
-		indices = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > cutoff and self.scoreBinary[self.target[1][i]] != 0)]
+		indices = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > cutoff and self.scoreBinary[self.target[1][i].upper()] != 0)]
 		#print np.array(scoreboard)
 		return (np.array(scoreboard)[:,indices], indices)
 

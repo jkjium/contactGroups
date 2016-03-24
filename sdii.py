@@ -14,19 +14,48 @@ __all__=['sdii']
 class sdii(object):
 
 	def __init__(self, data):
-		print 'version 1049'
+		print 'version 0322'
 		self.data = data
 		self.entropy_board = {}
 		self.weight = np.ones(self.data.shape[0])
 		self.meff = self.data.shape[0]
+		self.varlist = [i for i in xrange(0, self.data.shape[1])]
+		self.target = 'all'
+		self.order = 2
+		self.totalTask = 0
 
 
 	# currently for msa weight
 	def setWeight(self, w):
 		self.weight = w
 		self.meff = np.sum(w)
+		print 'set weight vector: %s' % repr(self.weight.shape)
 		print 'set meff: %f' % self.meff
 
+
+
+	# for task parameters
+	def setVarlist(self, varlist):
+		self.varlist = varlist
+		print 'set varlist: %s ...' % (repr(self.varlist)[0:100])
+
+
+	# for task parameters
+	def setTarget(self, target):
+		self.target = target
+		print 'set target variable: %s' % self.target
+
+
+	# for task parameters
+	def setOrder(self, order):
+		self.order = order
+		print 'set order: %d' % self.order
+
+
+	# for task parameters
+	def setTotalTask(self, tn):
+		self.totalTask = tn
+		print 'set total task number: %d' % self.totalTask
 
 	# weighted entropy test
 	'''

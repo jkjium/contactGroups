@@ -30,10 +30,62 @@ def resi2msai():
 			break
 
 
+def sdii2resi():
+	if len(sys.argv) < 5:
+		print 'resi2target: given a residue number output the corresponding position in target msa'
+		print 'example:python utils_msa.py sdii2resi PF07714_full.fa.r50 BTK_HUMAN 1k2p.pdb PF07714_full.fa.r50.3128_3_sdii\n'
+		print 'output: PF07714_full.fa.r50.3128_3_sdii.resi'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	pdbfile = sys.argv[4]
+	sdiifile = sys.argv[5]
+
+	print 'msafile: %s\ntarget header: %s\npdbfile: %s\nsdii file: %s' % (msafile, target, pdbfile, sdiifile)
+	m = msa(msafile)
+	p = protein(pdbfile)
+	rtmap = m.getResiTargetMap(p, target)
+	if len(rtmap) < 1:
+		print 'error occoured in generating rtmap'
+		return
+	#print '%s: %s' % (tvar, repr(rtmap[tvar]))
+	# construct trmap from rtmap
+	# 3128: (B641, 'R')
+	trmap = {}
+	#trmap = {v: k for k, v in rtmap.iteritems()}
+	for k in rtmap:
+		msai, resn = rtmap[k]
+		if msai in trmap:
+			print 'error. duplicate key [%d] in rtmap' % msai
+			return
+		trmap[msai] = (k, resn)
+
+	#print trmap
+
+	# read sdii file
+	with open(sdiifile) as f:
+		sdiilines = f.readlines()
+
+	outfile = sdiifile + '_resi'
+	fout = open(outfile, 'w')
+
+	# 52 [pid:20029] 926-3089-3128 0.001106226720675
+	count = 0
+	for line in sdiilines:
+		count += 1
+		print '%d/%d processed ...' % (count, len(sdiilines))
+		strArr = line.strip().split(' ')
+		msailist = strArr[2].split('-')
+		sdiivalue = strArr[3]
+		fout.write('%s %s\n' % ('-'.join([repr(trmap[int(i)]) for i in msailist]), sdiivalue))
+	fout.close()
+	print 'done.\noutput file: [%s]' % outfile
+
 def msai2resi():
 	pass
 
-
+# output: B641: (3128, 'R')
 def resi2target():
 	if len(sys.argv) < 5:
 		print 'resi2target: given a residue number output the corresponding position in target msa'
@@ -46,6 +98,13 @@ def resi2target():
 	tvar = sys.argv[5]
 
 	print 'msafile: %s\ntarget header: %s\npdbfile: %s\ntarget variable: %s' % (msafile, target, pdbfile, tvar)
+	m = msa(msafile)
+	p = protein(pdbfile)
+	print p.resDict[tvar]
+	rtmap = m.getResiTargetMap(p, target)
+	if len(rtmap) < 1:
+		return
+	print '%s: %s' % (tvar, repr(rtmap[tvar]))
 
 
 
@@ -75,6 +134,8 @@ def sdiiparse(sdiiline, msai2seqi, pdbseqDict):
 #
 # protein.seqDict{} : [132 : 'B529(V)']
 # msai -> seqi -> 'B529(V)'
+# discard for implant alignment
+'''
 def sdii2resi():
 	if len(sys.argv) < 5:
 		print 'sdii2resi: convert msa position to residue number in pdb for a sdii result file' 
@@ -94,7 +155,7 @@ def sdii2resi():
 
 	for line in sdiilines:
 		print sdiiparse(line, msai2seqi, p.seqDict)
-
+'''
 
 
 def getSeqbyName():
@@ -209,7 +270,7 @@ def main():
 
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
-		'reducebyweight': reduceByWeight
+		'reducebyweight': reduceByWeight, 'resi2target': resi2target
 	}
 
 	if len(sys.argv)<2:
@@ -227,26 +288,6 @@ def main():
 	if flag == False:
 		print 'No cmd matches'
 
-	'''
-	if len(sys.argv)<4:
-		print 'Usage: utils_msa.py msafile pdbfile chain+resi'
-		return
-	msafile = sys.argv[1]
-	pdbfile = sys.argv[2]
-	resi = sys.argv[3]
-
-	m = msa(msafile)
-	p = protein(pdbfile)
-	#print p.seq
-	#print p.resDict
-	resIdx = p.resDict[resi]
-	posMap = m.getPosMap(p)
-	#print m.msaArray[0][1]
-	for i in posMap:
-		if i == resIdx[0]:
-			print '[Res: %s] : (seqi: %d (%s) - msai: %d (%s))' % (resi, resIdx[0], resIdx[1], posMap[i], m.msaArray[0][1][posMap[i]])
-			break
-	'''
 
 if __name__ == '__main__':
 	main()
