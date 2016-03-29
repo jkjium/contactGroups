@@ -108,13 +108,12 @@ def resi2target():
 
 
 
-
-
-
 # function for parsing sdii result
 # msai -> seqi -> 'B529(V)'
 # pdbseqDict: 132 : 'B529(V)'
 # sdiline: [1042-2032-3128 0.006242240179705]
+# discard for implant alignment
+'''
 def sdiiparse(sdiiline, msai2seqi, pdbseqDict):
 	split1 = sdiiline.split(' ')
 	v_dep = split1[1].strip()
@@ -122,7 +121,7 @@ def sdiiparse(sdiiline, msai2seqi, pdbseqDict):
 	split2 = split1[0].split('-')
 	# some of the indices won't be in the msai2seqi since the column is significant but the position on target pdb msa seq are gaps
 	return '%s %s' % ('-'.join([pdbseqDict[msai2seqi[int(msai)] if int(msai) in msai2seqi else -1] for msai in split2]), v_dep)
-
+'''
 
 # convert
 # 1042-2032-3128 0.006242240179705
@@ -210,10 +209,52 @@ def getMsabyName():
 			print s[1]
 
 
+
+def reduceByHamming():
+	if len(sys.argv) < 3:
+		print 'reduceByHamming: reduce a msa file by selecting sequences that have sequential similarity < 62% (hamming dist > 0.38)'
+		print 'example: python utils_msa.py reducebyhamming PF07714_full.fa BTK_HUMAN\n'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	outfile = '%s.s62' % msafile
+
+	print 'msa file: %s\ntarget header: %s\noutfile: %s\n' % (msafile, target, outfile)
+
+	print 'loading msa ...'
+	m = msa(msafile)
+	m.setTarget(target)
+	print 
+
+	outlist = []	
+	outlist.append(m.target)
+
+	for fi in m.msaArray:
+		addflag = True
+		for fj in outlist:
+			if (np.array(list(fi[1]))!=np.array(list(fj[1]))).mean() <= 0.38:
+				addflag = False
+				print 'discard msa: [%s]' % fi[0]
+				break
+		if addflag == True:
+			outlist.append(fi)
+
+	print '\nreduced msa %d/%d' % (len(outlist), m.seqNum)
+	print 'writing output to [%s] ...' % outfile
+	fout = open(outfile, 'w')
+	for fa in outlist:
+		fout.write('>%s\n%s\n' % (fa[0], fa[1]))
+	fout.close()
+	print 'done.'
+
+
+
+
 def reduceByWeight():
 	if len(sys.argv) < 5:
 		print 'reduceByWeight: reduce a msa file by weighing and reduce scale (x%)'
-		print 'example: python utils_msa.py reducebyweight 1k2p_PF07714_full.fa test.weight pdb1k2p 0.5\n'
+		print 'example: python utils_msa.py reducebyweight 1k2p_PF07714_full.fa test.weight BTK_HUMAN 0.5\n'
 		return
 
 	msafile = sys.argv[2]
@@ -270,7 +311,7 @@ def main():
 
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
-		'reducebyweight': reduceByWeight, 'resi2target': resi2target
+		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target
 	}
 
 	if len(sys.argv)<2:
@@ -286,7 +327,8 @@ def main():
 			dispatch[key]()
 			flag = True
 	if flag == False:
-		print 'No cmd matches'
+		print 'Wrong cmd string'
+
 
 
 if __name__ == '__main__':
