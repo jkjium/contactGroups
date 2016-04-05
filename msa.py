@@ -230,10 +230,10 @@ class msa(object):
 				t_seq = np.array(list(t[1]))
 				if (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean() < 0.38:
 					add_flag = False
-					count+=1
-					print 'discarding %d: [%s]' % (count, s[0])
 					break
 			if add_flag == True:
+				count+=1
+				print 'adding %d: [%s]' % (count, s[0])
 				nrArray.append(s)
 
 		print '\nreduced msa %d/%d' % (len(nrArray), len(self.msaArray))
