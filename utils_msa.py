@@ -227,7 +227,7 @@ def reduceByHamming():
 	m.setTarget(target)
 	print 
 
-	m.hammingReduction(outfile, 0.30)
+	m.hammingReduction(outfile, 0.32)
 
 '''
 	outlist = []	

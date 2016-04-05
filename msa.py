@@ -211,13 +211,15 @@ class msa(object):
 		non_gap_pos = []
 		target_seq = self.target[1]
 		for i in xrange(0, len(target_seq)):
-			if self.scoreValue[target_seq[i]] != 0:
+			# treat unconserved postion as conserved
+			if self.scoreValue[target_seq[i].upper()] != 0:
 				non_gap_pos.append(i)
 
 		print repr(non_gap_pos)
 		non_gap_seq = np.array(list(target_seq))[non_gap_pos]
 		print ''.join(non_gap_seq)
 
+		count = 0
 		nrArray = []
 		nrArray.append(self.target)
 		# selecting sequences from msaArray to nrArray
@@ -228,6 +230,8 @@ class msa(object):
 				t_seq = np.array(list(t[1]))
 				if (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean() < 0.38:
 					add_flag = False
+					count+=1
+					print 'discarding %d: [%s]' % (count, s[0])
 					break
 			if add_flag == True:
 				nrArray.append(s)
