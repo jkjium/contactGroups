@@ -203,3 +203,40 @@ class msa(object):
 			fout.write('%s\n' % ','.join([str(i) for i in line]))
 		fout.close()
 
+
+	# reduce a full alignment to a non-redundant alignment
+	# all the sequences in the MSA has a hamming distance >= cutoff
+	def hammingReduction(self, outfile, cutoff):
+		# get non gap positions
+		non_gap_pos = []
+		target_seq = self.target[1]
+		for i in xrange(0, len(target_seq)):
+			if self.scoreValue[target_seq[i]] != 0:
+				non_gap_pos.append(i)
+
+		print repr(non_gap_pos)
+		non_gap_seq = np.array(list(target_seq))[non_gap_pos]
+		print ''.join(non_gap_seq)
+
+		nrArray = []
+		nrArray.append(self.target)
+		# selecting sequences from msaArray to nrArray
+		for s in self.msaArray:
+			s_seq = np.array(list(s[1]))
+			add_flag = True
+			for t in nrArray:
+				t_seq = np.array(list(t[1]))
+				if (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean() < 0.38:
+					add_flag = False
+					break
+			if add_flag == True:
+				nrArray.append(s)
+
+		print '\nreduced msa %d/%d' % (len(nrArray), len(self.msaArray))
+		print 'writing output to [%s] ...' % outfile
+
+		fout = open(outfile, 'w')
+		for fa in nrArray:
+			fout.write('>%s\n%s\n' % (fa[0], fa[1]))
+		fout.close()
+		print 'done.'

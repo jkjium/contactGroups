@@ -34,7 +34,7 @@ def sdii2resi():
 	if len(sys.argv) < 5:
 		print 'resi2target: given a residue number output the corresponding position in target msa'
 		print 'example:python utils_msa.py sdii2resi PF07714_full.fa.r50 BTK_HUMAN 1k2p.pdb PF07714_full.fa.r50.3128_3_sdii\n'
-		print 'output: PF07714_full.fa.r50.3128_3_sdii.resi'
+		print 'output: PF07714_full.fa.r50.3128_3_sdii_resi'
 		return
 
 	msafile = sys.argv[2]
@@ -227,6 +227,9 @@ def reduceByHamming():
 	m.setTarget(target)
 	print 
 
+	m.hammingReduction(outfile, 0.30)
+
+'''
 	outlist = []	
 	outlist.append(m.target)
 
@@ -248,7 +251,7 @@ def reduceByHamming():
 	fout.close()
 	print 'done.'
 
-
+'''
 
 
 def reduceByWeight():
