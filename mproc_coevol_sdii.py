@@ -122,8 +122,8 @@ def listener(total, outfile, q):
 			print 'listener: %d processes done.' % count
 		else:
 			tcount+=1
-			print 'listener: get %d/%d [%s]' % (tcount, total, m.strip('\n'))
 			timeUsed = int(time.time() - tstart)
+			print 'listener: get %d/%d [%s] %d' % (tcount, total, m.strip('\n'), timeUsed)
 			fout.write('%d %s' % (timeUsed, m))
 			fout.flush()
 		if count == 20:
