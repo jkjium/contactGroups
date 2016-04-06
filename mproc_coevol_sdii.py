@@ -59,11 +59,11 @@ def init():
 	else:
 		print 'setting weight: %r' % sdii_core.isWeighted
 
-	print 'Seting varlist to sdii ...'
+	print 'Setting varlist to sdii ...'
 	sdii_core.setVarlist(varlist) # set sequence weight
-	print 'Seting target variable ...'
+	print 'Setting target variable ...'
 	sdii_core.setTarget(target)
-	print 'Seting task order ...'
+	print 'Setting task order ...'
 	sdii_core.setOrder(order)
 
 
