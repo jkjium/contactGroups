@@ -13,7 +13,8 @@ from scipy.special import binom
 def init():
 	if len(sys.argv) < 6:
 		print 'Usage: python mproc_coevol_sdii.py msafile weightfile cutoff target_seq msapos order'
-		print 'Example: python mproc_coevol_sdii.py PF07714_full.fa.r50 PF07714_full.fa.r50.weight 0.6 BTK_HUMAN 3128 3'
+		print 'Example 1: python mproc_coevol_sdii.py PF07714_full.fa.r50 PF07714_full.fa.r50.weight 0.6 BTK_HUMAN 3128 3'
+		print 'Example 2: python mproc_coevol_sdii.py PF07714_full.fa.s62 NA 0.6 BTK_HUMAN 3128 3'
 		return
 
 	msafile = sys.argv[1]
@@ -46,12 +47,16 @@ def init():
 		print 'The alignment for var %s is not significant. exit.' % target
 		return 
 
-	print 'Loading weight ...'
-	pfam_weight = np.loadtxt(weightfile, delimiter=',')
-	print 'Weight vector: %s' % repr(pfam_weight.shape)
-
 	# sdii init
 	sdii_core = sdii(score)
+
+	print 'Loading weight ...'
+	if weightfile.upper() != 'NA':
+		pfam_weight = np.loadtxt(weightfile, delimiter=',')
+		print 'Weight vector: %s' % repr(pfam_weight.shape)
+	else:
+		print 'setting weight: %r' % sdii_core.isWeighted
+
 	print 'Applying weight to sdii data ...'
 	sdii_core.setWeight(pfam_weight) # set sequence weight
 	print 'Seting varlist to sdii ...'

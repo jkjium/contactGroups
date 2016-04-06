@@ -18,6 +18,7 @@ class sdii(object):
 		self.data = data
 		self.entropy_board = {}
 		self.weight = np.ones(self.data.shape[0])
+		self.isWeighted = False # set True by setWeight()
 		self.meff = self.data.shape[0]
 		self.varlist = [i for i in xrange(0, self.data.shape[1])]
 		self.target = 'all'
@@ -29,6 +30,7 @@ class sdii(object):
 	def setWeight(self, w):
 		self.weight = w
 		self.meff = np.sum(w)
+		self.isWeighted = True
 		print 'set weight vector: %s' % repr(self.weight.shape)
 		print 'set meff: %f' % self.meff
 
@@ -119,8 +121,10 @@ class sdii(object):
 			H = self.entropy_board[key]
 			#print 'found %s' % key
 		else:
-			#H = math.pow(-1, len(s)+1) * (np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X]))))
-			H = math.pow(-1, len(s)+1) * self.w_entropy(X)
+			if self.isWeighted == False:
+				H = math.pow(-1, len(s)+1) * (np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X]))))
+			else:
+				H = math.pow(-1, len(s)+1) * self.w_entropy(X)
 			self.entropy_board[key] = H
 			#print 'put %s' % key
 		return H
