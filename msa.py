@@ -215,9 +215,9 @@ class msa(object):
 			if self.scoreValue[target_seq[i].upper()] != 0:
 				non_gap_pos.append(i)
 
-		print repr(non_gap_pos)
+		#print repr(non_gap_pos)
 		non_gap_seq = np.array(list(target_seq))[non_gap_pos]
-		print ''.join(non_gap_seq)
+		#print ''.join(non_gap_seq)
 
 		count = 0
 		nrArray = []

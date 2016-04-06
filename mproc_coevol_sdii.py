@@ -54,11 +54,11 @@ def init():
 	if weightfile.upper() != 'NA':
 		pfam_weight = np.loadtxt(weightfile, delimiter=',')
 		print 'Weight vector: %s' % repr(pfam_weight.shape)
+		print 'Applying weight to sdii data ...'
+		sdii_core.setWeight(pfam_weight) # set sequence weight
 	else:
 		print 'setting weight: %r' % sdii_core.isWeighted
 
-	print 'Applying weight to sdii data ...'
-	sdii_core.setWeight(pfam_weight) # set sequence weight
 	print 'Seting varlist to sdii ...'
 	sdii_core.setVarlist(varlist) # set sequence weight
 	print 'Seting target variable ...'
