@@ -16,7 +16,7 @@ class protein(object):
     
     
     # read pdb from file
-    def __init__(self, pdbname, top='', pfam='', center='CA', cutoff=5, scutoff=1, flag=0, desc='', nbcutoff=4):
+    def __init__(self, pdbname, chain = 'all', top='', pfam='', center='CA', cutoff=5, scutoff=1, flag=0, desc='', nbcutoff=4):
         self.atoms=[]
         #dictionary for pairwise distance
         self.pairwiseDict={}
@@ -26,6 +26,7 @@ class protein(object):
         #self.pdb = pdbname[len(pdbname)-8:len(pdbname)-4]
         self.pdbfile = pdbname
         self.pdb = pdbname[:-4]
+        self.chain = chain
         self.top = top
         self.pfam = pfam
         self.center = center
@@ -50,6 +51,9 @@ class protein(object):
                 break
             if line[17:20].strip() not in aamap.AAA2A:
                 continue
+            if self.chain != 'all':
+                if (self.chain != line[21]):
+                    continue
             if line[0:6]=='ATOM  ' and (line[16]==' ' or line[16]=='A'): # to avoid alternative location
                 self.atoms.append(atom(lines[i]))
 

@@ -6,11 +6,12 @@ from protein import protein
 
 def getseq():
 	if len(sys.argv) < 3:
-		print 'getseq(): python utils_protein.py getseq pdbfile'
+		print 'getseq(): python utils_protein.py getseq pdbfile chainID'
 		return
 
 	pdbfile = sys.argv[2]
-	p = protein(pdbfile)
+	chain = sys.argv[3]
+	p = protein(pdbfile, chain)
 	print p.seq
 
 def main():
