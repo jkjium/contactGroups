@@ -208,6 +208,27 @@ def getMsabyName():
 			print s[0]
 			print s[1]
 
+def pdistDistribution():
+	if len(sys.argv) < 3:
+		print 'pdist: write pairwise sequence simiarity value in a file' 
+		print 'example: python utils_msa.py pdist PF07714_full.fa BTK_HUMAN\n'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	outfile = '%s.pdist' % msafile
+
+	print 'msa file: %s\ntarget header: %s\noutfile: %s\n' % (msafile, target, outfile)
+
+	print 'loading msa ...'
+	m = msa(msafile)
+	m.setTarget(target)
+	print
+
+	print 'saving to [%s] ...' % outfile
+	pdist = m.getpdist()
+	np.savetxt(outfile, pdist, fmt='%.8', delimiter='\n')
+	print '%d pdist saved.' % len(pdist)
 
 
 def reduceByHamming():
@@ -227,31 +248,8 @@ def reduceByHamming():
 	m.setTarget(target)
 	print 
 
-	m.hammingReduction(outfile, 0.32)
+	m.hammingReduction(outfile, 0.62)
 
-'''
-	outlist = []	
-	outlist.append(m.target)
-
-	for fi in m.msaArray:
-		addflag = True
-		for fj in outlist:
-			if (np.array(list(fi[1]))!=np.array(list(fj[1]))).mean() <= 0.38:
-				addflag = False
-				print 'discard msa: [%s]' % fi[0]
-				break
-		if addflag == True:
-			outlist.append(fi)
-
-	print '\nreduced msa %d/%d' % (len(outlist), m.seqNum)
-	print 'writing output to [%s] ...' % outfile
-	fout = open(outfile, 'w')
-	for fa in outlist:
-		fout.write('>%s\n%s\n' % (fa[0], fa[1]))
-	fout.close()
-	print 'done.'
-
-'''
 
 
 def reduceByWeight():

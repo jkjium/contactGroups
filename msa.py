@@ -228,7 +228,8 @@ class msa(object):
 			add_flag = True
 			for t in nrArray:
 				t_seq = np.array(list(t[1]))
-				if (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean() < 0.38:
+				#if (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean() < 0.38:
+				if (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean() < (1-cutoff):
 					add_flag = False
 					break
 			if add_flag == True:
@@ -244,3 +245,32 @@ class msa(object):
 			fout.write('>%s\n%s\n' % (fa[0], fa[1]))
 		fout.close()
 		print 'done.'
+
+
+	# save all the pairwise humming distance among sequences to pdistArray
+	def getpdist(self):
+		# get non gap positions
+		non_gap_pos = []
+		target_seq = self.target[1]
+		for i in xrange(0, len(target_seq)):
+			# treat unconserved postion as conserved
+			if self.scoreValue[target_seq[i].upper()] != 0:
+				non_gap_pos.append(i)
+
+		#print repr(non_gap_pos)
+		non_gap_seq = np.array(list(target_seq))[non_gap_pos]
+		#print ''.join(non_gap_seq)
+
+		count = 0
+		nrArray = []
+		nrArray.append(self.target)
+		pdistArray = []
+
+		for i in xrange(0, len(self.msaArray)):
+			s1 = np.array(list(self.msaArray[i][1]))
+			for j in xrange(i+1, len(self.msaArray)):
+				s2 = np.array(list(self.msaArray[j][1]))
+				d = (s_seq[non_gap_pos]!=t_seq[non_gap_pos]).mean()
+				pdistArray.append(d)
+
+		return pdistArray
