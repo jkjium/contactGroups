@@ -306,13 +306,54 @@ def reduceByWeight():
 	print 'reduced msa: [%s]\nlen: %d' % (outfile, goal)
 
 
+def MSAReduction():
+	if len(sys.argv) < 4:
+		print 'msareduction: reduce columns and rows by cutoffs'
+		print 'example: python utils_msa.py msareduction PF07714_full.fa BTK_HUMAN 0.2 0.62\n'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	gap_cutoff = float(sys.argv[4]) # gap cutoff
+	hamming_cutoff = float(sys.argv[5]) # hamming cutoff
+
+	print 'msa file: %s' % msafile
+	print 'target: %s' % target
+	print 'gap cutoff: %f' % gap_cutoff
+	print 'hamming cutoff: %s' % hamming_cutoff
+
+	print 'loading msa file ...'
+	m = msa(msafile)
+	m.setTarget(target)
+
+	(score, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
+	'''
+	print 'score matrix:'
+	for i in xrange(0, len(score)):
+		print repr(score[i])
+	print 'column index: %s' % repr(column_index)
+	print 'row index: %s' % repr(row_index)
+	'''
+
+	#np.savetxt(msafile+'.score', score, fmt='%.8', delimiter=',')
+	print 'save score to file: [%s]' % (msafile+'.score')
+	np.savetxt(msafile+'.score', score, fmt='%d', delimiter=',')
+	print 'save reduced indices to file: [%s]' % (msafile+'.index')
+	fout = open(msafile+'.index', 'w')
+	fout.write(','.join([str(i) for i in column_index])+'\n')
+	fout.write(','.join([str(i) for i in row_index])+'\n')
+	fout.close()
+
+
+
+
 
 
 def main():
 
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
-		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution
+		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction
 	}
 
 	if len(sys.argv)<2:

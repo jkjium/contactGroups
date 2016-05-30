@@ -5,6 +5,7 @@ from itertools import groupby
 class msa(object):
 	def __init__(self, msafile):
 		self.target = ('', '')
+		self.target_index = 0
 		self.msaArray=[]
 		for s in self.fasta_iter(msafile):
 			self.msaArray.append(s)
@@ -143,10 +144,15 @@ class msa(object):
 		return (seqi2msai, msai2seqi)
 
 	def setTarget(self, t):
-		for s in self.msaArray:
+		#for s in self.msaArray:
+		for i in xrange(0, self.seqNum):
+			s = self.msaArray[i]
 			if t in s[0]:
-				print 'target found: %s' % s[0]
 				self.target = s
+				self.target_index = i
+				print 'target found: %s' % s[0]
+				print 'target seq: %s' % s[1]
+				print 'target index: %d' % self.target_index
 				return
 		print 'target %s not found!' % t
 		sys.exit(-1)
@@ -174,6 +180,47 @@ class msa(object):
 		indices = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > cutoff and self.scoreBinary[self.target[1][i].upper()] != 0)]
 		#print np.array(scoreboard)
 		return (np.array(scoreboard)[:,indices], indices)
+
+	# return 3 values: 
+	#	complete scoreboard
+	#	indices of redueced columns
+	#	indices of redueced rows
+	# gap_cutoff: non-gap proportion
+	# hamming_cutoff: not closer(similar) than this distance
+	def get_msaboard_RC_RR(self, gap_cutoff, hamming_cutoff):
+		print 'Converting msa to scoreboard ...'
+		scoreboard = []
+		addboard = np.zeros(self.seqlen)
+		for s in self.msaArray:
+			scoreboard.append([self.scoreValue[a.upper()] for a in s[1]])
+			addboard+=np.array([self.scoreBinary[a.upper()] for a in s[1]]) # calculate gap proportion
+
+		# get conserved columns
+		if self.target[0] == '':
+			print 'target is empty. Cannot reduce columns'
+			sys.exit(-1)
+
+		#print [addboard[i]/self.seqNum for i in xrange(0, self.seqlen)]
+		indices_rc = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > gap_cutoff and self.scoreBinary[self.target[1][i].upper()] != 0)]
+		#print np.array(scoreboard)		
+
+		scoreboard_rc = np.array(scoreboard)[:,indices_rc]
+		indices_rr = []
+		indices_rr.append(self.target_index)
+		(rc_row, rc_column) = scoreboard_rc.shape
+		count = 0
+		for i in xrange(0, rc_row): # iterate row
+			add_flag = True
+			for j in indices_rr:
+				if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() < hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
+					add_flag = False
+					break
+			if add_flag == True:
+				count+=1
+				print 'adding %d: [%d]' % (count, i)
+				indices_rr.append(i)
+
+		return (scoreboard, indices_rc, indices_rr)
 
 
 	'''
