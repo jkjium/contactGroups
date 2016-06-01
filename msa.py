@@ -171,7 +171,7 @@ class msa(object):
 
 		# too slow to do it in python
 		#self.calcWeight(scoreboard, weight_cutoff)
-
+		print 'original row number: %d' % len(scoreboard)
 		# get conserved columns
 		if self.target[0] == '':
 			print 'target is empty. Cannot reduce columns'
@@ -212,14 +212,18 @@ class msa(object):
 		for i in xrange(0, rc_row): # iterate row
 			add_flag = True
 			for j in indices_rr:
-				if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() < hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
+				if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() <= hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
 					add_flag = False
+					print 'discard [%d -%d]'% (i, j)
 					break
 			if add_flag == True:
 				count+=1
 				print 'adding %d: [%d]' % (count, i)
 				indices_rr.append(i)
-
+		
+		print 'reduced MSA size: (%d, %d)' % (len(indices_rr), len(indices_rc))
+		indices_rc.sort()
+		indices_rr.sort()
 		return (scoreboard, indices_rc, indices_rr)
 
 

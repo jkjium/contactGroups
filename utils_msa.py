@@ -326,7 +326,10 @@ def MSAReduction():
 	m = msa(msafile)
 	m.setTarget(target)
 
-	(score, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
+	(scoreboard, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
+
+	print repr(column_index)
+	print repr(row_index)
 	'''
 	print 'score matrix:'
 	for i in xrange(0, len(score)):
@@ -335,13 +338,18 @@ def MSAReduction():
 	print 'row index: %s' % repr(row_index)
 	'''
 
+	score = np.array(scoreboard)[row_index,:][:,column_index]
 	#np.savetxt(msafile+'.score', score, fmt='%.8', delimiter=',')
 	print 'save score to file: [%s]' % (msafile+'.score')
 	np.savetxt(msafile+'.score', score, fmt='%d', delimiter=',')
-	print 'save reduced indices to file: [%s]' % (msafile+'.index')
-	fout = open(msafile+'.index', 'w')
-	fout.write(','.join([str(i) for i in column_index])+'\n')
+	print 'save reduced row indices to file: [%s]' % (msafile+'.row')
+	fout = open(msafile+'.row', 'w')
 	fout.write(','.join([str(i) for i in row_index])+'\n')
+	fout.close()
+
+	print 'save reduced column indices to file: [%s]' % (msafile+'.col')
+	fout = open(msafile+'.col', 'w')
+	fout.write(','.join([str(i) for i in column_index])+'\n')
 	fout.close()
 
 
