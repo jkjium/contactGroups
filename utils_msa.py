@@ -341,7 +341,7 @@ def MSAReduction():
 	for i in xrange(0, len(row_index)):
 		header = m.msaArray[row_index[i]][0]
 		fout.write('>'+header+'\n')
-		fout.write(''.join(seqs[i,:]+'\n'))
+		fout.write(''.join(seqs[i,:])+'\n')
 	fout.close()
 	print 'save reduced sequences to file: [%s]' % (msafile+'.rseq')
 	#np.savetxt(msafile+'.rseq', seqs, delimiter='')
