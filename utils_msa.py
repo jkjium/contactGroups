@@ -326,10 +326,8 @@ def MSAReduction():
 	m = msa(msafile)
 	m.setTarget(target)
 
-	(scoreboard, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
+	(seqboard, scoreboard, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
 
-	print repr(column_index)
-	print repr(row_index)
 	'''
 	print 'score matrix:'
 	for i in xrange(0, len(score)):
@@ -337,6 +335,16 @@ def MSAReduction():
 	print 'column index: %s' % repr(column_index)
 	print 'row index: %s' % repr(row_index)
 	'''
+	seqs = np.array(seqboard)[row_index,:][:,column_index]
+
+	fout = open(msafile+'.rseq', 'w')
+	for i in xrange(0, len(row_index)):
+		header = m.msaArray[row_index[i]][0]
+		fout.write('>'+header+'\n')
+		fout.write(''.join(seqs[i,:]+'\n'))
+	fout.close()
+	print 'save reduced sequences to file: [%s]' % (msafile+'.rseq')
+	#np.savetxt(msafile+'.rseq', seqs, delimiter='')
 
 	score = np.array(scoreboard)[row_index,:][:,column_index]
 	#np.savetxt(msafile+'.score', score, fmt='%.8', delimiter=',')
@@ -354,14 +362,31 @@ def MSAReduction():
 
 
 
+def searchpdbseq():
+	if len(sys.argv) < 2:
+		print 'searchpdbseq: locate pdb sequence in MSA' 
+		print 'example: python utils_msa.py searchpdbseq PF07714_full.fa 1T49_A.pdb\n'
+		return	
 
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+
+	print 'msa file: %s' % msafile
+	print 'pdb target: %s' % target
+
+	m = msa(msafile)
+	p = protein(target)
+
+	if m.searchTargetPDB(p)==0:
+		print 'cannot locate pdb sequence in MSA'
 
 
 def main():
 
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
-		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction
+		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
+		'searchpdbseq': searchpdbseq
 	}
 
 	if len(sys.argv)<2:

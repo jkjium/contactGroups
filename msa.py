@@ -157,6 +157,19 @@ class msa(object):
 		print 'target %s not found!' % t
 		sys.exit(-1)
 
+
+	def searchTargetPDB(self, p):
+		count = 0
+		for s in self.msaArray:
+			msaseq = s[1].replace('.','').replace('-','').upper()
+			preffixp = p.seq.find(msaseq)
+			if preffixp >= 0:
+				print 'found match: %s' % s[0]
+				count+=1
+		return count
+
+
+
 	# generate concised msa scoreboard
 	# cutoff: 0% ~ 100%, critera for dropping msa columns. how many gaps in the column
 	# weight_cutoff: 0 ~ 1.0 hamming distance between two sequences in msa. How much similar between two sequences in msa.
@@ -191,9 +204,11 @@ class msa(object):
 		print 'Converting msa to scoreboard ...'
 		scoreboard = []
 		addboard = np.zeros(self.seqlen)
+		seqboard = []
 		for s in self.msaArray:
 			scoreboard.append([self.scoreValue[a.upper()] for a in s[1]])
 			addboard+=np.array([self.scoreBinary[a.upper()] for a in s[1]]) # calculate gap proportion
+			seqboard.append(list(s[1]))
 
 		# get conserved columns
 		if self.target[0] == '':
@@ -214,7 +229,6 @@ class msa(object):
 			for j in indices_rr:
 				if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() <= hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
 					add_flag = False
-					print 'discard [%d -%d]'% (i, j)
 					break
 			if add_flag == True:
 				count+=1
@@ -224,7 +238,7 @@ class msa(object):
 		print 'reduced MSA size: (%d, %d)' % (len(indices_rr), len(indices_rc))
 		indices_rc.sort()
 		indices_rr.sort()
-		return (scoreboard, indices_rc, indices_rr)
+		return (seqboard, scoreboard, indices_rc, indices_rr)
 
 
 	'''
