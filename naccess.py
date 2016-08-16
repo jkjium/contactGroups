@@ -112,6 +112,10 @@ class naccess(object):
 		else:
 			return 'B'
 
+	# get relative accessible area value
+	def accessibleArea(self, key):
+		return self.rsaDict[key].AA_REL
+
 	# output residue number according to query variable type
 	def dumpResiMap(self):
 		for key in self.resiDict:

@@ -82,8 +82,41 @@ def sdii2resi():
 	fout.close()
 	print 'done.\noutput file: [%s]' % outfile
 
+
 def msai2resi():
-	pass
+	if len(sys.argv) < 4:
+		print 'msai2resi: output the mapping between msa position index and pdb residue number'
+		print 'example:python utils_msa.py msai2resi PF07714_full.fa BTK_HUMAN 1k2p.pdb\n'
+		print 'output: PF07714_full.fa.1k2p.pdb.map'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	pdbfile = sys.argv[4]
+	outfile = msafile+'.'+pdbfile+'.map'
+
+	print 'msafile: %s\ntarget header: %s\npdbfile: %s\noutput file: %s' % (msafile, target, pdbfile, outfile)
+	m = msa(msafile)
+	p = protein(pdbfile)
+	rtmap = m.getResiTargetMap(p, target)
+	if len(rtmap) < 1:
+		print 'error occoured in generating rtmap'
+		return
+	#print '%s: %s' % (tvar, repr(rtmap[tvar]))
+	# construct trmap from rtmap
+	# 3128: (B641, 'R')
+	trmap = {}
+	#trmap = {v: k for k, v in rtmap.iteritems()}
+	fout = open(outfile ,'w')
+	for k in rtmap:
+		msai, resn = rtmap[k]
+		if msai in trmap:
+			print 'error. duplicate key [%d] in rtmap' % msai
+			return
+		trmap[msai] = (k, resn)
+		fout.write('%d %d %d' % (msai, k, resn))
+	fout.close()
+	#print trmap	
 
 # output: B641: (3128, 'R')
 def resi2target():

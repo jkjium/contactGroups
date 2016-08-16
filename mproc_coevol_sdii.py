@@ -14,7 +14,7 @@ def init():
 	if len(sys.argv) < 6:
 		print 'Usage: python mproc_coevol_sdii.py msafile weightfile cutoff target_seq msapos order'
 		print 'Example 1: python mproc_coevol_sdii.py PF07714_full.fa.r50 PF07714_full.fa.r50.weight 0.6 BTK_HUMAN 3128 3'
-		print 'Example 2: python mproc_coevol_sdii.py PF07714_full.fa.s62 NA 0.6 BTK_HUMAN 3128 3'
+		print 'Example 2: python mproc_coevol_sdii.py PF07714_full.fa.s62 NA 0.6 BTK_HUMAN all 3'
 		return
 
 	msafile = sys.argv[1]

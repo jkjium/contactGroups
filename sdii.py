@@ -166,6 +166,44 @@ class sdii(object):
 		return math.pow(-1, n)*deltaX_bar
 
 
+	def sdii_spectrum(self, varset):
+		deltaX_bar = 1.0
+		n = len(varset)
+		entropy_profile = [] # for all the entropy(s)
+		deltaX_profile = [] # for all the DeltaX
+
+		subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
+		#print 'deltaN_bar()::varset: %s, subsets: %s' % (repr(varset), repr(subsets))
+		# varset = Set([2,4,6])
+		# [(), (2,), (4,), (6,), (2, 4), (2, 6), (4, 6), (2, 4, 6)]		
+		for index in varset:
+			deltaX = 0.0
+			#subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
+			for tau in subsets:
+				if index in tau:
+					# non hashing version
+					# deltaX+=math.pow(-1, len(tau)+1)*entropy(data[:,tau].T)
+					deltaX+=self.signed_entropy(self.data[:,tau].T, tau) # always hash
+			deltaX_profile.append(deltaX)
+			deltaX_bar*=deltaX
+
+		deltaX_profile.sort() # order does not matter. composition matters
+
+		# store entropy profile
+		for i in xrange(1, len(subsets)):
+			key = repr(subsets[i])
+			entropy_profile.append(self.entropy_board[key]) # order matters
+
+		sdii = math.pow(-1, n)*deltaX_bar
+
+		entropy_profile_str = ','.join([str(v) for v in entropy_profile])
+		deltaX_profile_str = ','.join([str(v) for v in deltaX_profile])
+
+		return '%.15f,%s,%s' % (sdii, deltaX_profile_str, entropy_profile_str)
+
+
+
+
 	# integrate deltaN_bar and Interaction information
 	def calc_sdii(self, varset):
 		n = len(varset)

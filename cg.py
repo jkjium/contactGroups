@@ -32,6 +32,7 @@ class cg(object):
 			self.scoreboard[a] = 0
 
 		#self.scoreboard = {'A':0,'C':0,'D':0,'E':0,'F':0,'G':0,'H':0,'I':0,'K':0,'L':0,'M':0,'N':0,'P':0,'Q':0,'R':0,'S':0,'T':0,'V':0,'W':0,'Y':0}
+		self.volumeDict = {'A':88.6,'C':108.5,'D':111.1,'E':138.4,'F':189.9,'G':60.1,'H':153.2,'I':166.7,'K':168.6,'L':166.7,'M':162.9,'N':144.1,'P':112.7,'Q':143.8,'R':173.4,'S':89.0,'T':116.1,'V':140.0,'W':227.8,'Y':193.6}
 
 	# output scoreboard for AA + accesibility type contact group
 	def nascore(self, na):
@@ -46,6 +47,29 @@ class cg(object):
 		for a in self.alphabet:
 			retlist.append(str(self.scoreboard[a]))
 		return ','.join(retlist)
+
+	# output scoreboard for AA + accesibility area + total volume
+	# just for single letter AA alphabet
+	def nvscore(self, na):
+		volume = 0.0
+		accessible = 0.0
+		for k in self.AAdict:
+			# k: B97, residue: single letter resn
+			residue = self.AAdict[k]
+			self.scoreboard[residue]+=1
+			# get cg volume
+			volume+=self.volumeDict[residue]
+			# get cg rsa
+			na_key = '%s%s' % (residue, k)
+			accessible+=na.accessibleArea(na_key)
+
+		retlist = []
+		for a in self.alphabet:
+			retlist.append(str(self.scoreboard[a]))
+		retlist.append(str(volume))
+		retlist.append(str(accessible))
+		return ','.join(retlist)			
+
 
 
 	# put sorted cg type string
