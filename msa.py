@@ -17,12 +17,12 @@ class msa(object):
 			sys.exit(-1)
 		'''
 		self.scoreValue = {
-							'X':0,'-': 0,'.': 0,'A': 1,'C': 2,'D': 3,'E': 4,'F': 5,'G': 6,'H': 7,'I': 8,'K': 9,
+							'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 2,'D': 3,'E': 4,'F': 5,'G': 6,'H': 7,'I': 8,'K': 9,
 							'L': 10,'M': 11,'N': 12,'P': 13,'Q': 14,'R': 15,'S': 16,'T': 17,'V': 18,'W': 19,'Y': 20, 'B': 3
 						}
 
 		self.scoreBinary = {
-							'X':0,'-': 0,'.': 0,'A': 1,'C': 1,'D': 1,'E': 1,'F': 1,'G': 1,'H': 1,'I': 1,'K': 1,
+							'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 1,'D': 1,'E': 1,'F': 1,'G': 1,'H': 1,'I': 1,'K': 1,
 							'L': 1,'M': 1,'N': 1,'P': 1,'Q': 1,'R': 1,'S': 1,'T': 1,'V': 1,'W': 1,'Y': 1, 'B': 1
 						}
 
@@ -103,10 +103,13 @@ class msa(object):
 
 
 	# get corresponding map from sequence postion to msa position
-	# idxMap[seq_index] = msa_index
-	def getPosMap(self, p):
+	# idxMap[pdb_index] = msa_index
+	def getPosMap(self, p, header):
 		pdbseq = p.seq
-		pdbheader = p.pdb
+		pdbheader = header
+
+		print pdbseq
+		print header
 
 		msaheader = ''
 		msaseq = ''
@@ -121,16 +124,30 @@ class msa(object):
 
 		idxMap = {}
 		token = -1
+		j=0
+		for i in xrange(0, len(msaseq)):
+			if msaseq[i] == '.' or msaseq[i] == '_':
+				continue
+			if msaseq[i].upper() == pdbseq[j]:
+				idxMap[j] = i
+				j+=1
+			else:
+				print 'getPosMap():: error: mismatch msa: %d - %s with pdb: %d - %s' % (i, msaseq[i], j, pdbseq[j])
+
+		'''
 		for i in xrange(0,len(pdbseq)):
 			for j in xrange(token+1, len(msaseq)):
 				if pdbseq[i] == msaseq[j]:
 					idxMap[i] = j
 					token = j
 					break
+		'''
 
 		if len(idxMap) != len(pdbseq):
 			print 'getPosMap()::error:length not match'
-			return
+			print 'msa: ' + msaseq
+			print 'pdb: ' + pdbseq
+			exit()
 
 		# msai2seqi: 3128:244
 		msai2seqi = {}
@@ -339,3 +356,6 @@ class msa(object):
 				pdistArray.append(d)
 
 		return pdistArray
+
+
+
