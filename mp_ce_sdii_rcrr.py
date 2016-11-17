@@ -95,7 +95,8 @@ def worker(sdii_core, tasks, q):
 	for s in tasks:
 		#print 'worker: %d: %s          ' % (os.getpid(), '-'.join([(alphabet[i]) for i in s]))
 		ret_sdii = sdii_core.calc_sdii(s)
-		outMessage = '[pid:%d] %s %.15f\n' % (os.getpid(), '-'.join([(alphabet[i]) for i in s]), ret_sdii)
+		#outMessage = '[pid:%d] %s %.15f\n' % (os.getpid(), '-'.join([(alphabet[i]) for i in s]), ret_sdii)
+		outMessage = '%s %.15f\n' % ('-'.join([(alphabet[i]) for i in s]), ret_sdii)
 		q.put(outMessage)
 	q.put('done')
 
@@ -114,9 +115,11 @@ def listener(total, outfile, q):
 			print 'listener: %d processes done.' % count
 		else:
 			tcount+=1
-			timeUsed = int(time.time() - tstart)
-			print 'listener: get %d/%d [%s] %d' % (tcount, total, m.strip('\n'), timeUsed)
-			fout.write('%d %s' % (timeUsed, m))
+			if tcount%100 == 0:
+				timeUsed = int(time.time() - tstart)
+				print 'listener: %d/%d in %d seconds, %f hours left.' % (tcount, total, timeUsed, 1.0*total*timeUsed/(tcount*3600))
+			#fout.write('%d %s' % (timeUsed, m))
+			fout.write('%s' % (m))
 			fout.flush()
 		if count == 20:
 			break
