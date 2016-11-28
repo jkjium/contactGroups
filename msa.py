@@ -4,6 +4,7 @@ from itertools import groupby
 
 class msa(object):
 	def __init__(self, msafile):
+		self.msafile = msafile
 		self.target = ('', '')
 		self.target_index = 0
 		self.msaArray=[]
@@ -171,7 +172,7 @@ class msa(object):
 				print 'target seq: %s' % s[1]
 				print 'target index: %d' % self.target_index
 				return
-		print 'target %s not found!' % t
+		print '%s: target %s not found!' % (self.msafile, t)
 		sys.exit(-1)
 
 
@@ -229,7 +230,7 @@ class msa(object):
 
 		# get conserved columns
 		if self.target[0] == '':
-			print 'target is empty. Cannot reduce columns'
+			print 'target not exist' 
 			sys.exit(-1)
 
 		#print [addboard[i]/self.seqNum for i in xrange(0, self.seqlen)]
@@ -238,19 +239,23 @@ class msa(object):
 
 		scoreboard_rc = np.array(scoreboard)[:,indices_rc]
 		indices_rr = []
-		indices_rr.append(self.target_index)
 		(rc_row, rc_column) = scoreboard_rc.shape
 		count = 0
-		for i in xrange(0, rc_row): # iterate row
-			add_flag = True
-			for j in indices_rr:
-				if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() <= hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
-					add_flag = False
-					break
-			if add_flag == True:
-				count+=1
-				print 'adding %d: [%d]' % (count, i)
-				indices_rr.append(i)
+		if hamming_cutoff >= 0:
+			indices_rr.append(self.target_index)
+			for i in xrange(0, rc_row): # iterate row
+				add_flag = True
+				for j in indices_rr:
+					if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() <= hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
+						add_flag = False
+						break
+				if add_flag == True:
+					count+=1
+					print 'adding %d: [%d]' % (count, i)
+					indices_rr.append(i)
+		else:
+			print 'get_msaboard_RC_RR(): no reduction on row'
+			indices_rr = [ i for i in xrange(0, rc_row)]
 		
 		print 'reduced MSA size: (%d, %d)' % (len(indices_rr), len(indices_rc))
 		indices_rc.sort()

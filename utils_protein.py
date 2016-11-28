@@ -29,16 +29,62 @@ def resn2bfactor():
 	print 'Output file: %s' % outfile
 
 
+def pdbcut():
+	if len(sys.argv) < 5:
+		print 'pdbcut(): write pdb by residue segment'
+		print 'pdbcut(): python utils_protein.py pdbcut 1t3r.pdb A 5-15'
+		print 'pdbcut(): python utils_protein.py pdbcut 1t3r.pdb all 5-15'
+		return
+
+	pdbfile = sys.argv[2]
+	chain = sys.argv[3]
+	rangeStr = sys.argv[4]
+
+	rangeArray = rangeStr.split('-')
+
+	rBegin = int(rangeArray[0])
+	rEnd = int(rangeArray[1])
+
+	pdbname = pdbfile[0:4]
+	outfile = '%s_%s_%d_%d.rpdb' % (pdbname, chain, rBegin, rEnd)
+
+	print 'pdbcut():pdbfile: %s' % pdbfile
+	print 'pdbcut():pdb: %s' % pdbname
+	print 'pdbcut():chain: %s' % chain
+	print 'pdbcut():residue range: %d - %d' % (rBegin, rEnd)
+
+	p = protein(pdbfile)
+	out = []
+	if chain == 'all':
+		for a in p.atoms:
+			if a.resSeq <= rEnd and a.resSeq >= rBegin:
+				out.append(a)
+	else:
+		for a in p.atoms:
+			if (a.resSeq <= rEnd and a.resSeq >= rBegin and a.chainID == chain):
+				out.append(a)
+
+	fout = open(outfile, 'w')
+	print 'pdbcut():output: %s' % outfile
+	print 'pdbcut():%d atoms written.' % len(out)
+	for a in out:
+		fout.write(a.writeAtom())
+	fout.close()
+
 def main():
-	if len(sys.argv)<3:
+	if len(sys.argv)<2:
 		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
 		return
 
 	dispatch = {
-		'resn2bfactor': resn2bfactor
+		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut
 	}
 
 	cmd = sys.argv[1]
+
+	if sys.argv[1] not in dispatch:
+		print 'invalid cmd: %s' % sys.argv[1]
+		return
 
 	for key in dispatch:
 		if key == cmd:
