@@ -46,7 +46,7 @@ def pdbcut():
 	rEnd = int(rangeArray[1])
 
 	pdbname = pdbfile[0:4]
-	outfile = '%s_%s_%d_%d.rpdb' % (pdbname, chain, rBegin, rEnd)
+	outfile = '%s_%s_%d-%d.rpdb' % (pdbname, chain, rBegin, rEnd)
 
 	print 'pdbcut():pdbfile: %s' % pdbfile
 	print 'pdbcut():pdb: %s' % pdbname
@@ -71,13 +71,32 @@ def pdbcut():
 		fout.write(a.writeAtom())
 	fout.close()
 
+
+def writeseq():
+	if len(sys.argv) < 3:
+		print 'writeseq(): write pdb sequence'
+		print 'writeseq(): python utils_protein.py writeseq 1t3r.pdb'
+		print 'writeseq(): output: 1t3r.pdb.seq'
+		return
+
+	pdbfile = sys.argv[2]
+	outfile = sys.argv[2]+'.seq'
+	print 'writeseq(): pdbfile: %s' % pdbfile
+	print 'writeseq(): outfile: %s' % outfile
+
+	p = protein(pdbfile)
+	fout = open(outfile, 'w')
+	fout.write(p.seq+'\n')
+	fout.close()
+
+
 def main():
 	if len(sys.argv)<2:
 		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
 		return
 
 	dispatch = {
-		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut
+		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq
 	}
 
 	cmd = sys.argv[1]

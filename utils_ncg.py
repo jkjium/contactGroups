@@ -21,6 +21,15 @@ def writencg():
 	p = protein(pdbfile)
 	for a in p.atoms:
 		c = ncg(a, size)
+		ncgArray.append(c)
+
+	fout = open(outfile, 'w')
+	for c in ncgArray:
+		c.grow(p.atoms)
+		fout.write(c.outStr()+'\n')
+	fout.close()
+
+
 
 def main():
 	if len(sys.argv)<2:

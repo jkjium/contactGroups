@@ -678,6 +678,257 @@ def saveBlosum(alphabet, s, filename):
 
 
 
+# convert ncg to sorted msa group array
+# example of ncg file:
+'''
+A93 A36 A89 A37 A35
+A97 A23 A96 A24 A27
+'''
+# rtmap['B641'] = (seqpos, 'R')
+def ncg2msa(filename, rtmap):
+	fin = open(filename, 'r')
+	lines = fin.readlines()
+	fin.close()
+
+	#for k in rtmap:
+	#	print (k, rtmap[k])
+	msaGroupArray = []
+	for line in lines:
+		line = line.strip()
+		if len(line)<1:
+			continue
+		#print line
+		resiStr = line
+
+		msaColArray = []
+		discard_flag=False # for inconsistent pfam index. v29.0 1APS 1-97 but in v30.0 1APS 10-97
+		for resi in resiStr.split(' '):
+			if resi not in rtmap:
+				discard_flag = True # if pdb residue not exist in MSA then discard the current contact group mapping
+				break
+			else:
+				msaColArray.append(rtmap[resi][0])
+
+		if discard_flag == True:
+			continue
+		else:
+			msaGroupArray.append(msaColArray)
+
+		#msaColArray = [rtmap[resi][0] for resi in resiStr.split(' ')] # [139, 109, 124]
+		#msaColArray.sort() #Do not sort!
+
+	#print repr(msaGroupArray)
+	return msaGroupArray
+
+
+# read hcg pdb msa(raw) sdii pdbtitle
+# output new substitute matrix
+def ncg2blossum():
+	if len(sys.argv) < 7:
+		print 'ncg2blossum: construct new substitution matrix from contact group'
+		print 'example:python utils_msa.py ncg2blossum 5pti_pf.pdb 5pti_pf.tip.ncg PF00014_full.txt.rseq PF00014_full.txt.sdii BPT1_BOVIN order'
+		print 'output: a substitution matrix file (same format as BLOSSUM62)'
+		return
+	#print sys.argv[0] # utils_msa.py
+	#print sys.argv[1] # hcg2blossum
+	pdbfile = sys.argv[2] # pdb name
+	ncgfile = sys.argv[3] # hcg
+	msafile = sys.argv[4] # msa (full or reduced)
+	sdiifile = sys.argv[5] # sdii
+	target = sys.argv[6] # target name
+	order = int(sys.argv[7])
+	outfile = msafile[0:7]+".sm" # new substitution matrix
+
+	# get msa in matrix format
+	m = msa(msafile)
+	msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+
+	#for i in xrange(0, len(seqs)):
+	#	print seqs[i]
+	print 'msa matrix: ' + repr(msaMatrix.shape)
+
+	# get resi -> msai map	
+	p = protein(pdbfile)
+	rtmap = m.getResiTargetMap(p, target)
+
+	sdiidict = loadsdii(sdiifile) # key: 39-140-210, value = 0.0788593466276019
+	msaGroupArray = ncg2msa(ncgfile, rtmap) # [[210, 215], [106, 211], [73, 95, 166], [109, 124, 139]]
+
+	# get non overlapped column indices
+	colset = set()
+	for g in msaGroupArray:
+		rg = g[0:order] # get ith order contact group
+		rg.sort() # for generating key
+		sdiikey = '-'.join([str(r) for r in rg])
+		if sdiikey not in sdiidict:
+			#print 'ncg2sdiicol(): discard group: %s for low sdii' % sdiikey
+			continue
+		print (sdiikey, sdiidict[sdiikey])			
+		for resi in rg: # for significant ncg, add corresponding MSA column index
+			colset.add(resi)
+
+	# init substitution matrix
+	EBlist = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
+	#AAlist = sorted(EBlist)
+	#AAlist = sorted(['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*'])
+	AAlist = sorted(['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V'])
+	sm = {}
+	for i in xrange(0, len(AAlist)):
+		for j in xrange(i, len(AAlist)):
+			key = '%s%s' % (AAlist[i], AAlist[j])
+			sm[key] = 0
+	print AAlist
+	print 'Alphabet: %d' % len(AAlist) 
+	print 'AA: %d' % len(sm)
+
+	# accumulate substitution matrix AA frequency for all the contact group columns
+	# Sum the scores for each columns across column
+	print ''
+	w = 0 # count column number
+	for col in colset:
+		w+=1
+		calcColSM(sm, msaMatrix, col)
+	'''
+	for mg in msaGroupArray:
+		# form key for co-evolve value 
+		sdiikey = '-'.join([str(i) for i in mg])
+		if sdiikey not in sdiidict:
+			print 'hcg2blossum():discard group: %s' % sdiikey
+			continue
+		sdiiweight = sdiidict[sdiikey]
+		print (sdiikey, sdiiweight)
+
+		# accumulate SM for each contact group / column group
+		for col in mg:
+			w +=1
+			calcColSM(sm, msaMatrix, col)
+		print ''
+	'''
+	#print repr(sm)
+	#print ''
+
+	n = msaMatrix.shape[0]
+	T = w*n*(n-1)/2 # normalization term
+	print 'w: %d' % w # number of columns (contact group)
+	print 'n: %d' % n # number of sequence
+	print 'T: %d' % T
+
+
+	# convert cij to qij
+	# Normalize the pair frequencies so they will sum to 1
+	for c in sm:
+		sm[c] = 1.0*sm[c]/T
+
+	#print repr(sm)
+	#print ''
+
+	# Calculate the expected probability of occurrence of the ith residue in an (i,j) pair
+	# pi = qii + sum( qij/2 )_{i!=j}
+	pi = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		sum_qij = 0
+		for j in xrange(i+1, len(AAlist)): # i should not = j
+			B = AAlist[j]
+			sum_qij += sm[A+B]/2
+		pi[A] = sm[A+A] + sum_qij
+
+	print repr(pi)	
+	print ''
+
+	# The desired denominator is the expected frequency for each pair 
+	eij = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		for j in xrange(i+1, len(AAlist)):
+			B = AAlist[j]
+			eij[A+B] = 2 * pi[A] * pi[B]
+		eij[A+A] = pi[A] * pi[A]
+
+	print len(eij)
+	print repr(eij)	
+	print ''
+
+	#  Log odds ratio sij = round(2*log2(qij/eij))
+	sij = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		for j in xrange(i, len(AAlist)):
+			B = AAlist[j]
+			if eij[A+B] == 0.0 or sm[A+B]==0.0:
+				sij[A+B] = 0
+			else:
+				sij[A+B] = int(round(2*math.log((sm[A+B]/eij[A+B]),2)))
+			#	sij[A+B] = sm[A+B]/eij[A+B]
+
+	print repr(sij)	
+	print len(sij)
+	print ''
+
+	saveBlosum(EBlist, sij, outfile)
+
+
+
+def ncg2sdiicol():
+	if len(sys.argv)<7:
+		print 'ncg2sdiicol: write selected MSA column into .sdiicol file'
+		print 'python utils_msa.py ncg2sdiicol 1aps_A_1_97.rpdb.tip 1aps_A_1_97.rpdb.tip.ncg PF00708_full.txt.rseq PF00708_full.txt.all_2_sdiii ACYP2_HORSE 2'
+		return
+
+	pdbfile = sys.argv[2] # pdb name
+	ncgfile = sys.argv[3] # hcg
+	msafile = sys.argv[4] # msa (full or reduced)
+	sdiifile = sys.argv[5] # sdii
+	target = sys.argv[6] # target name	
+	orderlist = [int(i) for i in sys.argv[7].split(',')]
+	outfile =  pdbfile[0:4]+'_'+msafile[0:7]+'.sdiicol'# new substitution matrix
+
+
+	print 'pdbfile :%s' % pdbfile
+	print 'ncgfile :%s' % ncgfile
+	print 'msafile :%s' % msafile
+	print 'sdiifile :%s' % sdiifile
+	print 'uniprot name :%s' % target
+	print 'ncg order list : [%s]' % repr(orderlist)
+	print 'outfile: %s' % outfile
+
+	# get msa in matrix format
+	m = msa(msafile)
+	msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+
+	#for i in xrange(0, len(seqs)):
+	#	print seqs[i]
+	print 'msa matrix: ' + repr(msaMatrix.shape)
+
+	# get resi -> msai map	
+	p = protein(pdbfile)
+
+	rtmap = m.getResiTargetMap(p, target) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
+
+	sdiidict = loadsdii(sdiifile) # key: 39-140-210, value = 0.0788593466276019
+	msaGroupArray = ncg2msa(ncgfile, rtmap) # unsorted [[86, 83, 198, 127, 120], [138, 76, 82, 127, 132]]
+
+	# output msa column set
+	colset = set()
+	for i in orderlist:
+		for g in msaGroupArray:
+			rg = g[0:i] # get ith order contact group
+			rg.sort() # for generating key
+			sdiikey = '-'.join([str(r) for r in rg])
+			if sdiikey not in sdiidict:
+				#print 'ncg2sdiicol(): discard group: %s for low sdii' % sdiikey
+				continue
+			print (sdiikey, sdiidict[sdiikey])			
+			for resi in rg: # for significant ncg, add corresponding MSA column index
+				colset.add(resi)
+
+	print 'ncg2sdiicol():writing %s: %s' % (outfile, repr(colset))
+	fout = open(outfile, 'w')
+	fout.write(' '.join([str(c) for c in colset]))
+	fout.close()
+
+
+
 #
 def applysm():
 	if len(sys.argv) < 5:
@@ -725,7 +976,7 @@ def main():
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
-		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm
+		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum
 	}
 
 	if len(sys.argv)<2:

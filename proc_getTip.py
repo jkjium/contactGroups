@@ -15,9 +15,9 @@ def main():
     for i in xrange(0,len(lines)):  
         line = lines[i].strip()
         #pdb_filename=line+'.pdb'
-        pdb_filename=line+'.pdb'
+        pdb_filename=line
         print pdb_filename
-        p=protein(pdb_filename,'TIP')
+        p=protein(pdb_filename)
         p.writeChainATips('AAtips.def',line+'.tip')
 
     pass
