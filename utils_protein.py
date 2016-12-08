@@ -61,7 +61,7 @@ def pdbcut():
 				out.append(a)
 	else:
 		for a in p.atoms:
-			if (a.resSeq <= rEnd and a.resSeq >= rBegin and a.chainID == chain):
+			if (a.resSeq <= rEnd and a.resSeq >= rBegin and a.chainID.lower() == chain.lower()):
 				out.append(a)
 
 	fout = open(outfile, 'w')
