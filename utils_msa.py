@@ -8,6 +8,27 @@ import math
 from msa import msa
 from protein import protein
 
+# print out whether a uniprot name is existing in the PFam MSA
+def printUniprot():
+	if len(sys.argv) < 4:
+		print 'showUniprot: print existing target uniprot in PFXXXXX'
+		print 'example: python utils_msa.py printuniprot PF00154_full.txt Q7X416'
+		print 'output: PF00154_full.txt Q7X416 1'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+
+	m = msa(msafile)
+	outArray = m.searchUniprot(target)
+	if len(outArray) == 0:
+		print '%s %s 0' % (msafile, target)
+	else:
+		for name in outArray:
+			print '%s %s %d' % (msafile, name, len(outArray), ' '.join(outArray))
+
+
+
 def sdii2resi():
 	if len(sys.argv) < 5:
 		print 'resi2target: given a residue number output the corresponding position in target msa'
@@ -168,15 +189,17 @@ def sdii2resi():
 		print sdiiparse(line, msai2seqi, p.seqDict)
 '''
 
-
-def getSeqbyName():
+def writeUniprotSeq():
 	if len(sys.argv) < 4:
-		print 'getSeqbyName: get msa sequence without gaps by searching fasta name'
-		print 'example: python utils_msa.py getseqbyname PF07714_full.fa BTK_HUMAN\n'
+		print 'writeUniprotSeq: get msa sequence without gaps by searching fasta name'
+		print 'example: python utils_msa.py writeuniprotseq PF07714_full.txt BTK_HUMAN\n'
 		return
 
 	msafile = sys.argv[2]
 	msaheader = sys.argv[3].upper()
+	outfile = '%s-%s.seq' % (msafile[0:7], msaheader)
+
+
 	print 'msa file: %s' % msafile
 	print 'target entry: %s' % msaheader
 
@@ -197,6 +220,40 @@ def getSeqbyName():
 			outputSeq.append(a)
 
 	print msaheader
+	print 'writing: %s' % outfile
+	fout = open(outfile, 'w')
+	fout.write(''.join(outputSeq))
+	fout.close()
+
+
+def getSeqbyName():
+	if len(sys.argv) < 4:
+		print 'getSeqbyName: get msa sequence without gaps by searching fasta header (uniprot KB)'
+		print 'example: python utils_msa.py getseqbyname PF07714_full.fa BTK_HUMAN\n'
+		return
+
+	msafile = sys.argv[2]
+	msaheader = sys.argv[3].upper()
+	#print 'msa file: %s' % msafile
+	#print 'target entry: %s' % msaheader
+
+	msaseq = ''
+	m = msa(msafile)
+	#m.setTarget(msaheader)
+
+	for s in m.msaArray:
+		if msaheader in s[0]:
+			msaheader = s[0]
+			msaseq = s[1]
+
+	outputSeq = []
+	for a in msaseq:
+		if a in ['.', '-', '_']:
+			continue
+		else:
+			outputSeq.append(a.upper())
+
+	#print msaheader
 	print ''.join(outputSeq)
 
 
@@ -208,17 +265,18 @@ def getMsabyName():
 
 	msafile = sys.argv[2]
 	msaheader = sys.argv[3].upper()
-	print 'msa file: %s' % msafile
-	print 'target entry: %s' % msaheader
+	#print 'msa file: %s' % msafile
+	#print 'target entry: %s' % msaheader
 
 	msaseq = ''
 	m = msa(msafile)
-	m.setTarget(msaheader)
+	#m.setTarget(msaheader)
 
 	for s in m.msaArray:
 		if msaheader in s[0]:
-			print s[0]
+			#print s[0]
 			print s[1]
+			break
 
 def pdistDistribution():
 	if len(sys.argv) < 3:
@@ -321,7 +379,8 @@ def reduceByWeight():
 def MSAReduction():
 	if len(sys.argv) < 4:
 		print 'msareduction: reduce columns and rows by cutoffs'
-		print 'example: python utils_msa.py msareduction PF07714_full.fa BTK_HUMAN 0.2 0.62\n'
+		print 'example: python utils_msa.py msareduction PF07714_full.fa BTK_HUMAN 0.8 0.38'
+		print 'python utils_msa.py msareduction PF13855_full.txt RTN4R_HUMAN 0.8 -1'
 		return
 
 	msafile = sys.argv[2]
@@ -329,7 +388,7 @@ def MSAReduction():
 	gap_cutoff = float(sys.argv[4]) # gap cutoff
 	hamming_cutoff = float(sys.argv[5]) # hamming cutoff
 
-	print 'msa file: %s' % msafile
+	print '\nmsa file: %s' % msafile
 	print 'target: %s' % target
 	print 'gap cutoff: %f' % gap_cutoff
 	print 'hamming cutoff: %s' % hamming_cutoff
@@ -976,7 +1035,8 @@ def main():
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
-		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum
+		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
+		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot
 	}
 
 	if len(sys.argv)<2:

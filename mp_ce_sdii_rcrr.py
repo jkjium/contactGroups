@@ -39,9 +39,13 @@ def init():
 	rowIndex = [int(i) for i in np.loadtxt(rowIndexFile, delimiter=',')]
 	colIndex = [int(j) for j in np.loadtxt(colIndexFile, delimiter=',')]
 
-	print 'row index: %s' % repr(rowIndex)
-	print 'col index: %s' % repr(colIndex)
+	#print 'row index: %s' % repr(rowIndex)[0:10]
+	#print 'col index: %s' % repr(colIndex)
 	print 'reduced data dimension: %s, (%d, %d)' % (repr(score.shape), len(rowIndex), len(colIndex))
+	if len(rowIndex) < 200 or len(colIndex) < 4:
+		print 'exit for insufficient dataset'
+		exit()
+
 
 	varlist = colIndex
 

@@ -40,20 +40,25 @@ def pdbcut():
 	chain = sys.argv[3]
 	rangeStr = sys.argv[4]
 
-	rangeArray = rangeStr.split('-')
-
-	rBegin = int(rangeArray[0])
-	rEnd = int(rangeArray[1])
 
 	pdbname = pdbfile[0:4]
-	outfile = '%s_%s_%d-%d.rpdb' % (pdbname, chain, rBegin, rEnd)
 
 	print 'pdbcut():pdbfile: %s' % pdbfile
 	print 'pdbcut():pdb: %s' % pdbname
 	print 'pdbcut():chain: %s' % chain
-	print 'pdbcut():residue range: %d - %d' % (rBegin, rEnd)
 
 	p = protein(pdbfile)
+	if rangeStr != 'all':
+		rangeArray = rangeStr.split('-')
+		rBegin = int(rangeArray[0])
+		rEnd = int(rangeArray[1])
+		outfile = '%s-%s-%d-%d.rpdb' % (pdbname, chain, rBegin, rEnd)
+	else:
+		rBegin = -999
+		rEnd = 999999
+		outfile = '%s-%s.rpdb' % (pdbname, chain)
+	print 'pdbcut():residue range: %s, %d - %d' % (rangeStr, rBegin, rEnd)
+
 	out = []
 	if chain == 'all':
 		for a in p.atoms:
@@ -66,7 +71,7 @@ def pdbcut():
 
 	fout = open(outfile, 'w')
 	print 'pdbcut():output: %s' % outfile
-	print 'pdbcut():%d atoms written.' % len(out)
+	print 'pdbcut():%s: %d atoms written.' % (outfile, len(out))
 	for a in out:
 		fout.write(a.writeAtom())
 	fout.close()
@@ -81,7 +86,7 @@ def writeseq():
 
 	pdbfile = sys.argv[2]
 	outfile = sys.argv[2]+'.seq'
-	print 'writeseq(): pdbfile: %s' % pdbfile
+	#print 'writeseq(): pdbfile: %s' % pdbfile
 	print 'writeseq(): outfile: %s' % outfile
 
 	p = protein(pdbfile)

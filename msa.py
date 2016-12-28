@@ -1,9 +1,13 @@
 import sys
 import numpy as np
+import os.path
 from itertools import groupby
 
 class msa(object):
 	def __init__(self, msafile):
+		if os.path.isfile(msafile) == False:
+			print 'error: file %s not exist' % msafile
+			exit()
 		self.msafile = msafile
 		self.target = ('', '')
 		self.target_index = 0
@@ -17,13 +21,15 @@ class msa(object):
 			print 'Target: %s not found in MSA.' % target
 			sys.exit(-1)
 		'''
+		# The special characters X, B, Z and U are understood. X means "unknown amino acid",
+		# B is D or N, Z is E or Q. U is understood to be the 21st amino acid Selenocysteine. 
 		self.scoreValue = {
-							'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 2,'D': 3,'E': 4,'F': 5,'G': 6,'H': 7,'I': 8,'K': 9,
+							'O':0, 'Z':0, 'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 2,'D': 3,'E': 4,'F': 5,'G': 6,'H': 7,'I': 8,'K': 9,
 							'L': 10,'M': 11,'N': 12,'P': 13,'Q': 14,'R': 15,'S': 16,'T': 17,'V': 18,'W': 19,'Y': 20, 'B': 3
 						}
 
 		self.scoreBinary = {
-							'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 1,'D': 1,'E': 1,'F': 1,'G': 1,'H': 1,'I': 1,'K': 1,
+							'O':0, 'Z':0, 'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 1,'D': 1,'E': 1,'F': 1,'G': 1,'H': 1,'I': 1,'K': 1,
 							'L': 1,'M': 1,'N': 1,'P': 1,'Q': 1,'R': 1,'S': 1,'T': 1,'V': 1,'W': 1,'Y': 1, 'B': 1
 						}
 
@@ -54,6 +60,7 @@ class msa(object):
 	# given pdb sequence and target in msa
 	# return pdb resi -> msa position (with gaps) map
 	# for pdb sequence contained in the msa
+	# ('A9', (14, 'V'))
 	def getResiTargetMap(self, p, target):
 		midict = {} # midict[resn+seq_pos] = msa_pos 
 		rtdict = {}
@@ -187,6 +194,12 @@ class msa(object):
 		return count
 
 
+	def searchUniprot(self, uniprot):
+		out = []
+		for s in self.msaArray:
+			if uniprot.upper() in s[1].upper():
+				 out.append(s[1])
+		return out
 
 	# generate concised msa scoreboard
 	# cutoff: 0% ~ 100%, critera for dropping msa columns. how many gaps in the column
@@ -251,13 +264,13 @@ class msa(object):
 						break
 				if add_flag == True:
 					count+=1
-					print 'adding %d: [%d]' % (count, i)
+					#print 'adding %d: [%d]' % (count, i)
 					indices_rr.append(i)
 		else:
 			print 'get_msaboard_RC_RR(): no reduction on row'
 			indices_rr = [ i for i in xrange(0, rc_row)]
 		
-		print 'reduced MSA size: (%d, %d)' % (len(indices_rr), len(indices_rc))
+		print '%s :: reduced MSA size: (%d, %d)' % (self.msafile, len(indices_rr), len(indices_rc))
 		indices_rc.sort()
 		indices_rr.sort()
 		return (seqboard, scoreboard, indices_rc, indices_rr)

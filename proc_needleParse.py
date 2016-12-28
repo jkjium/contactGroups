@@ -51,7 +51,8 @@ AQPNADWIAGGLDWGDWTQKFHGGRPSWGNETTELRTVDWFKHRDPLRRW
 '''
 
 def parseFasta(lines, i):
-	AAset = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '-']
+	AAset = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '-',
+			 'a', 'r', 'n', 'd', 'c', 'q', 'e', 'g', 'h', 'i', 'l', 'k', 'm', 'f', 'p', 's', 't', 'w', 'y', 'v', 'b', 'z', 'x']
 	fastalines = []
 	while lines[i][0] in AAset:
 		fastalines.append(lines[i].strip())
@@ -98,6 +99,7 @@ def main():
 			 strArray = tsvline.split(' ')
 			 ratioStr = strArray[2]
 			 ratioArr = ratioStr.split('/')
+			 out.append(ratioArr[0]) # number of identity
 			 ratio = float(ratioArr[0])/float(ratioArr[1])
 			 identity = '%.1f' % (ratio * 100)
 			 out.append(identity)
@@ -110,6 +112,7 @@ def main():
 			 strArray = tsvline.split(' ')
 			 ratioStr = strArray[2]
 			 ratioArr = ratioStr.split('/')
+			 out.append(ratioArr[0]) # number of similarity
 			 ratio = float(ratioArr[0])/float(ratioArr[1])
 			 similarity = '%.1f' % (ratio * 100)
 			 out.append(similarity)
@@ -122,6 +125,7 @@ def main():
 			 strArray = tsvline.split(' ')
 			 ratioStr = strArray[2]
 			 ratioArr = ratioStr.split('/')
+			 out.append(ratioArr[0]) # number of gaps
 			 ratio = float(ratioArr[0])/float(ratioArr[1])
 			 gaps = '%.1f' % (ratio * 100)
 			 out.append(gaps)
@@ -140,6 +144,7 @@ def main():
 		# > ..
 		if '>' == line[0]:
 			fastaline, index = parseFasta(lines, i) # parse fasta sequence from the ith line
+			out.append(('%d' % len(fastaline.strip('-')))) # pure sequence length
 			out.append(fastaline)
 			i = index 
 			print 'seq: %s ... len: %d' % (fastaline[0:5], len(fastaline))
