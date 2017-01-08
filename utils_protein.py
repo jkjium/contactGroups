@@ -94,6 +94,21 @@ def writeseq():
 	fout.write(p.seq+'\n')
 	fout.close()
 
+def writetip():
+	if len(sys.argv) < 3:
+		print 'writetip(): write tip pdb file'
+		print 'writeseq(): python utils_protein.py writetip pdbfile'
+		print 'writetip(): output: 1t3r.tip'
+		return
+
+	pdbfile = sys.argv[2]
+	outfile = pdbfile+'.tip'
+	print 'writetip(): outfile: %s' % outfile
+
+	p = protein(pdbfile)
+	p.writeTips('AAtips.def',outfile)
+
+
 
 def main():
 	if len(sys.argv)<2:
@@ -101,7 +116,7 @@ def main():
 		return
 
 	dispatch = {
-		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq
+		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip
 	}
 
 	cmd = sys.argv[1]

@@ -60,7 +60,7 @@ class protein(object):
         # map for Chain+Resi : (index in sequence, ResName)
         # 'B529': (132, 'V')
         self.resDict = {} # assigned in self.getSeq() function
-        self.seq = self.getSeq()
+        self.seq, self.resArray = self.getSeq()
 
         # map for sequence index: Chain+Resi(ResName)
         # 132 : 'B529(V)'
@@ -89,16 +89,19 @@ class protein(object):
         seq=''
         last_resSeq = -1
         seqPos = 0
+        resArray = []
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
             if last_resSeq != a.resSeq:
                 seq=seq+aamap.getAAmap(a.resName)
                 last_resSeq = a.resSeq
 
-                key = '%s%s' % (a.chainID, a.resSeq)
+                key = '%s%d' % (a.chainID, a.resSeq)
                 self.resDict[key] = (seqPos, seq[seqPos])
                 seqPos+=1
-        return seq       
+
+                resArray.append(a.chainID+aamap.getAAmap(a.resName)+str(a.resSeq))
+        return seq, resArray       
            
     # print PDB sequence into fasta file
     def writeFASTA(self):
@@ -156,7 +159,8 @@ class protein(object):
 			
     # tip atom extraction
     # not for chain A only
-    def writeChainATips(self, profile, filename):
+    # def writeChainATips(self, profile, filename):
+    def writeTips(self, profile, filename):
         # loading tip atoms records
         fp=open(profile, 'r')
         lines = fp.readlines()

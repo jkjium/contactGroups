@@ -56,7 +56,8 @@ class msa(object):
 			print
 		print '%d sequence in total' % len(self.msaArray)
 
-
+	# delegated
+	# ! pdb sequence can be different from target sequence in MSA
 	# given pdb sequence and target in msa
 	# return pdb resi -> msa position (with gaps) map
 	# for pdb sequence contained in the msa

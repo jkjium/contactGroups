@@ -551,9 +551,16 @@ def loadsdii(sdiifile):
 # calculate columwised substritution marix
 # input a column of MSA in list type
 def calcColSM(sm, msaMatrix, column):
+	#rc = msaMatrix[:, column].replace('-','.').replace('O','.').replace('U','.').replace('X','.').replace('B','.').replace('Z','.')
 	colset = set(msaMatrix[:, column])
 	if '.' in colset:
 		colset.remove('.')
+	if '-' in colset:
+		colset.remove('-')
+	if 'O' in colset:
+		colset.remove('O')
+	if 'U' in colset:
+		colset.remove('U')
 	if 'X' in colset:
 		colset.remove('X')
 	if 'B' in colset:
@@ -562,16 +569,20 @@ def calcColSM(sm, msaMatrix, column):
 		colset.remove('Z')
 	#alphabet = sorted(set(msaMatrix[:, column])) # get sorted alphabet list
 	alphabet = sorted(colset) # get sorted alphabet list
-	print repr(alphabet)
+	#print repr(alphabet)
 	# get A frequency
 	freqDict = collections.Counter(msaMatrix[:, column]) # get frequency
-	print repr(freqDict)
+	#print repr(freqDict)
 
 	# calculate AA frequency cij
 	for i in xrange(0, len(alphabet)):
-		A = alphabet[i]
+		A = alphabet[i].upper()
+		if A not in alphabet:
+			continue
 		for j in xrange(i+1, len(alphabet)):
-			B = alphabet[j]
+			B = alphabet[j].upper()
+			if B not in alphabet:
+				continue
 			sm[A+B] += freqDict[A]*freqDict[B]
 		sm[A+A] += freqDict[A]*(freqDict[A]-1)/2
 
@@ -736,7 +747,7 @@ def saveBlosum(alphabet, s, filename):
 	fout.close()
 
 
-
+# called by ncg2blossum
 # convert ncg to sorted msa group array
 # example of ncg file:
 '''
@@ -927,29 +938,49 @@ def ncg2blossum():
 	saveBlosum(EBlist, sij, outfile)
 
 
+# called in ncg2sdiicol()
+# load map between pdb residue ID and MSA uniprot position ID 
+# dictionary element: ('A9', (14, 'V')) : (chain+resi, (MSA position index, resn))
+# mapfile:
+# AT284 1218 T  : chain A residue T resn 284 => position 1218 (start from 0) resn T
+# AE285 1220 e  : lowercase exists!
+# AR286 -1 -	: residue number that cannot map to MSA position (does not exist)
+def getPDBUniprotMap(mapfile):
+	posmap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) < 1:
+				print 'getPDBUniprotMap: error loading map: %s' % mapfile
+			strArray = line.split(' ')
+			key = strArray[0][0] + strArray[0][2:]
+			value = (int(strArray[1]), strArray[2].upper())
+			posmap[key] = value
+	print 'getPDBUniprotMap: %s %d maps loaded' % (mapfile, len(posmap))
+	return posmap
 
+
+# select informative sdii columns from MSA and save the column indices into file
+# output: .sdiicol file
 def ncg2sdiicol():
-	if len(sys.argv)<7:
+	if len(sys.argv)<6:
 		print 'ncg2sdiicol: write selected MSA column into .sdiicol file'
-		print 'python utils_msa.py ncg2sdiicol 1aps_A_1_97.rpdb.tip 1aps_A_1_97.rpdb.tip.ncg PF00708_full.txt.rseq PF00708_full.txt.all_2_sdiii ACYP2_HORSE 2'
+		print '$ python utils_msa.py ncg2sdiicol 1a0p-A.rpdb.tip.ncg PF00589_full.txt.rseq PF00589_full.txt.all_2_sdii.4.top 1a0p-A-PF00589-XERD_ECOLI.map 2'
 		return
 
-	pdbfile = sys.argv[2] # pdb name
-	ncgfile = sys.argv[3] # hcg
-	msafile = sys.argv[4] # msa (full or reduced)
-	sdiifile = sys.argv[5] # sdii
-	target = sys.argv[6] # target name	
-	orderlist = [int(i) for i in sys.argv[7].split(',')]
-	outfile =  pdbfile[0:4]+'_'+msafile[0:7]+'.sdiicol'# new substitution matrix
+	ncgfile = sys.argv[2] # hcg
+	msafile = sys.argv[3] # msa (full or reduced)
+	sdiifile = sys.argv[4] # sdii
+	resimapfile = sys.argv[5]
+	orderlist = [int(i) for i in sys.argv[6].split(',')]
+	outfile =  msafile[0:7]+'.sdiicol'# new substitution matrix
 
 
-	print 'pdbfile :%s' % pdbfile
 	print 'ncgfile :%s' % ncgfile
 	print 'msafile :%s' % msafile
 	print 'sdiifile :%s' % sdiifile
-	print 'uniprot name :%s' % target
+	print 'resimapfile :%s' % resimapfile
 	print 'ncg order list : [%s]' % repr(orderlist)
-	print 'outfile: %s' % outfile
 
 	# get msa in matrix format
 	m = msa(msafile)
@@ -959,10 +990,8 @@ def ncg2sdiicol():
 	#	print seqs[i]
 	print 'msa matrix: ' + repr(msaMatrix.shape)
 
-	# get resi -> msai map	
-	p = protein(pdbfile)
-
-	rtmap = m.getResiTargetMap(p, target) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
+	#rtmap = m.getResiTargetMap(p, target) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
+	rtmap = getPDBUniprotMap(resimapfile) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
 
 	sdiidict = loadsdii(sdiifile) # key: 39-140-210, value = 0.0788593466276019
 	msaGroupArray = ncg2msa(ncgfile, rtmap) # unsorted [[86, 83, 198, 127, 120], [138, 76, 82, 127, 132]]
@@ -981,10 +1010,130 @@ def ncg2sdiicol():
 			for resi in rg: # for significant ncg, add corresponding MSA column index
 				colset.add(resi)
 
-	print 'ncg2sdiicol():writing %s: %s' % (outfile, repr(colset))
+	print 'ncg2sdiicol():writing %s, sdiicol %d' % (outfile, len(colset))
+	print '%s' % (repr(sorted(colset)))
 	fout = open(outfile, 'w')
-	fout.write(' '.join([str(c) for c in colset]))
+	#fout.write(' '.join([str(c) for c in colset]))
+	fout.write('%s %s\n' % (msafile, ' '.join([str(c) for c in colset])))
 	fout.close()
+
+
+# read combined .sdiicol file
+# for each one calculate the substitution rate cij
+def sdii2blosum():
+	if len(sys.argv) < 2:
+		print 'sdii2blosum: construct new substitution matrix from sdii filtered msa columns'
+		print 'python utils_msa.py sdii2blosum PF00014.sdiicol'
+		print 'output: a substitution matrix file (same format as BLOSSUM62)'
+		return
+
+	sdiicolfile = sys.argv[2]
+	outfile = sdiicolfile+".sm" # new substitution matrix
+
+	sdiicolArray = []
+	with open(sdiicolfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) < 1:
+				print 'error sdiicol line: %s' % line
+
+			valueArray = line.split(' ')
+			msafile = valueArray[0]
+			if len(valueArray)==1:
+				print '%s: no column' % msafile
+				continue
+			colset = [int(i) for i in valueArray[1:]]
+			sdiicolArray.append((msafile, colset))
+	print 'sdii2bolsum(): %d sdiicol lines loaded ..' % len(sdiicolArray)
+
+	# init substitution matrix
+	AAlist = sorted(['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V'])
+	sm = {}
+	for i in xrange(0, len(AAlist)):
+		for j in xrange(i, len(AAlist)):
+			key = '%s%s' % (AAlist[i], AAlist[j])
+			sm[key] = 0
+	#print AAlist
+	#print 'Alphabet: %d' % len(AAlist) 
+	#print 'AA: %d' % len(sm)
+
+	T=0 # total number of possible substitutions
+	for msafile, colset in sdiicolArray:
+		#print len(colset), repr(colset)
+
+		# get msa in matrix format
+		m = msa(msafile)
+		msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+		#print 'msa matrix: ' + repr(msaMatrix.shape)
+
+		# accumulate substitution matrix AA frequency for all the contact group columns
+		# Sum the scores for each columns across column
+		for col in colset:
+			calcColSM(sm, msaMatrix, col)
+
+		w = len(colset) # number of columns for current MSA
+		n = msaMatrix.shape[0]
+		T= sum(sm.itervalues())
+		#T = w*n*(n-1)/2 # normalization term, removing gaps will cause T in action is smaller than w*n*(n-1)/2
+		print '%s: w: %d/%d, n: %d, T: %d' % (msafile, w, msaMatrix.shape[1], n, T)
+		#T+=T1
+
+	print 'total T:  %d' % T
+	print 'total sm: %d' % sum(sm.itervalues())
+	print ''
+	# convert cij to qij
+	# Normalize the pair frequencies so they will sum to 1
+	for c in sm:
+		sm[c] = 1.0*sm[c]/T
+	print 'sum(sm): %f' % sum(sm.itervalues())
+	print repr(sm)[0:10]
+	print ''
+
+	# Calculate the expected probability of occurrence of the ith residue in an (i,j) pair
+	# pi = qii + sum( qij/2 )_{i!=j}
+	pi = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		sum_qij = 0
+		for j in xrange(i+1, len(AAlist)): # i should not = j
+			B = AAlist[j]
+			sum_qij += sm[A+B]/2
+		pi[A] = sm[A+A] + sum_qij
+	print 'sum(pi): %f' % sum(pi.itervalues())
+	#print repr(pi)[0:10]	
+	print ''
+
+	# The desired denominator is the expected frequency for each pair 
+	eij = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		for j in xrange(i+1, len(AAlist)):
+			B = AAlist[j]
+			eij[A+B] = 2 * pi[A] * pi[B]
+		eij[A+A] = pi[A] * pi[A]
+
+	print 'sum(eij): %f' % sum(eij.itervalues())
+	#print repr(eij)[0:10]
+	print ''
+
+	#  Log odds ratio sij = round(2*log2(qij/eij))
+	sij = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		for j in xrange(i, len(AAlist)):
+			B = AAlist[j]
+			if eij[A+B] == 0.0 or sm[A+B]==0.0:
+				sij[A+B] = 0
+			else:
+				sij[A+B] = int(round(2*math.log((sm[A+B]/eij[A+B]),2)))
+			#	sij[A+B] = sm[A+B]/eij[A+B]
+
+	print repr(sij)	
+	print len(sij)
+	print ''
+
+	EBlist = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
+	saveBlosum(EBlist, sij, outfile)
 
 
 
@@ -992,7 +1141,7 @@ def ncg2sdiicol():
 def applysm():
 	if len(sys.argv) < 5:
 		print 'applysm: write new sm file'
-		print 'python utils_msa.py applysm blosum62.txt smlist.txt 1 1'
+		print 'python utils_msa.py applysm untitled_blosum62.txt smlist.txt 0.1 1'
 		return
 	alphabet = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
 
@@ -1016,7 +1165,7 @@ def applysm():
 
 	newblosum = np.rint(origblosum + weight * newsm)
 
-	outfilename = blosumfile+'.'+sys.argv[4]+'.new'
+	outfilename = 'combined-'+blosumfile+'.'+sys.argv[4]+'.sm'
 	if title==1:
 		fout = open(outfilename, 'w')
 		fout.write('   '+'  '.join(alphabet)+'\n')
@@ -1036,7 +1185,7 @@ def main():
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
 		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
-		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot
+		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum
 	}
 
 	if len(sys.argv)<2:

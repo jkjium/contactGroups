@@ -2,6 +2,13 @@ import sys
 from protein import protein
 from atom import atom
 
+#
+# AV9 -1 -
+# AV10 33 V
+# AI11 34 I
+#
+
+
 def main():
 	if len(sys.argv) < 3:
 		print 'Usage: python proc_posmap.py pdbfile msaseqfile flatalignfile'
