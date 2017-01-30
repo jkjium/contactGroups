@@ -14,7 +14,6 @@ __all__=['sdii']
 class sdii(object):
 
 	def __init__(self, data):
-		print 'version 0322'
 		self.data = data
 		self.entropy_board = {}
 		self.weight = np.ones(self.data.shape[0])

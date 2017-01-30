@@ -50,11 +50,11 @@ class AAmap(object):# -*- coding: utf-8 -*-
         self.A2AAA['W']='TRP'        
         
         self.A2T={}
-        self.A2T['D']='-'
-        self.A2T['E']='-'
-        self.A2T['H']='+'
-        self.A2T['K']='+'
-        self.A2T['R']='+'
+        self.A2T['D']='C'
+        self.A2T['E']='C'
+        self.A2T['H']='C'
+        self.A2T['K']='C'
+        self.A2T['R']='C'
         self.A2T['P']='H'
         self.A2T['V']='H'
         self.A2T['M']='H'
