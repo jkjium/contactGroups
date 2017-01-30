@@ -17,7 +17,7 @@ def main():
 			seq1 = lines[i].strip()
 			seq2 = lines[j].strip()
 			outfile = '%s-%s.%s.align' % (seq1[:-4], seq2[:-4], matrix)
-			cmdstr = './needle %s %s -gapopen 10 -gapextend 0.5 -data %s -aformat markx3 %s' % (seq1, seq2, matrix, outfile)
+			cmdstr = 'needle %s %s -gapopen 10 -gapextend 0.5 -data %s -aformat markx3 %s' % (seq1, seq2, matrix, outfile)
 			out.append(cmdstr)
 
 	print '\n'.join(out)
