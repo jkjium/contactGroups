@@ -376,6 +376,77 @@ def reduceByWeight():
 	print 'reduced msa: [%s]\nlen: %d' % (outfile, goal)
 
 
+def findfamiliar():
+	if len(sys.argv)<4:
+		print 'findfamiliar: find sequences with mutually hamming distance'
+		print 'example: python utils_msa.py findfamiliar PF07714_full.txt BTK_HUMAN 0.8 0.1,0.4'
+		return
+
+	msafile = sys.argv[2]
+	target = sys.argv[3]
+	gap_cutoff = float(sys.argv[4]) # gap cutoff
+	range_str = sys.argv[5] # hamming cutoff
+	rangeArray = [float(i) for i in range_str.split(',')]
+	rangeArray.sort()
+
+	print '\nmsa file: %s' % msafile
+	print 'target: %s' % target
+	print 'gap cutoff: %f' % gap_cutoff
+	print 'hamming cutoff range: %s' % repr(rangeArray)
+
+	print 'loading msa file ...'
+	m = msa(msafile)
+	m.setTarget(target)
+
+	print 'filtering sequences ...'
+	row_set = m.find_familiar(gap_cutoff, rangeArray)
+
+	for i in row_set:
+		(head, msaline) = m.msaArray[i]
+		seq = msaline.replace('.','').replace('-','').lower()
+		headArray = head.split('/')
+		outname = '%s-%s-%d.sseq' % (msafile[0:7], headArray[0], i)
+		#print '%s %s' % (outname, seq)
+		fout = open(outname, 'w')
+		fout.write(seq)
+		fout.close()
+
+	print 'findsimilar: %d sequences generated.' % len(row_set)
+
+
+def extractnseq():
+	if len(sys.argv)<3:
+		print 'findfamiliar: extract n sequences from MSA file' 
+		print 'example: python utils_msa.py extractnseq PF07714_full.txt number_of_sequence'
+		return
+
+	msafile = sys.argv[2]
+	nseq = int(sys.argv[3]) 
+
+	print '\nmsa file: %s' % msafile
+	print 'nseq: %d' % nseq
+
+	print 'loading msa file ...'
+	m = msa(msafile)
+	#m.setTarget(target)
+
+	if len(m.msaArray) < nseq:
+		print 'not enough sequence in MSA'
+		exit(-1)
+
+	for i in xrange(0,nseq):
+		(head, msaline) = m.msaArray[i]
+		headArray = head.split('/')
+		seq = msaline.replace('.','').replace('-','').lower()
+		outname = '%s-%s-%d.sseq' % (msafile[0:7], headArray[0], i)
+		#print '%s %s' % (outname, seq)
+		fout = open(outname, 'w')
+		fout.write(seq)
+		fout.close()
+
+	print 'extractnseq: %d sequences generated.' % nseq
+
+
 def MSAReduction():
 	if len(sys.argv) < 4:
 		print 'msareduction: reduce columns and rows by cutoffs'
@@ -1185,7 +1256,7 @@ def main():
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
 		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
-		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum
+		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum, 'findfamiliar':findfamiliar,'extractnseq':extractnseq
 	}
 
 	if len(sys.argv)<2:

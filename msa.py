@@ -226,6 +226,55 @@ class msa(object):
 		#print np.array(scoreboard)
 		return (np.array(scoreboard)[:,indices], indices)
 
+
+	# find similar sequences within a hamming cutoff range
+	# hamming_cutoff_range: a list of (two) float number
+	# return a set of row indices
+	def find_familiar(self, gap_cutoff, hamming_cutoff_range):
+		print 'Converting msa to scoreboard ...'
+		scoreboard = []
+		addboard = np.zeros(self.seqlen)
+		seqboard = []
+		for s in self.msaArray:
+			scoreboard.append([self.scoreValue[a.upper()] for a in s[1]])
+			addboard+=np.array([self.scoreBinary[a.upper()] for a in s[1]]) # calculate gap proportion
+			seqboard.append(list(s[1]))
+
+		low = hamming_cutoff_range[0]
+		high = hamming_cutoff_range[1]
+
+		# get conserved columns
+		if self.target[0] == '':
+			print 'target not exist' 
+			sys.exit(-1)
+
+		# get informative columns
+		indices_rc = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > gap_cutoff and self.scoreBinary[self.target[1][i].upper()] != 0)]
+
+		scoreboard_rc = np.array(scoreboard)[:,indices_rc]
+		print 'scoreboard dimension: %s' % repr(scoreboard_rc.shape)
+		indices_rr = []
+		(rc_row, rc_column) = scoreboard_rc.shape
+		if len(hamming_cutoff_range)==2:
+			indices_rr.append(self.target_index)
+			for i in xrange(0, rc_row): # iterate row
+				add_flag = True # prepare to add
+				# filter against existing sequences
+				for j in indices_rr:
+					d = (scoreboard_rc[i, :]==scoreboard_rc[j,:]).mean() # 0: completely different, 1: completely same
+					if (d<low or d>high): # discard any sequence outside the range
+						add_flag = False
+						break
+				if add_flag == True: 
+					indices_rr.append(i)
+		else:
+			print 'error: invalid hamming cutoff range: %s' % repr(hamming_cutoff_range)
+			sys.exit(-1)
+
+		return set(indices_rr)
+
+
+
 	# return 3 values: 
 	#	complete scoreboard
 	#	indices of redueced columns

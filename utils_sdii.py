@@ -4,6 +4,7 @@ post-process for sdii result
 import sys
 import numpy as np
 from protein import protein
+from sdii import sdii
 
 
 # read key-value sdii result file
@@ -98,10 +99,6 @@ def tripletstat():
 	print infoList[len(infoList)-1]
 
 
-
-
-
-
 def getresset():
 	if len(sys.argv) < 2:
 		print 'getresset(): python utils_sdii.py getresset result_sdii'
@@ -112,13 +109,36 @@ def getresset():
 	p = protein(pdbfile, chain)
 	print p.seq
 
+
+def entropy():
+	if len(sys.argv) < 4:
+		print 'entropy(): python utils_sdii.py entropy scorefile 0,1'
+		return
+
+	scorefile = sys.argv[2]
+	varliststr = sys.argv[3]	
+
+	varlist = [int(i) for i in varliststr.split(',')]
+	print 'varlist: %s' % repr(varlist)
+
+	score = np.loadtxt(scorefile, delimiter=',')
+	print 'score: %s' % repr(score)
+
+	s = sdii(score)
+	#print 'entropy [%s]: %f' % (repr(varlist), s.entropy(score[varlist, :]))
+	#print 'score%s: %s' % (repr(varlist), repr(score[:,varlist].T))
+	print 'entropy [%s]: %f' % (repr(varlist), s.entropy(score[:,varlist].T))
+
+
+
+
 def main():
 	if len(sys.argv)<3:
 		print 'Usage: python utils_sdii.py cmd pdbfile [args ...]'
 		return
 
 	dispatch = {
-		'getresset': getresset, 'tripletstat': tripletstat
+		'getresset': getresset, 'tripletstat': tripletstat, 'entropy':entropy
 	}
 
 	cmd = sys.argv[1]
