@@ -39,29 +39,67 @@ def main():
 	lines2 = f2.readlines()
 	f2.close()
 
+	# percentile
 	identity = []
 	similarity = []
 	gaps = []
+
+	# number
+	nid = []
+	nsm = []
+	ngp = []
+
+	# length
+	alen = []
+
+	idgp = []
+
 	for i in xrange(0, len(lines1)):
 		line1 = lines1[i].strip()
 		a1 = line1.split(' ')
 		line2 = lines2[i].strip()
 		a2 = line2.split(' ')
-		if a1[0][0:17] != a2[0][0:17]:
+		if a1[0][0:9] != a2[0][0:9]:
 			print 'error: unmatched titles: %s - %s' % (a1[0], a2[0])
 			return
+
 		identity.append(float(a1[3])-float(a2[3]))
 		similarity.append(float(a1[5])-float(a2[5]))
 		gaps.append(float(a1[7])-float(a2[7]))
+
+		nid.append(float(a1[2])-float(a2[2]))
+		nsm.append(float(a1[4])-float(a2[4]))
+		ngp.append(float(a1[6])-float(a2[6]))
+
+		alen.append(float(a1[1])-float(a2[1]))
+
+		idgp.append(float(a1[2])/float(a1[6]) - float(a2[2])/float(a2[6]))
 
 	did=np.array(identity)
 	dsm=np.array(similarity)
 	dgp=np.array(gaps)
 
-	print 'identity   +: %d\t-: %d\t.: %d' % ((did>0).sum(), (did<0).sum(), (did==0).sum())
-	print 'similarity +: %d\t-: %d\t.: %d' % ((dsm>0).sum(), (dsm<0).sum(), (dsm==0).sum())
-	print 'gaps       +: %d\t-: %d\t.: %d' % ((dgp>0).sum(), (dgp<0).sum(), (dgp==0).sum())
+	dnid=np.array(nid)
+	dnsm=np.array(nsm)
+	dngp=np.array(ngp)
 
+	dlen=np.array(alen)
+
+	didgp = np.array(idgp)
+	print '\n-------------------------------------------------------------------------'
+	print 'i/g ratio    +: %d\t-: %d\t.: %d' % ((didgp>0).sum(), (didgp<0).sum(), (didgp==0).sum())
+	print 'align length +: %d\t-: %d\t.: %d\n' % ((dlen>0).sum(), (dlen<0).sum(), (dlen==0).sum())
+
+	print '%% identity   +: %d\t-: %d\t.: %d' % ((did>0).sum(), (did<0).sum(), (did==0).sum())
+	print '%% similarity +: %d\t-: %d\t.: %d' % ((dsm>0).sum(), (dsm<0).sum(), (dsm==0).sum())
+	print '%% gaps       +: %d\t-: %d\t.: %d\n' % ((dgp>0).sum(), (dgp<0).sum(), (dgp==0).sum())
+
+	print '# identity   +: %d\t-: %d\t.: %d' % ((dnid>0).sum(), (dnid<0).sum(), (dnid==0).sum())
+	print '# similarity +: %d\t-: %d\t.: %d' % ((dnsm>0).sum(), (dnsm<0).sum(), (dnsm==0).sum())
+	print '# gaps       +: %d\t-: %d\t.: %d' % ((dngp>0).sum(), (dngp<0).sum(), (dngp==0).sum())
+
+
+	print '-------------------------------------------------------------------------\n'
 
 
 

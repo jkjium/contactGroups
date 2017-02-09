@@ -1031,6 +1031,93 @@ def getPDBUniprotMap(mapfile):
 	return posmap
 
 
+# by just using top sdii columns alone to save sdiicol file
+# no structural info considered
+def topsdii2sdiicol():
+	if len(sys.argv)<3:
+		print 'topsdii2sdiicol: selecting MSA column with top sdii value only into .sdiicol file'
+		print 'python utils_msa.py topsdii2sdiicol PF00589_full.txt.rseq PF00589_full.txt.all_2_sdii.4.top'
+		return	
+
+	msafile = sys.argv[2]
+	sdiifile = sys.argv[3]
+	outfile = msafile[0:7]+'.tsdiicol'
+
+	print 'msafile :%s' % msafile
+	print 'sdiifile :%s' % sdiifile
+
+	colset = set()
+	with open(sdiifile) as f:
+		for line in f:
+			if len(line)<2:
+				continue
+			sdiiArray = line.strip().split(' ')
+			for i in sdiiArray[0].split('-'):
+				colset.add(int(i))
+	print 'topsdii2sdiicol():writing %s, sdiicol %d' % (outfile, len(colset))
+	print '%s' % (repr(sorted(colset)))
+
+	fout = open(outfile, 'w')
+	fout.write('%s %s\n' % (msafile, ' '.join([str(c) for c in sorted(colset)])))
+	fout.close()
+
+#by just using residue contact to save msa columns
+def cg2col():
+	if len(sys.argv)<5:
+		print 'cg2col: write selected MSA column into .csdiicol file'
+		print 'python utils_msa.py cg2col 1a0p-A.rpdb.tip.ncg PF00589_full.txt.rseq 1a0p-A-PF00589-XERD_ECOLI.map 2'
+		return
+
+	ncgfile = sys.argv[2] # hcg
+	msafile = sys.argv[3] # msa (full or reduced)
+	resimapfile = sys.argv[4]
+	orderlist = [int(i) for i in sys.argv[6].split(',')]
+	outfile =  msafile[0:7]+'.csdiicol'
+
+
+	print 'ncgfile :%s' % ncgfile
+	print 'msafile :%s' % msafile
+	print 'resimapfile :%s' % resimapfile
+	print 'ncg order list : [%s]' % repr(orderlist)
+
+	# get msa in matrix format
+	m = msa(msafile)
+	msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+
+	#for i in xrange(0, len(seqs)):
+	#	print seqs[i]
+	print 'msa matrix: ' + repr(msaMatrix.shape)
+
+	#rtmap = m.getResiTargetMap(p, target) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
+	rtmap = getPDBUniprotMap(resimapfile) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
+
+	sdiidict = loadsdii(sdiifile) # key: 39-140-210, value = 0.0788593466276019
+	msaGroupArray = ncg2msa(ncgfile, rtmap) # unsorted [[86, 83, 198, 127, 120], [138, 76, 82, 127, 132]]
+
+	# output msa column set
+	colset = set()
+	for i in orderlist:
+		for g in msaGroupArray:
+			rg = g[0:i] # get ith order contact group
+			rg.sort() # for generating key
+			#sdiikey = '-'.join([str(r) for r in rg])
+			#if sdiikey not in sdiidict:
+				#print 'ncg2sdiicol(): discard group: %s for low sdii' % sdiikey
+			#	continue
+			#print (sdiikey, sdiidict[sdiikey])			
+			for resi in rg: # for significant ncg, add corresponding MSA column index
+				colset.add(resi)
+
+	print 'cg2col():writing %s, col %d' % (outfile, len(colset))
+	print '%s' % (repr(sorted(colset)))
+	fout = open(outfile, 'w')
+	#fout.write(' '.join([str(c) for c in colset]))
+	fout.write('%s %s\n' % (msafile, ' '.join([str(c) for c in colset])))
+	fout.close()
+
+
+
+# from possible residue contact
 # select informative sdii columns from MSA and save the column indices into file
 # output: .sdiicol file
 def ncg2sdiicol():
@@ -1210,9 +1297,9 @@ def sdii2blosum():
 
 #
 def applysm():
-	if len(sys.argv) < 5:
+	if len(sys.argv) < 6:
 		print 'applysm: write new sm file'
-		print 'python utils_msa.py applysm untitled_blosum62.txt smlist.txt 0.1 1'
+		print 'python utils_msa.py applysm untitled_blosum62.txt smlist.txt 0.1 1 outfile'
 		return
 	alphabet = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
 
@@ -1220,6 +1307,7 @@ def applysm():
 	newsmfilelist = sys.argv[3]
 	weight = float(sys.argv[4])
 	title = int(sys.argv[5])
+
 
 	fin = open(newsmfilelist, 'r')
 	lines = fin.readlines()
@@ -1236,7 +1324,8 @@ def applysm():
 
 	newblosum = np.rint(origblosum + weight * newsm)
 
-	outfilename = 'combined-'+blosumfile+'.'+sys.argv[4]+'.sm'
+	#outfilename = 'combined-'+blosumfile+'.'+sys.argv[4]+'.sm'
+	outfilename = sys.argv[6]
 	if title==1:
 		fout = open(outfilename, 'w')
 		fout.write('   '+'  '.join(alphabet)+'\n')
@@ -1256,7 +1345,8 @@ def main():
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
 		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
-		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum, 'findfamiliar':findfamiliar,'extractnseq':extractnseq
+		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum, 'findfamiliar':findfamiliar,'extractnseq':extractnseq,
+		'topsdii2sdiicol':topsdii2sdiicol
 	}
 
 	if len(sys.argv)<2:
