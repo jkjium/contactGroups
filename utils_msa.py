@@ -1131,7 +1131,8 @@ def ncg2sdiicol():
 	sdiifile = sys.argv[4] # sdii
 	resimapfile = sys.argv[5]
 	orderlist = [int(i) for i in sys.argv[6].split(',')]
-	outfile =  msafile[0:7]+'.sdiicol'# new substitution matrix
+	outStringArray = sdiifile.split('.')
+	outfile =  msafile[0:7]+'.'+outStringArray[-1]+'.msacol' # new substitution matrix
 
 
 	print 'ncgfile :%s' % ncgfile
@@ -1168,7 +1169,7 @@ def ncg2sdiicol():
 			for resi in rg: # for significant ncg, add corresponding MSA column index
 				colset.add(resi)
 
-	print 'ncg2sdiicol():writing %s, sdiicol %d' % (outfile, len(colset))
+	print 'ncg2sdiicol():writing %s, col %d' % (outfile, len(colset))
 	print '%s' % (repr(sorted(colset)))
 	fout = open(outfile, 'w')
 	#fout.write(' '.join([str(c) for c in colset]))
