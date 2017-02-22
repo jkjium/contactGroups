@@ -56,6 +56,45 @@ class msa(object):
 			print
 		print '%d sequence in total' % len(self.msaArray)
 
+
+	# given fasta name (include residue range)
+	# return posmap[resi] = position (start from 0) and msa sequence for checking
+	# work on the first occurrence
+	def getPosMapbyName(self, name):
+		start_idx = -1 
+		for fa in self.msaArray:
+			if name in fa[0]:
+				# header format: UPAR_MOUSE/215-294
+				ridx = fa[0].index('/')+1
+				rangeArray = fa[0][ridx:].split('-')
+				start_idx = int(rangeArray[0])
+				end_idx = int(rangeArray[1])
+				msaseq = fa[1]
+				#print '%s, start: %d, end: %d' % (fa[0], start_idx, end_idx)
+				break				
+
+		if start_idx == '':
+			print 'msa::getPosMapbyName(): Can not find start residue ID for %s' % seqname
+			exit()
+
+		posmap = {}
+		for i in xrange(0, len(msaseq)):
+			if msaseq[i] == '.':
+				continue
+			else:
+				posmap[start_idx] = i
+				start_idx+=1
+
+		if start_idx!=(end_idx+1):
+			print 'msa::getPosMapbyName(): error end index (+1): %d vs %d in header' % (start_idx, end_idx+1)
+			exit()
+
+		return (posmap, msaseq)
+
+
+
+
+
 	# delegated
 	# ! pdb sequence can be different from target sequence in MSA
 	# given pdb sequence and target in msa
