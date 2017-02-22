@@ -6,19 +6,22 @@ import numpy as np
 # output a flat csv file
 '''
 $1:  file name
-$2:  aligned sequence length
-$3:  identity number
-$4:  identity percentile 
-$5:  similarity number
-$6:  similarity percentile
-$7:  gaps number
-$8:  gaps percentile
-$9:  align score
-$10:  seq A pure length
-$11: aligned seq A
-$12: seq B pure length
-$13: aligned seq B
+$2:  gap open penalty
+$3:  gap extend penalty
+$4:  aligned sequence length
+$5:  identity number
+$6:  identity percentile
+$7:  similarity number
+$8:  similarity percentile
+$9:  gaps number
+$10: gaps percentile
+$11: align score
+$12: seq A pure length
+$13: aligned seq A
+$14: seq B pure length
+$15: aligned seq B
 '''
+
 
 
 def main():
@@ -63,17 +66,17 @@ def main():
 			print 'error: unmatched titles: %s - %s' % (a1[0], a2[0])
 			return
 
-		identity.append(float(a1[3])-float(a2[3]))
-		similarity.append(float(a1[5])-float(a2[5]))
-		gaps.append(float(a1[7])-float(a2[7]))
+		identity.append(float(a1[5])-float(a2[5]))
+		similarity.append(float(a1[7])-float(a2[7]))
+		gaps.append(float(a1[9])-float(a2[9]))
 
-		nid.append(float(a1[2])-float(a2[2]))
-		nsm.append(float(a1[4])-float(a2[4]))
-		ngp.append(float(a1[6])-float(a2[6]))
+		nid.append(float(a1[4])-float(a2[4]))
+		nsm.append(float(a1[6])-float(a2[6]))
+		ngp.append(float(a1[8])-float(a2[8]))
 
-		alen.append(float(a1[1])-float(a2[1]))
+		alen.append(float(a1[3])-float(a2[3]))
 
-		idgp.append(float(a1[2])/float(a1[6]) - float(a2[2])/float(a2[6]))
+		idgp.append(float(a1[4])/float(a1[8]) - float(a2[4])/float(a2[8]))
 
 	did=np.array(identity)
 	dsm=np.array(similarity)
