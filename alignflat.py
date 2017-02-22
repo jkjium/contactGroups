@@ -73,6 +73,7 @@ class alignflat(object):
 		self.totalnid = 0
 		self.totalnsm = 0
 		self.totalngp = 0
+		self.totalres = 0
 		with open(flatfile) as f:
 			for line in f:
 				if len(line)<2:
@@ -81,6 +82,9 @@ class alignflat(object):
 				self.totalnid+=p.nid
 				self.totalnsm+=p.nsm
 				self.totalngp+=p.ngp
+				
+				self.totalres+=p.seqAlen
+				self.totalres+=p.seqBlen
 				#p.dump()
 				self.flatArray.append(p)
 		#print '%s: %d alignments loaded' % (self.name, len(self.flatArray))

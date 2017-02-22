@@ -3,10 +3,10 @@ from alignflat import alignflat
 
 def printtotal():
 	if len(sys.argv) < 3:
-		print 'python utils_alignflat.py sandbox test.allflat'
+		print 'python utils_alignflat.py printtotal test.allflat'
 		return	
 	af = alignflat(sys.argv[2])
-	print '%d %d %d %f' % (af.totalnid, af.totalnsm, af.totalngp, 1.0*af.totalnid/af.totalngp)
+	print '%d %d %d %f %d' % (af.totalnid, af.totalnsm, af.totalngp, 1.0*af.totalnid/af.totalngp, af.totalres)
 
 
 def dump():
