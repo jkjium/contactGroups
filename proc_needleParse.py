@@ -78,12 +78,32 @@ def main():
 	i = 0
 	out = []
 	out.append(alignfile)
+
 	while i<len(lines):
 		#print lines[i]
 		line = lines[i].strip()
 		i+=1
 		if len(line) < 1:
 			continue
+
+		# Gap_penalty: 10.0
+		if 'Gap_penalty:' in line:
+			 tsvline = ' '.join(line.split()) 
+			 strArray = tsvline.split(' ')
+			 gapopen = strArray[2]
+			 out.append(gapopen)
+			 print 'Gap_penalty: %s' % gapopen
+			 continue
+
+		# Extend_penalty: 0.5			 
+		if 'Extend_penalty:' in line:
+			 tsvline = ' '.join(line.split()) 
+			 strArray = tsvline.split(' ')
+			 gapextend = strArray[2]
+			 out.append(gapextend)
+			 print 'Extend_penalty: %s' % gapextend
+			 continue			
+
 		# Length: 451
 		if 'Length:' in line:
 			 tsvline = ' '.join(line.split()) 
@@ -144,7 +164,7 @@ def main():
 		# > ..
 		if '>' == line[0]:
 			fastaline, index = parseFasta(lines, i) # parse fasta sequence from the ith line
-			out.append(('%d' % len(fastaline.strip('-')))) # pure sequence length
+			out.append(('%d' % len(fastaline.replace('-', '')))) # pure sequence length
 			out.append(fastaline)
 			i = index 
 			print 'seq: %s ... len: %d' % (fastaline[0:5], len(fastaline))
