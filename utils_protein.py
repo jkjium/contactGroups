@@ -119,7 +119,7 @@ def dumpseqflat():
 	pdbfile = sys.argv[2]
 	chain = sys.argv[3]
 	p = protein(pdbfile, chain=chain)
-	print '%s %s' % (pdbfile, p.seq)
+	print '%d %s %s' % (len(p.seq), pdbfile, p.seq)
 
 
 def main():
