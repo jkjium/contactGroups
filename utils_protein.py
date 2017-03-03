@@ -109,6 +109,18 @@ def writetip():
 	p.writeTips('AAtips.def',outfile)
 
 
+def dumpseqflat():
+	if len(sys.argv) < 4:
+		print 'Printout sequence in flat foramt: [seq name] [sequence]'
+		print 'python utils_protein.py seqflat pdbfile chain'
+		print 'python utils_protein.py seqflat 2gag.pdb A'
+		return
+
+	pdbfile = sys.argv[2]
+	chain = sys.argv[3]
+	p = protein(pdbfile, chain=chain)
+	print '%s %s' % (pdbfile, p.seq)
+
 
 def main():
 	if len(sys.argv)<2:
@@ -116,7 +128,7 @@ def main():
 		return
 
 	dispatch = {
-		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip
+		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat
 	}
 
 	cmd = sys.argv[1]
