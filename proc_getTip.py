@@ -18,7 +18,7 @@ def main():
         pdb_filename=line
         print pdb_filename
         p=protein(pdb_filename)
-        p.writeChainATips('AAtips.def',line+'.tip')
+        p.writeChainATips('AAtips.py',line+'.tip')
 
     pass
 if __name__=="__main__":

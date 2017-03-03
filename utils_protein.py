@@ -106,7 +106,7 @@ def writetip():
 	print 'writetip(): outfile: %s' % outfile
 
 	p = protein(pdbfile)
-	p.writeTips('AAtips.def',outfile)
+	p.writeTips('AAtips.py',outfile)
 
 
 def dumpseqflat():
