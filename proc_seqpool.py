@@ -97,7 +97,7 @@ def main():
 		if r <= 0.3: 
 			ret = sp.check_output(['./aln.sh',si,sj])
 			#print ret
-			strpid= ret[ret.index('(')+1:ret.index('%')]
+			strpid= ret[ret.index('(')+1:ret.index('%')].strip()
 			pid = float(strpid) # get identity percentage
 			#print '[%d] - i: %d j: %d r: %.2f pid: %.2f ' % (count, i,j,r,pid)
 			#print 'i: %d len(si): %d ni: %s\n%s' % (i, len(si), ni, si)

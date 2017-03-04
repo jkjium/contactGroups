@@ -112,8 +112,8 @@ def writetip():
 def dumpseqflat():
 	if len(sys.argv) < 4:
 		print 'Printout sequence in flat foramt: [seq name] [sequence]'
-		print 'python utils_protein.py seqflat pdbfile chain'
-		print 'python utils_protein.py seqflat 2gag.pdb A'
+		print 'python utils_protein.py dumpseqflat pdbfile chain'
+		print 'python utils_protein.py dumpseqflat 2gag.pdb A'
 		return
 
 	pdbfile = sys.argv[2]
