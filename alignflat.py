@@ -3,7 +3,7 @@ import math
 import time
 import sys
 
-__all__=['alignflat']
+__all__=['alignflat', 'palign']
 
 '''
 $1:  file name
@@ -25,29 +25,33 @@ $15: aligned seq B
 class palign(object):
 	def __init__(self, flatStr):
 		flatArray = flatStr.split(' ')
-		if len(flatArray)!= 15:
-			print 'Invalid flat string: \n'
+		if len(flatArray)!= 17:
+			print 'Invalid flat string len: %d\n' % len(flatArray)
 			print flatStr
 			exit(1)
 		self.name = flatArray[0]
-		self.gapopen = float(flatArray[1])
-		self.gapextend = float(flatArray[2])
-		self.alignlen = float(flatArray[3])
-		self.nid = float(flatArray[4])
-		self.pid = float(flatArray[5])
-		self.nsm = float(flatArray[6])
-		self.psm = float(flatArray[7])
-		self.ngp = float(flatArray[8])
-		self.pgp = float(flatArray[9])
-		self.score = float(flatArray[10])
-		self.seqAlen = float(flatArray[11])
-		self.seqA = flatArray[12]
-		self.seqBlen = float(flatArray[13])
-		self.seqB = flatArray[14]
+		self.program = flatArray[1]
+		self.matrix = flatArray[2]
+		self.gapopen = float(flatArray[3])
+		self.gapextend = float(flatArray[4])
+		self.alignlen = float(flatArray[5])
+		self.nid = float(flatArray[6])
+		self.pid = float(flatArray[7])
+		self.nsm = float(flatArray[8])
+		self.psm = float(flatArray[9])
+		self.ngp = float(flatArray[10])
+		self.pgp = float(flatArray[11])
+		self.score = float(flatArray[12])
+		self.seqAlen = float(flatArray[13])
+		self.seqA = flatArray[14]
+		self.seqBlen = float(flatArray[15])
+		self.seqB = flatArray[16]
 
 	def dump(self):
 		print '\n-----------------------------'
 		print 'name: %s' % self.name
+		print 'program: %s' % self.program
+		print 'matrix: %s' % self.matrix
 		print 'gap open penalty: %f' % self.gapopen
 		print 'gap extend penalty: %f' % self.gapextend
 		print 'alignment length: %d' % self.alignlen

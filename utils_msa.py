@@ -1339,6 +1339,38 @@ def applysm():
 		print 'write: %s without title' % (outfilename)
 
 
+def combinesm():
+	if len(sys.argv) < 7:
+		print 'combinsm: write new sm file with improved weighting scheme'
+		print 'python utils_msa.py combinesm untitled_blosum62 newsm.txt 0.5 0.8 title=1 outfile'
+		return
+	alphabet = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
+
+	blosumfile = sys.argv[2]
+	newsmfile = sys.argv[3]
+	w1 = float(sys.argv[4])
+	w2 = float(sys.argv[5])
+	title = int(sys.argv[6])
+
+	origblosum = np.loadtxt(blosumfile)
+	newsm = np.loadtxt(newsmfile)
+
+	newblosum = np.rint(w1*origblosum + w2 * newsm)
+
+	#outfilename = 'combined-'+blosumfile+'.'+sys.argv[4]+'.sm'
+	outfilename = sys.argv[7]
+	if title==1:
+		fout = open(outfilename, 'w')
+		fout.write('   '+'  '.join(alphabet)+'\n')
+		for i in xrange(0, newblosum.shape[0]):
+			fout.write(alphabet[i]+' '+' '.join(['%2i'%n for n in newblosum[i,:]])+'\n')
+		fout.close()
+		print 'write: %s with title' % (outfilename)
+	else:
+		np.savetxt(outfilename, newblosum, fmt='%2i', delimiter=' ')
+		print 'write: %s without title' % (outfilename)
+
+
 #######################################################################################################
 def main():
 
@@ -1347,7 +1379,7 @@ def main():
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
 		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
 		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum, 'findfamiliar':findfamiliar,'extractnseq':extractnseq,
-		'topsdii2sdiicol':topsdii2sdiicol
+		'topsdii2sdiicol':topsdii2sdiicol, 'combinesm':combinesm
 	}
 
 	if len(sys.argv)<2:
