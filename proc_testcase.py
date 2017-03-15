@@ -187,27 +187,27 @@ def printpair():
 
 # output all flat files 
 def alignpool(seqpool, param):
-	#flatfile = '%s.%s_%s_%s_%s.align.flat' % (seqpool, param[0], param[1], param[2], param[3])
+	flatfile = '%s.%s_%s_%s_%s.align.flat' % (seqpool, param[0], param[1], param[2], param[3])
 	#print 'save to: %s' % flatfile
 	identity = 0
 	similarity = 0
 	gaps = 0
 
 
-	#fout = open(flatfile, 'w')
+	fout = open(flatfile, 'w')
 	with open(seqpool) as fp:
 		for line in fp:
 			name = line.strip()
 			ret = align_exec(name, param[0], param[1], param[2], param[3]) # needle, B62, 10, 0.5
 			flat = alignparse(name, ret)
-			#fout.write('%s\n' % flat)
+			fout.write('%s\n' % flat)
 
 			ap = palign(flat)
 			identity+=ap.nid
 			similarity+=ap.nsm
 			gaps+=ap.ngp
 
-	#fout.close()
+	fout.close()
 	print '%d %d %d %s %s %s %s %s' % (identity, similarity, gaps, seqpool, param[0], param[1], param[2], param[3])
 
 
