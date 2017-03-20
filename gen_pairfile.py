@@ -6,6 +6,7 @@ def readseq(seqfile):
 		line = f.readline()
 		return line.strip()
 
+# iterate and write all the combination files
 def iteratepair():
         if len(sys.argv) < 3:
                 print 'Usage: python gen_pairfile.py seqfilelist'
@@ -33,28 +34,51 @@ def iteratepair():
         print '%d files generated.' % count
 
 
+# output a list of pair files
+# without inlcuding any pair from exclude list
+# pair name in 'p.%s-%s.seq' format
+# exclude line in '%s %s' format
 def randompair():
-        if len(sys.argv) < 5:
-                print 'Usage: python gen_pairfile.py randompair pairfile number outfile'
+        if len(sys.argv) < 6:
+                print 'Usage: python gen_pairfile.py randompair pairfile excludelist number outfile'
                 return
 
 	pairfile = sys.argv[2]
-	num = int(sys.argv[3])
-	outfile = sys.argv[4]
+        excludefile = sys.argv[3]
+	num = int(sys.argv[4])
+	outfile = sys.argv[5]
 
 	pairlist = []
 	with open(pairfile) as f:
 		for line in f:
+                        if len(line)<2:
+                                continue
 			pairlist.append(line.strip())
 	print '%d pair names loaded. ' % len(pairlist)
 
-	indexlist = random.sample(range(len(pairlist)), num)
+        excludelist = []
+        with open(excludefile) as f:
+                for line in f:
+                        if len(line)<2:
+                                continue
+                        line = line.strip()
+                        nameArray = line.split(' ')
+                        name = 'p.%s-%s.seq' % (nameArray[0], nameArray[1])
+                        excludelist.append(name)
+        print '%d exclude pair names loaded. ' % len(excludelist)
+
+        count=0
+	indexlist = random.sample(range(len(pairlist)), num+len(excludelist))
 	fout = open(outfile,'w')
 	for i in indexlist:
+                if pairlist[i] in excludelist:
+                        print 'skip pair: %s' % pairlist[i]
+                        continue
 		fout.write('%s\n' % pairlist[i])
+                count+=1
 	fout.close()
 	
-	print '%d pairs written.' % len(indexlist)
+	print '%d pairs written.' % count
 		
 
 
