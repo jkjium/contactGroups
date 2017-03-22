@@ -91,7 +91,7 @@ def writeseq():
 
 	p = protein(pdbfile)
 	fout = open(outfile, 'w')
-	fout.write(p.seq+'\n')
+	fout.write(p.seq.lower()+'\n')
 	fout.close()
 
 def writetip():
@@ -107,6 +107,19 @@ def writetip():
 
 	p = protein(pdbfile)
 	p.writeTips('AAtips.py',outfile)
+
+
+def writeca():
+	if len(sys.argv) < 4:
+		print 'writeca(): extract ca atoms from all atom pdb and save to a file'
+		print 'writeca(): python utils_protein.py writeca pdbfile outcafile'
+		print 'writeca(): output: outcafile'
+		return
+
+	pdbfile = sys.argv[2]
+	p = protein(pdbfile)
+	p.writeCA(sys.argv[3])
+	print 'writeca(): %s' % sys.argv[3]
 
 
 def dumpseqflat():
@@ -128,7 +141,8 @@ def main():
 		return
 
 	dispatch = {
-		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat
+		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
+		'writeca':writeca
 	}
 
 	cmd = sys.argv[1]

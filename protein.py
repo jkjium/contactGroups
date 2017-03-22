@@ -42,7 +42,9 @@ class protein(object):
         fin=open(pdbname, 'r')
         lines=fin.readlines()
         fin.close()
-        
+       
+        lastname =''
+        lastres = ''
         aamap = AAmap()
         for i in xrange(0,len(lines)):
             line = lines[i]
@@ -54,8 +56,16 @@ class protein(object):
             if self.chain != 'all':
                 if (self.chain != line[21]):
                     continue
-            if line[0:6]=='ATOM  ' and (line[16]==' ' or line[16]=='A'): # to avoid alternative location
-                self.atoms.append(atom(lines[i]))
+            if line[0:6]=='ATOM  ':
+                at = atom(lines[i])
+                if (at.name == lastname) and (at.resSeq == lastres):
+                    print 'alter loc: %s' % lines[i]
+                    #if (line[16]==' ' or line[16]=='A'): # to avoid alternative location
+                    continue
+                else:
+                    self.atoms.append(at)
+                    lastname = at.name
+                    lastres = at.resSeq
 
         # map for Chain+Resi : (index in sequence, ResName)
         # 'B529': (132, 'V')
@@ -81,7 +91,7 @@ class protein(object):
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
             print a.getCoor()
- 
+
     # return sequence extracted from pdb file
     # assign values for self.resDict['B641'] = (seqpos, 'R')
     def getSeq(self):

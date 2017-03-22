@@ -47,6 +47,14 @@ class palign(object):
 		self.seqBlen = float(flatArray[15])
 		self.seqB = flatArray[16]
 
+	# return the names of the paired sequences
+	# p.1aoe-1kmv.seq
+	def pairnames(self):
+		strArr = self.name.split('.')
+		nameArr = strArr[1].split('-')
+		return (nameArr[0], nameArr[1])
+
+
 	def dump(self):
 		print '\n-----------------------------'
 		print 'name: %s' % self.name

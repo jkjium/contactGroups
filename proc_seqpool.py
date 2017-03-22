@@ -16,6 +16,10 @@ def main():
 		print 'Usage: python proc_seqpool.py 2m.4m.flat 30-100 2000000 50000 1'
 		return
 
+	for p in sys.argv:
+		print p,
+	print ''
+
 	dbname = sys.argv[1]
 	cutoffArray = sys.argv[2].split('-')
 	if len(cutoffArray)!=2:
@@ -27,9 +31,6 @@ def main():
 	numlimit = int(sys.argv[4])
 	bucket = int(sys.argv[5]) 
 
-	for p in sys.argv:
-		print p,
-	print ''
 
 	print 'searching db:    %s' % dbname
 	print 'searching range: %%%.1f - %%%.1f' % (cmin, cmax)
@@ -91,42 +92,43 @@ def main():
 			nj,sj = fetchseq(dbname, j)
 
 
-		r = 1.0*abs(len(si)-len(sj))/min(len(si),len(sj))
+		#r = 1.0*abs(len(si)-len(sj))/min(len(si),len(sj))
 		#print 'r: %.3f' % r
 
-		if r <= 0.3: 
-			ret = sp.check_output(['./aln.sh',si,sj])
-			#print ret
-			strpid= ret[ret.index('(')+1:ret.index('%')].strip()
-			pid = float(strpid) # get identity percentage
-			#print '[%d] - i: %d j: %d r: %.2f pid: %.2f ' % (count, i,j,r,pid)
-			#print 'i: %d len(si): %d ni: %s\n%s' % (i, len(si), ni, si)
-			#print 'j: %d len(sj): %d nj: %s\n%s\n' % (j, len(sj), nj, sj)
+		#if r <= 0.3: 
+		ret = sp.check_output(['./aln.sh',si,sj])
+		#print ret
+		strpid= ret[ret.index('(')+1:ret.index('%')]
+		pid = float(strpid) # get identity percentage
+		strpid = '%02d' % pid
+		#print '[%d] - i: %d j: %d pid: %.2f ' % (count, i,j,pid)
+		#print 'i: %d len(si): %d ni: %s\n%s' % (i, len(si), ni, si)
+		#print 'j: %d len(sj): %d nj: %s\n%s\n' % (j, len(sj), nj, sj)
 
-			# writing pair into file
-			if pid <= cmax and pid > cmin :
-				outname = 'p.%s.%s.%s' % (ni,nj,strpid[0])
-				print '[%d] - i: %d j: %d r: %.2f pid: %.2f - [%s]' % (count, i,j,r,pid,outname)
+		# writing pair into file
+		if pid <= cmax and pid > cmin :
+			outname = 'p.%s.%s.%s' % (ni,nj,strpid[0])
+			print '[%d] - i: %d j: %d pid: %.2f - [%s]\n' % (count, i,j,pid,outname)
 
-				fout = open(outname, 'w')
-				fout.write('%s %s' % (si, sj))
-				fout.close()		
+			fout = open(outname, 'w')
+			fout.write('%s %s' % (si, sj))
+			fout.close()		
 
-				count+=1
-			else:
-				# not in the identity range
-				# keep i unchanged
-				forwardflag = False
-				#print '%d %d pid: %.1f' % (i, j, pid)
-				tag+=1
-				if tag%100==0:
-					print '.',
-					sys.stdout.flush()
-				'''
-				print 'i: %d len(si): %d ni: %s\n%s' % (i, len(si), ni, si)
-				print 'j: %d len(sj): %d nj: %s\n%s\n' % (j, len(sj), nj, sj)
-				'''
-
+			count+=1
+		else:
+			# not in the identity range
+			# keep i unchanged
+			forwardflag = False
+			#print '%d %d pid: %.1f' % (i, j, pid)
+			#tag+=1
+			#if tag%100==0:
+			#	print '.',
+			#	sys.stdout.flush()
+			'''
+			print 'i: %d len(si): %d ni: %s\n%s' % (i, len(si), ni, si)
+			print 'j: %d len(sj): %d nj: %s\n%s\n' % (j, len(sj), nj, sj)
+			'''
+		'''
 		else: # not in the same length level
 			# forward i
 			forwardflag = True
@@ -135,10 +137,7 @@ def main():
 				print '+',
 				sys.stdout.flush()
 			print '%d %d r: %.1f' % (i, j, r)
-			'''
-			print 'i: %d len(si): %d ni: %s\n%s' % (i, len(si), ni, si)
-			print 'j: %d len(sj): %d nj: %s\n%s\n' % (j, len(sj), nj, sj)
-			'''
+		'''
 
 		j+=1
 		if count == numlimit:
