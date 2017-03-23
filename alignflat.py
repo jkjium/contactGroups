@@ -29,12 +29,13 @@ class palign(object):
 			print 'Invalid flat string len: %d\n' % len(flatArray)
 			print flatStr
 			exit(1)
+		self.flatstr = flatStr
 		self.name = flatArray[0]
 		self.program = flatArray[1]
 		self.matrix = flatArray[2]
 		self.gapopen = float(flatArray[3])
 		self.gapextend = float(flatArray[4])
-		self.alignlen = float(flatArray[5])
+		self.alignlen = int(flatArray[5])
 		self.nid = float(flatArray[6])
 		self.pid = float(flatArray[7])
 		self.nsm = float(flatArray[8])
@@ -48,13 +49,22 @@ class palign(object):
 		self.seqB = flatArray[16]
 
 	# return the names of the paired sequences
-	# p.1aoe-1kmv.seq
+	# p.1aoe.1kmv.seq
 	def pairnames(self):
 		strArr = self.name.split('.')
-		nameArr = strArr[1].split('-')
-		return (nameArr[0], nameArr[1])
+		return (strArr[1], strArr[2])
 
+	# return index list for aligned positions
+	# non-gap positions
+	def alnpos(self):
+		gap = ['.', '-']
+		poslist = []
+		for i in xrange(0, self.alignlen):
+			if (self.seqA[i] not in gap) and (self.seqB[i] not in gap):
+				poslist.append(i)
+		return poslist
 
+	# dump object to stdout
 	def dump(self):
 		print '\n-----------------------------'
 		print 'name: %s' % self.name

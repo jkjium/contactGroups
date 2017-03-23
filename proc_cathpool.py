@@ -29,7 +29,7 @@ def main():
 	total = int(sys.argv[4])
 	#the switch fold class level: 1: C, 2:A, 3:T, 4:H'
 	fold = int(sys.argv[5])
-	outfile = 'cathpair.%dp.%dn.list' % (cutoff, total)
+	outfile = '%s.%dp.%dn.list' % (dbname, cutoff, total)
 
 	for p in sys.argv:
 		print p,

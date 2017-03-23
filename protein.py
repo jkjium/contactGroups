@@ -37,7 +37,7 @@ class protein(object):
         self.desc = desc
         
         self.nbcutoff = nbcutoff
-        
+        self.ca = []
         
         fin=open(pdbname, 'r')
         lines=fin.readlines()
@@ -64,6 +64,8 @@ class protein(object):
                     continue
                 else:
                     self.atoms.append(at)
+                    if at.name.strip()=='CA':
+                        self.ca.append(at)
                     lastname = at.name
                     lastres = at.resSeq
 

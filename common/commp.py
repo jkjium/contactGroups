@@ -17,6 +17,7 @@ def rmsd(v, w):
 # given two strings
 # normal sequence & aligned sequence
 # return map 1. key=1  pos[s1] = s2; 2. key=2 pos[s2] = s1
+# s1: aligned string index, s2: pdb sequence index
 def posmap(s1, s2, key=1):
 	gap = ['.', '-', '_']
 	ps1 = s1.translate(None, ''.join(gap))

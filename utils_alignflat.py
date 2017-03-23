@@ -1,5 +1,6 @@
 import sys
-from alignflat import alignflat
+#from alignflat import alignflat
+from common.alignflat import alignflat
 
 def printtotal():
 	if len(sys.argv) < 3:
