@@ -71,7 +71,7 @@ def main():
 	# write outlist into file
 	fout = open(outfile, 'w')			
 	for p in outlist:
-		fout.write(p.flatstr+'\n')
+		fout.write(p.name+'\n')
 	fout.close()
 
 	print '%d unique pairs saved to %s' % (len(outlist), outfile)
