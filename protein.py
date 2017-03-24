@@ -74,6 +74,10 @@ class protein(object):
         self.resDict = {} # assigned in self.getSeq() function
         self.seq, self.resArray = self.getSeq()
 
+        # some residue does not have CA!! 1e6i.aln.pdb the last residue
+        aamap = AAmap()
+        self.seq = ''.join([aamap.getAAmap(a.resName) for a in self.ca])
+
         # map for sequence index: Chain+Resi(ResName)
         # 132 : 'B529(V)'
         self.seqDict = {-1: '.'}

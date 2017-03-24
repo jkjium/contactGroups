@@ -27,7 +27,7 @@ def posmap(s1, s2, key=1):
 	if ps1!=ps2:
 		print 'error: not homo-str'
 		print 'ps1: %s\nps2: %s' % (ps1, ps2)
-		exit(1)
+		return False
 
 	i=0
 	j=0
@@ -49,7 +49,7 @@ def posmap(s1, s2, key=1):
 
 	if len(retmap)!=len(ps1):
 		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
-		exit(1)
+		return False
 
 	'''
 	print 's1:%s\ns2:%s' % (s1,s2)

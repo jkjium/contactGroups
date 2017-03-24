@@ -64,6 +64,22 @@ class palign(object):
 				poslist.append(i)
 		return poslist
 
+	def alnposlist(self):
+		gap = ['.', '-']
+		setlist = []
+		start = 0
+		forward = 0
+		for i in xrange(0, self.alignlen):
+			if (self.seqA[i] not in gap) and (self.seqB[i] not in gap):
+				forward = i
+			else:
+				if forward > start:
+					setlist.append([k for k in xrange(start+1, forward+1)])
+				start = i 
+		#print repr(setlist)
+		return setlist
+
+
 	# dump object to stdout
 	def dump(self):
 		print '\n-----------------------------'
