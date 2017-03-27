@@ -110,6 +110,32 @@ def getresset():
 	print p.seq
 
 
+def dumpdii():
+	if len(sys.argv) < 4:
+		print 'dumpdii(): python utils_sdii.py dumpdii scorefile 0,1,2'
+		print 'varlist must contain at least 3 variables'
+		return
+
+	scorefile = sys.argv[2]
+	varliststr=sys.argv[3]
+
+	varlist = [int(i) for i in varliststr.split(',')]
+	if len(varlist)< 3:
+		print 'varlist must contain at least 3 variables'
+		return
+
+	print 'varlist: %s' % repr(varlist)
+
+	score = np.loadtxt(scorefile, delimiter=',')
+	print 'score: %s' % repr(score)
+
+	s = sdii(score)
+	d = s.deltaN(varlist)
+	#print repr(d)
+	for k in s.deltaN(varlist):
+		print '%s: %f' % (k, d[k])
+
+
 def entropy():
 	if len(sys.argv) < 4:
 		print 'entropy(): python utils_sdii.py entropy scorefile 0,1'
@@ -138,11 +164,13 @@ def main():
 		return
 
 	dispatch = {
-		'getresset': getresset, 'tripletstat': tripletstat, 'entropy':entropy
+		'getresset': getresset, 'tripletstat': tripletstat, 'entropy':entropy, 'dumpdii':dumpdii
 	}
 
 	cmd = sys.argv[1]
 
+	if cmd not in dispatch:
+		print 'invalid cmd string: %s' % cmd
 	for key in dispatch:
 		if key == cmd:
 			dispatch[key]()

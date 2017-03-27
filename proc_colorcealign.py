@@ -13,6 +13,7 @@ def main():
 	identifier = sys.argv[2]
 	outfile = '%s.pml' % flatfile
 
+	'''
 	colormap = ['[0.4023, 0, 0.1211]',
 				'[0.5508, 0.0469, 0.1445]',
 				'[0.6953, 0.0938, 0.1680]',
@@ -34,22 +35,33 @@ def main():
 				'[0.1289, 0.3984, 0.6719]',
 				'[0.0742, 0.2930, 0.5234]',
 				'[0.0195, 0.1875, 0.3789]']
+	'''
+	colormap = ['[0.5625,0.3828,0.6641]',
+				'[0.9766,0.6484,0.7266]',
+				'[0.5758,0.6969,0.6148]',
+				'[0.4109,0.5828,0.9375]',
+				'[0.6445,0.5156,0.4688]',
+				'[0.5531,0.2094,0.2836]',
+				'[0.9438,0.8734,0.5828]',
+				'[0.5117,0.5000,0.6133]']
 
 	fout = open(outfile, 'w')
 	#fout.write('bg_color white\n')
-	fout.write('set ribbon_smooth, 2\n')
-	fout.write('set ribbon_width, 4\n')
+	#fout.write('set ribbon_smooth, 2\n')
+	#fout.write('set ribbon_width, 6\n')
+	#fout.write('cartoon tube\n')
 	fout.write('set sphere_scale, .5\n')
 	for c in xrange(0, len(colormap)):
 		fout.write('set_color kc%d, %s\n' % (c, colormap[c] ))
 
+	count =0
 	with open(flatfile) as fp:
 		for line in fp:
 			pml = []
 
 			pa = palign(line.strip())
 
-			print '%s:\n%s\n%s\n' % (pa.name, pa.seqA, pa.seqB)
+			#print '%s:\n%s\n%s\n' % (pa.name, pa.seqA, pa.seqB)
 			pdbs = pa.pairnames()
 
 			p1 = protein(pdbs[0]+'.aln.pdb')
@@ -57,7 +69,7 @@ def main():
 			if rmap1 == False:
 				continue
 			pml.append('load %s.aln.pdb' % pdbs[0])
-			pml.append('color smudge, %s.aln' % pdbs[0])
+			pml.append('color gray90, %s.aln' % pdbs[0])
 
 			p2 = protein(pdbs[1]+'.aln.pdb')
 			rmap2 = cp.posmap(pa.seqB.upper(), p2.seq.upper())
@@ -65,9 +77,10 @@ def main():
 				continue
 
 			pml.append('load %s.aln.pdb' % pdbs[1])
-			pml.append('color forest, %s.aln' % pdbs[1])
+			pml.append('color gray90, %s.aln' % pdbs[1])
 
-			pml.append('as ribbon')
+			pml.append('cartoon tube')
+			pml.append('as cartoon')
 			pml.append('show sphere, name ca')
 
 			posset = pa.alnposlist()
@@ -91,7 +104,9 @@ def main():
 			pml.append('delete all')
 
 			fout.write('%s\n' % '\n'.join(pml))
-	
+			count+=1
+			print '%d alns processed.' % count
+	print 'save to: %s'	% outfile
 	fout.close()
 
 if __name__ == '__main__':

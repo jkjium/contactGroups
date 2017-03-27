@@ -142,6 +142,27 @@ class sdii(object):
 		return -iiv
 
 
+	def deltaN(self, varset):
+		dii = {}
+		n = len(varset)
+
+		subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
+		#print 'deltaN_bar()::varset: %s, subsets: %s' % (repr(varset), repr(subsets))
+		# varset = Set([2,4,6])
+		# [(), (2,), (4,), (6,), (2, 4), (2, 6), (4, 6), (2, 4, 6)]		
+		for index in varset:
+			deltaX = 0.0
+			#subsets = list(itertools.chain.from_iterable(itertools.combinations(varset, i) for i in range(len(varset)+1)))
+			for tau in subsets:
+				if index in tau:
+					# non hashing version
+					# deltaX+=math.pow(-1, len(tau)+1)*entropy(data[:,tau].T)
+					deltaX+=self.signed_entropy(self.data[:,tau].T, tau) # always hash
+			key = '%s\\%d' % (repr(tau), index)
+			dii[key] = deltaX
+		return dii
+
+
 	# dependence calculation
 	# for a speicific variable set e.g. (X1, X2, X3)
 	def deltaN_bar(self, varset):
