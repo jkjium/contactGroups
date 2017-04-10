@@ -8,7 +8,7 @@ def rmsd(v, w):
 	if len(v) != len(w):
 		print 'error: vector length mismatch. v: %d w: %d' % (len(v), len(w))
 		exit(1)
-	print repr(v), repr(w)
+	#print repr(v), repr(w)
 	d = [((v[i][0]-w[i][0])*(v[i][0]-w[i][0]) + (v[i][1]-w[i][1])*(v[i][1]-w[i][1]) + (v[i][2]-w[i][2])*(v[i][2]-w[i][2])) for i in xrange(0, len(v))] 
 	#print repr(d)
 	return math.sqrt(sum(d)/len(d))

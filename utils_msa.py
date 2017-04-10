@@ -660,6 +660,8 @@ def calcColSM(sm, msaMatrix, column):
 	return 
 
 
+
+
 # read hcg pdb msa(raw) sdii pdbtitle
 # output new substitute matrix
 def hcg2blossum():
@@ -1116,6 +1118,177 @@ def cg2col():
 	fout.close()
 
 
+# variation of ncg2sdii
+# from possible residue contact
+# select informative sdii columns from MSA and save the column index pairs into file
+# output: .colpair file
+def ncg2colpair():
+	if len(sys.argv)<6:
+		print 'ncg2colpair: write selected MSA column into .colpair file'
+		print '$ python utils_msa.py ncg2colpair 1a0p-A.rpdb.tip.ncg PF00589_full.txt.rseq PF00589_full.txt.all_2_sdii.4.top 1a0p-A-PF00589-XERD_ECOLI.map 2'
+		return
+
+	ncgfile = sys.argv[2] # hcg
+	msafile = sys.argv[3] # msa (full or reduced)
+	sdiifile = sys.argv[4] # sdii
+	resimapfile = sys.argv[5]
+	orderlist = [int(i) for i in sys.argv[6].split(',')]
+	outStringArray = sdiifile.split('.')
+	outfile =  msafile[0:7]+'.'+outStringArray[-1]+'.colpair' # new substitution matrix
+	
+	for c in sys.argv:
+		print c+' ',
+	print ''
+
+	# get msa in matrix format
+	m = msa(msafile)
+	msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+	#print 'msa matrix: ' + repr(msaMatrix.shape)
+
+	rtmap = getPDBUniprotMap(resimapfile) # ('A9', (14, 'V')) : (resi+chain, (MSA index, resn))
+
+	sdiidict = loadsdii(sdiifile) # key: 39-140-210, value = 0.0788593466276019
+	msaGroupArray = ncg2msa(ncgfile, rtmap) # unsorted [[86, 83, 198, 127, 120], [138, 76, 82, 127, 132]]
+
+	# output msa column pair list
+	colset = []
+	for i in orderlist:
+		for g in msaGroupArray:
+			rg = g[0:i] # get ith order contact group
+			rg.sort() # for generating key
+			sdiikey = '-'.join([str(r) for r in rg])
+			if sdiikey not in sdiidict:
+				#print 'ncg2sdiicol(): discard group: %s for low sdii' % sdiikey
+				continue
+			#print (sdiikey, sdiidict[sdiikey])			
+			colset.append(sdiikey)
+			#for resi in rg: # for significant ncg, add corresponding MSA column index
+			#	colset.add(resi)
+
+	print 'ncg2colpair():write to %s, colpairs %d' % (outfile, len(colset))
+	fout = open(outfile, 'w')
+	fout.write('%s %s\n' % (msafile, ' '.join(colset)))
+	fout.close()
+
+
+
+
+# calculate double-columwised substritution marix
+# input two columns of MSA in list type
+def calcColpairSM(sm, msaMatrix, columns):
+	ignore = ['.','-','O','U','B','X','Z']
+
+	col0 = msaMatrix[:, columns[0]]
+	col1 = msaMatrix[:, columns[1]]
+
+	AAlist = []
+	for i in xrange(0, msaMatrix.shape[0]):
+		if (col0[i] in ignore) or (col1[i] in ignore):
+			continue
+		AA = ''.join(sorted([col0[i], col1[i]]))
+		AAlist.append(AA)
+
+	# get AA frequency
+	freqDict = collections.Counter(AAlist) # get frequency
+	#print repr(freqDict)
+	alphabet = sorted(set(AAlist))
+	#print repr(set(AAlist))
+
+	# calculate AA frequency cij
+	for i in xrange(0, len(alphabet)):
+		A = alphabet[i].upper()
+		if A not in alphabet:
+			continue
+		for j in xrange(i+1, len(alphabet)):
+			B = alphabet[j].upper()
+			if B not in alphabet:
+				continue
+			sm[A+B] += freqDict[A]*freqDict[B]
+		#sm[A+A] += freqDict[A]*(freqDict[A]-1)/2
+
+	return 	
+
+
+# calculate pair col substitution frequency
+def colpairfreq():
+	if len(sys.argv) < 2:
+		print 'colpairfreq: calculate pair col substitution frequency'
+		print 'python utils_msa.py colpairfreq pfam1977.cg-mi.allcolpair'
+		print 'output: pfam1977.cg-mi.allcolpair.freq'
+		return
+
+	colpairfile = sys.argv[2]
+	outfile = colpairfile+".freq" # new substitution matrix
+
+	# make pair alphabets
+	AAlist = sorted(['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V'])
+	AA2list = []	
+	for i in xrange(0, len(AAlist)):
+		for j in xrange(i, len(AAlist)):
+			AA2list.append('%s%s' % (AAlist[i], AAlist[j]))
+
+
+	# load colpairs
+	colpairArray = []
+	with open(colpairfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) < 1:
+				continue
+
+			valueArray = line.split(' ')
+			msafile = valueArray[0]
+			if len(valueArray)==1:
+				print '%s: no column' % msafile
+				continue
+
+			pairs = []
+			for p in valueArray[1:]:
+				pairs.append([int(s) for s in p.split('-')])
+
+			colpairArray.append((msafile, pairs))
+	print 'colpairfreq(): %d colpair lines loaded ..' % len(colpairArray)
+
+	# init frequency table
+	AAAAlist = sorted(AA2list)
+	sm = {}
+	for i in xrange(0, len(AAAAlist)):
+		for j in xrange(i+1, len(AAAAlist)):
+			sm['%s%s' % (AAAAlist[i], AAAAlist[j])] = 0
+
+	T=0 # total number of possible substitutions
+	for msafile, colpairset in colpairArray:
+		#print len(colset), repr(colset)
+
+		# get msa in matrix format
+		m = msa(msafile)
+		msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+		#print 'msa matrix: ' + repr(msaMatrix.shape)
+
+		# accumulate substitution matrix AA frequency for all the contact group columns
+		# Sum the scores for each columns across column
+		for col in colpairset:
+			calcColpairSM(sm, msaMatrix, col)
+
+		w = len(colpairset) # number of columns for current MSA
+		n = msaMatrix.shape[0]
+		T= sum(sm.itervalues())
+		#T = w*n*(n-1)/2 # normalization term, removing gaps will cause T in action is smaller than w*n*(n-1)/2
+		print '%s: w: %d/%d, n: %d, T: %d' % (msafile, w, msaMatrix.shape[1], n, T)
+		#T+=T1
+
+	print 'total T:  %d' % T
+	print 'total sm: %d' % sum(sm.itervalues())
+	print ''
+
+	fout = open(outfile, 'w')
+	for k in sm:
+		fout.write('%s %.8f\n' % (k, 1.0*sm[k]/T))
+	fout.close()
+
+	print 'colpairfreq(): write to %s' % outfile
+
+
 
 # from possible residue contact
 # select informative sdii columns from MSA and save the column indices into file
@@ -1377,7 +1550,7 @@ def main():
 	dispatch = {
 		'resi2msai': resi2msai, 'msai2resi':msai2resi, 'sdii2resi': sdii2resi, 'getseqbyname': getSeqbyName, 'getmsabyname': getMsabyName,
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
-		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
+		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm,'colpairfreq': colpairfreq, 'ncg2colpair':ncg2colpair, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
 		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum, 'findfamiliar':findfamiliar,'extractnseq':extractnseq,
 		'topsdii2sdiicol':topsdii2sdiicol, 'combinesm':combinesm
 	}

@@ -35,9 +35,9 @@ def scoreStr(flatfile, measure):
 			pgp.append(p.pgp)			
 
 	n = np.array([nid, pid, nsm, psm, ngp, pgp]).T
-	print repr(n)
-	print repr(np.mean(n, axis=0))
-	print repr(np.std(n, axis=0))
+	#print repr(n)
+	#print repr(np.mean(n, axis=0))
+	#print repr(np.std(n, axis=0))
 	if measure == 'nid':
 		ret = np.sum(nid)
 	elif measure == 'pid':
@@ -106,7 +106,7 @@ def main():
 
 	# main loop
 	# one gap combination with all matrices makes one row
-	outfile = '%s.flatscore' % prefix
+	outfile = '%s.%s.%s.%s.flatscore' % (prefix, flag, smlistfile, measure)
 	fout = open(outfile, 'w')
 	count = 0
 	for s in suffix: # forward row
@@ -117,7 +117,7 @@ def main():
 		count+=1
 		fout.write(','.join(['%.2f' % k for k in score])+'\n')
 	print '%d lines saved to: %s' % (count, outfile)
-	print repr(score)
+	#print repr(score)
 	fout.close()
 
 if __name__ == '__main__':
