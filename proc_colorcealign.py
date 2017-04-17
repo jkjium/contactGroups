@@ -46,11 +46,11 @@ def main():
 				'[0.5117,0.5000,0.6133]']
 
 	fout = open(outfile, 'w')
-	#fout.write('bg_color white\n')
+	fout.write('bg_color white\n')
 	#fout.write('set ribbon_smooth, 2\n')
 	#fout.write('set ribbon_width, 6\n')
 	#fout.write('cartoon tube\n')
-	fout.write('set sphere_scale, .5\n')
+	#fout.write('set sphere_scale, .5\n')
 	for c in xrange(0, len(colormap)):
 		fout.write('set_color kc%d, %s\n' % (c, colormap[c] ))
 
@@ -66,22 +66,22 @@ def main():
 
 			p1 = protein(pdbs[0]+'.aln.pdb')
 			rmap1 = cp.posmap(pa.seqA.upper(), p1.seq.upper())
-			if rmap1 == False:
+			if len(rmap1) == 0:
 				continue
 			pml.append('load %s.aln.pdb' % pdbs[0])
 			pml.append('color gray90, %s.aln' % pdbs[0])
 
 			p2 = protein(pdbs[1]+'.aln.pdb')
 			rmap2 = cp.posmap(pa.seqB.upper(), p2.seq.upper())
-			if rmap2 == False:
+			if len(rmap2) == 0:
 				continue
 
 			pml.append('load %s.aln.pdb' % pdbs[1])
 			pml.append('color gray90, %s.aln' % pdbs[1])
 
-			pml.append('cartoon tube')
+			pml.append('cartoon automatic')
 			pml.append('as cartoon')
-			pml.append('show sphere, name ca')
+			#pml.append('show sphere, name ca')
 
 			posset = pa.alnposlist()
 			for k in xrange(0, len(posset)):
@@ -98,6 +98,7 @@ def main():
 				pml.append('color kc%d, %s.aln and resi %s' % (color, pdbs[0], '+'.join(p1resi)))
 				pml.append('color kc%d, %s.aln and resi %s' % (color, pdbs[1], '+'.join(p2resi)))
 
+			pml.append('zoom')
 			pml.append('save %s.%s.pse' % (pa.name, identifier))
 			pml.append('save %s.%s.png' % (pa.name, identifier))
 

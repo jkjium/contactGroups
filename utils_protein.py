@@ -85,7 +85,7 @@ def writeseq():
 		return
 
 	pdbfile = sys.argv[2]
-	outfile = sys.argv[2]+'.seq'
+	outfile = sys.argv[2]+'.fa'
 	#print 'writeseq(): pdbfile: %s' % pdbfile
 	print 'writeseq(): outfile: %s' % outfile
 

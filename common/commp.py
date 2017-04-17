@@ -24,14 +24,14 @@ def posmap(s1, s2, key=1):
 	ps2 = s2.translate(None, ''.join(gap))
 	#print 'ps1: %s\nps2: %s' % (ps1, ps2)
 
+	retmap={}
 	if ps1!=ps2:
 		print 'error: not homo-str'
 		print 'ps1: %s\nps2: %s' % (ps1, ps2)
-		return False
+		return retmap
 
 	i=0
 	j=0
-	retmap={}
 	while(i<len(s1) and j<len(s2)):
 		if s1[i] in gap:
 			i+=1

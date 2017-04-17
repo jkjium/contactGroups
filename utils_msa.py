@@ -1350,6 +1350,224 @@ def ncg2sdiicol():
 	fout.close()
 
 
+# remove ['.', '-', 'O', 'U', 'X', 'B', 'Z']
+def removeGaps(msacol):
+	if '.' in colset:
+		msacol.remove('.')
+	if '-' in colset:
+		msacol.remove('-')
+	if 'O' in colset:
+		msacol.remove('O')
+	if 'U' in colset:
+		msacol.remove('U')
+	if 'X' in colset:
+		mascol.remove('X')
+	if 'B' in colset:
+		msacol.remove('B')
+	if 'Z' in colset:
+		msacol.remove('Z')	
+
+# 
+def mp_freq_count(args):
+	return pairlim_freq_count(*args)
+
+def pairlim_freq_count(A,B,ri,mcRef):
+	count = 0
+	for p in ri[A]: # should not have gaps
+		for q in ri[B]:
+			# skip single mutation in mcAim
+			if mcRef[p] != mcRef[q]:
+				count += 1
+	return count	
+
+# count frequency of the current column when there is a mutation in the correlated column
+def calcPairConstrainSM(sm, msaMatrix, gaps, colaim, colref):
+	mcAim = msaMatrix[:, colaim]
+	mcRef = msaMatrix[:, colref]
+
+	# filter gaps and sort alphabet
+	alphabet = sorted(set([A for A in mcAim if A not in gaps]))
+
+	# adjacency linked list for A index
+	# row index for echo type of Amino acid
+	ri = {}
+	for A in alphabet:
+		ri[A] =  [i for i in xrange(0, len(mcAim)) if (mcAim[i] == A) and (mcRef[i] not in gaps)]
+		sm[A+A] = len(ri[A])*(len(ri[A])-1)/2
+
+	arglist = []
+	for i in xrange(0, len(alphabet)):
+		A = alphabet[i].upper()
+		for j in xrange(i+1, len(alphabet)): # include A==A
+			B = alphabet[j].upper()
+			arglist.append((A,B,ri,mcRef))
+
+
+	from multiprocessing import Pool
+	pool = Pool(12)
+	mpret = pool.map(mp_freq_count,arglist)
+
+	for i in xrange(0, len(arglist)):
+		A = arglist[i][0]
+		B = arglist[i][1]
+		sm[A+B]+=mpret[i]
+	'''
+	# iterate all the substitution indices
+	for i in xrange(0, len(alphabet)):
+		A = alphabet[i].upper()
+		for j in xrange(i+1, len(alphabet)): # include A==A
+			B = alphabet[j].upper()
+
+			count = 0
+			# replace multiplication by counting one-by-one
+			for p in ri[A]: # should not have gaps
+				for q in ri[B]:
+					# skip single mutation in mcAim
+					if mcRef[p] != mcRef[q]:
+						count += 1
+			sm[A+B] += count
+	'''
+	return 
+				 
+	# ignore all pairs with gaps
+	
+
+
+
+# calculate sm from paired frequencies with correlated constrains
+# read .allcolpair file
+def sdiipairlimit2sm():
+	if len(sys.argv) < 2:
+		print 'sdii2pairblosum: construct new substitution matrix from msa paired-columns with constrains'
+		print 'python utils_msa.py sdiipairlimit2sm pfam1977.cg-mi.allcolpair'
+		print 'output: a substitution matrix file (same format as BLOSSUM62)'
+		return
+
+	sdiicolfile = sys.argv[2]
+	outfile = sdiicolfile+".sm" # new substitution matrix
+
+	sdiicolArray = []
+	with open(sdiicolfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) < 1:
+				print 'error sdiicol line: %s' % line
+
+			valueArray = line.split(' ')
+			msafile = valueArray[0]
+			if len(valueArray)==1:
+				print '%s: no column' % msafile
+				continue
+
+			# colpairs: PF00008_full.txt.rseq 17-22 21-22
+			colpairlist = [colpair.split('-') for colpair in valueArray[1:]]
+			sdiicolArray.append((msafile, colpairlist))
+	print 'sdiipairlimit2sm(): %d sdiicol lines loaded ..' % len(sdiicolArray)
+
+	# init substitution matrix
+	AAlist = sorted(['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V'])
+	gaps = ['.', '-', 'O', 'U', 'X', 'B', 'Z']
+	sm = {}
+	for i in xrange(0, len(AAlist)):
+		for j in xrange(i, len(AAlist)):
+			key = '%s%s' % (AAlist[i], AAlist[j])
+			sm[key] = 0
+	#print AAlist
+	#print 'Alphabet: %d' % len(AAlist) 
+	#print 'AA: %d' % len(sm)
+
+	T=0 # total number of possible substitutions
+	count=0
+	for msafile, colpairs in sdiicolArray:
+		count+=1
+
+		# get msa in matrix format
+		m = msa(msafile)
+		msaMatrix = np.array([list(s[1]) for s in m.msaArray]) # matrix format of msa
+		#print 'msa matrix: ' + repr(msaMatrix.shape)
+
+		# accumulate substitution matrix AA frequency for all the contact group columns
+		# Sum the scores for each columns across column
+		doneColset = set() # prevent double counting
+		for colpair in colpairs:
+			print '%s, %d/%d, %s' % (msafile, count, len(sdiicolArray), repr(colpair))
+			colA = int(colpair[0])
+			colB = int(colpair[1])
+
+			if colA not in doneColset:
+				calcPairConstrainSM(sm, msaMatrix, gaps, colA, colB)
+				doneColset.add(colA)
+			if colB not in doneColset:
+				calcPairConstrainSM(sm, msaMatrix, gaps, colB, colA)
+				doneColset.add(colB)
+
+		w = len(doneColset) # number of columns for current MSA
+		n = msaMatrix.shape[0]
+		T= sum(sm.itervalues())
+		#T = w*n*(n-1)/2 # normalization term, removing gaps will cause T in action is smaller than w*n*(n-1)/2
+		print '%s: w: %d/%d, n: %d, T: %d' % (msafile, w, msaMatrix.shape[1], n, T)
+		#print repr(sm)
+		#T+=T1
+
+	print 'total T:  %d' % T
+	print 'total sm: %d' % sum(sm.itervalues())
+	print ''
+	# convert cij to qij
+	# Normalize the pair frequencies so they will sum to 1
+	for c in sm:
+		sm[c] = 1.0*sm[c]/T
+	print 'sum(sm): %f' % sum(sm.itervalues())
+	print repr(sm)[0:10]
+	print ''
+
+	# Calculate the expected probability of occurrence of the ith residue in an (i,j) pair
+	# pi = qii + sum( qij/2 )_{i!=j}
+	pi = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		sum_qij = 0
+		for j in xrange(i+1, len(AAlist)): # i should not = j
+			B = AAlist[j]
+			sum_qij += sm[A+B]/2
+		pi[A] = sm[A+A] + sum_qij
+	print 'sum(pi): %f' % sum(pi.itervalues())
+	#print repr(pi)[0:10]	
+	print ''
+
+	# The desired denominator is the expected frequency for each pair 
+	eij = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		for j in xrange(i+1, len(AAlist)):
+			B = AAlist[j]
+			eij[A+B] = 2 * pi[A] * pi[B]
+		eij[A+A] = pi[A] * pi[A]
+
+	print 'sum(eij): %f' % sum(eij.itervalues())
+	#print repr(eij)[0:10]
+	print ''
+
+	#  Log odds ratio sij = round(2*log2(qij/eij))
+	sij = {}
+	for i in xrange(0, len(AAlist)):
+		A = AAlist[i]
+		for j in xrange(i, len(AAlist)):
+			B = AAlist[j]
+			if eij[A+B] == 0.0 or sm[A+B]==0.0:
+				sij[A+B] = 0
+			else:
+				sij[A+B] = int(round(2*math.log((sm[A+B]/eij[A+B]),2)))
+			#	sij[A+B] = sm[A+B]/eij[A+B]
+
+	print repr(sij)	
+	print len(sij)
+	print ''
+
+	EBlist = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
+	saveBlosum(EBlist, sij, outfile)
+
+
+
 # read combined .sdiicol file
 # for each one calculate the substitution rate cij
 def sdii2blosum():
@@ -1552,7 +1770,7 @@ def main():
 		'reducebyweight': reduceByWeight, 'reducebyhamming': reduceByHamming, 'resi2target': resi2target, 'pdist': pdistDistribution, 'msareduction':MSAReduction,
 		'searchpdbseq': searchpdbseq, 'hcg2blossum': hcg2blossum, 'applysm': applysm,'colpairfreq': colpairfreq, 'ncg2colpair':ncg2colpair, 'ncg2sdiicol':ncg2sdiicol, 'ncg2blossum':ncg2blossum,
 		'writeuniprotseq':writeUniprotSeq, 'printuniprot':printUniprot, 'sdii2blosum':sdii2blosum, 'findfamiliar':findfamiliar,'extractnseq':extractnseq,
-		'topsdii2sdiicol':topsdii2sdiicol, 'combinesm':combinesm
+		'topsdii2sdiicol':topsdii2sdiicol, 'combinesm':combinesm, 'sdiipairlimit2sm': sdiipairlimit2sm
 	}
 
 	if len(sys.argv)<2:

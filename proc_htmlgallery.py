@@ -6,7 +6,7 @@ import sys
 
 def main():
 	if len(sys.argv) < 2:
-		print 'Usage: python proc_htmlgallery.py pnglist.txt'
+		print 'Usage: python proc_htmlgallery.py pairlist.txt'
 		return
 
 	prefix = ['<html>' ,

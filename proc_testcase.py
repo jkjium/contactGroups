@@ -187,7 +187,8 @@ def printpair():
 
 # output all flat files 
 def alignpool(seqpool, param):
-	flatfile = '%s.%s_%s_%s_%s.align.flat' % (seqpool, param[0], param[1], param[2], param[3])
+	#cathpair88.pool.needle_B62_8_8.5.align.flat
+	flatfile = '%s.%s_%s_%s-%s_.flat' % (seqpool, param[0], param[1], param[2], param[3])
 	#print 'save to: %s' % flatfile
 	identity = 0
 	similarity = 0

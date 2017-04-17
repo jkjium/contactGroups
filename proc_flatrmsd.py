@@ -21,7 +21,12 @@ def alnRMSD(pa):
 	'''
 	v = []
 	w = []
-	for i in pa.alnpos():
+	apos = pa.alnpos()
+	if len(apos) == 0 or len(rmap1)==0 or len(rmap2)==0:
+		return (0, 0)
+
+	#for i in pa.alnpos():
+	for i in apos:
 		p = rmap1[i]
 		q = rmap2[i]
 		v.append((p1.ca[p].x, p1.ca[p].y, p1.ca[p].z))

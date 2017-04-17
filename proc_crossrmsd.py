@@ -97,8 +97,8 @@ def main():
 			print 'error: unmatched name %s - %s' % (pA.name, pB.name)
 			return
 
-		rmsdbaseA = corssRMSD(pA, pB)
-		rmsdbaseB = corssRMSD(pB, pA)
+		rmsdbaseA = crossRMSD(pA, pB)
+		rmsdbaseB = crossRMSD(pB, pA)
 
 		fout.write('%s %d %.4f %d %.4f, %.4f %.4f\n' % (pA.name, nA, rmsdA, nB, rmsdB, rmsdbaseA, rmsdbaseB))
 
