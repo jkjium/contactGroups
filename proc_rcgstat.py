@@ -22,7 +22,8 @@ def rcg(plist, method, cgsize, cutoff, seqdist, title):
 		fout = open(outfile, 'w')
 		for p in plist:
 			cglist = [] 
-			for ncg in p.contactbynearest(p.atomsbytip('AAtips.py'),cgsize):
+			#for ncg in p.contactbynearest(p.atomsbytip('AAtips.py'),cgsize):
+			for ncg in p.contactbynearest(p.atoms,cgsize):
 				# does not need to sort
 				cglist.append('-'.join(['%s%d' % (a.chainID, a.resSeq) for a in ncg]))
 				# need sort to match the key in sm
@@ -36,7 +37,7 @@ def rcg(plist, method, cgsize, cutoff, seqdist, title):
 		fout = open(outfile, 'w')
 		for p in plist:
 			cglist = [] 
-			for pcg in p.contactbycutoff(p.atomsbytip('AAtips.py'),cutoff,seqdist):
+			for pcg in p.contactbycutoff(p.atoms,cutoff,seqdist):
 				# does not need to sort
 				cglist.append('-'.join(['%s%d' % (a.chainID, a.resSeq) for a in pcg]))
 				# need sort to match the key in sm
