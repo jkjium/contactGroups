@@ -94,6 +94,7 @@ def writeseq():
 	fout.write(p.seq.lower()+'\n')
 	fout.close()
 
+# write tip pdb
 def writetip():
 	if len(sys.argv) < 3:
 		print 'writetip(): write tip pdb file'
@@ -103,23 +104,40 @@ def writetip():
 
 	pdbfile = sys.argv[2]
 	outfile = pdbfile+'.tip'
-	print 'writetip(): outfile: %s' % outfile
 
 	p = protein(pdbfile)
 	p.writeTips('AAtips.py',outfile)
+	print 'save to %s' % outfile
 
-
-def writeca():
-	if len(sys.argv) < 4:
-		print 'writeca(): extract ca atoms from all atom pdb and save to a file'
-		print 'writeca(): python utils_protein.py writeca pdbfile outcafile'
-		print 'writeca(): output: outcafile'
+# side chain geom center
+def writesgc():
+	if len(sys.argv) < 3:
+		print 'writeseq(): python utils_protein.py writesgc pdbfile'
+		print 'writetip(): output: 1t3r.pdb.sgc'
 		return
 
 	pdbfile = sys.argv[2]
+	outfile = sys.argv[2] + '.sgc'
+
+	fout = open(outfile, 'w')
 	p = protein(pdbfile)
-	p.writeCA(sys.argv[3])
-	print 'writeca(): %s' % sys.argv[3]
+	for a in p.atomsbygmcenter():
+		fout.write(a.writeAtom())
+	fout.close()
+	print 'save to %s' % outfile
+
+
+def writeca():
+	if len(sys.argv) < 3:
+		print 'writeca(): python utils_protein.py writeca pdbfile outcafile'
+		print 'writeca(): output: 1k2p.pdb.ca'
+		return
+
+	pdbfile = sys.argv[2]
+	outfile = pdbfile + '.ca'
+	p = protein(pdbfile)
+	p.writeCA(outfile)
+	print 'save to %s' % outfile
 
 
 def dumpseqflat():
@@ -142,7 +160,7 @@ def main():
 
 	dispatch = {
 		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
-		'writeca':writeca
+		'writeca':writeca, 'writesgc':writesgc
 	}
 
 	cmd = sys.argv[1]

@@ -1,6 +1,30 @@
 import sys
 import math
 
+aa2a={'ARG':'R','HIS':'H','LYS':'K','ASP':'D','GLU':'E',
+      'SER':'S','THR':'T','ASN':'N','GLN':'Q','CYS':'C',
+	  'SEC':'U','GLY':'G','PRO':'P','ALA':'A','VAL':'V',
+	  'ILE':'I','LEU':'L','MET':'M','PHE':'F','TYR':'Y',
+	  'TRP':'W'}
+
+a2aa={'R':'ARG','H':'HIS','K':'LYS','D':'ASP','E':'GLU',
+      'S':'SER','T':'THR','N':'ASN','Q':'GLN','C':'CYS',
+      'U':'SEC','G':'GLY','P':'PRO','A':'ALA','V':'VAL',
+      'I':'ILE','L':'LEU','M':'MET','F':'PHE','Y':'TYR',
+      'W':'TRP'}
+
+a2t={'D':'C','E':'C','H':'C','K':'C','R':'C',
+	 'P':'P','V':'H','M':'H','I':'H','L':'H',
+	 'F':'H','W':'H','G':'G','A':'H','C':'C',
+	 'T':'P','Q':'P','N':'P','Y':'P','S':'P'}
+
+# jaccard distance for two sets
+def jaccard(a, b):
+	c = a.intersection(b)
+	print repr(a), repr(b)
+	print repr(c)
+	return 1 - (float(len(c)) / (len(a) + len(b) - len(c)))
+
 # given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format
 # return RMSD
 # RMSD = sqrt( 1/n * \sum_i (|| v_i - w_i ||^2)   )

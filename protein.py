@@ -1,12 +1,13 @@
 #!/usr/bin/python
 import sys
 import math
+import copy
 import numpy as np
 
 from atom import atom
 from AAmap import AAmap
 from cluster import cluster
-
+from ncg import ncg
 #from sklearn.cluster import spectral_clustering
 #from scipy.sparse import coo_matrix
 
@@ -72,7 +73,9 @@ class protein(object):
         # map for Chain+Resi : (index in sequence, ResName)
         # 'B529': (132, 'V')
         self.resDict = {} # assigned in self.getSeq() function
-        self.seq, self.resArray = self.getSeq()
+        # resAtoms, a list of lists, each (element) list contains atoms of residues
+        # resArray, gives a list of keys eg. AQ70,AI71, AV72 
+        self.seq, self.resArray, self.resAtoms = self.getSeq()
 
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
         aamap = AAmap()
@@ -84,6 +87,102 @@ class protein(object):
         for r in self.resDict:
             self.seqDict[self.resDict[r][0]] = '%s(%s)' % (r, self.resDict[r][1])
 
+    # get atom by atom name, ie. CA, CB, ...
+    def atomsbyname(self, aname):
+        return [a for a in self.atoms if a.name.strip() == aname]
+
+    # get geometrical center for each residue
+    def atomsbygmcenter(self):
+        ats = []
+        for al in self.resAtoms:
+            x=0.0
+            y=0.0
+            z=0.0
+
+            # save CA as a template
+            # get accumulative coordinates
+            for a in al:
+                x+=a.x
+                y+=a.y
+                z+=a.z
+
+            # replace geom center to template coordinate 
+            # and save for output
+            reta = copy.copy(al[0])
+            reta.x = x/len(al)
+            reta.y = y/len(al)
+            reta.z = z/len(al)
+            ats.append(reta)
+
+        return ats
+
+
+    # get geometrical center for each residue side chain
+    # except for gly
+    def atomsbyscgmcenter(self):
+        bb = ['N', 'CA', 'C', 'O']
+        ats = []
+        for al in self.resAtoms:
+            x=0.0
+            y=0.0
+            z=0.0
+
+            # save CA as a template
+            # get accumulative coordinates
+            count = 0
+            for a in al:
+                if a.name.strip() in bb and a.resName!='GLY':
+                    #print 'skip bb atom'
+                    continue
+                count+=1
+                x+=a.x
+                y+=a.y
+                z+=a.z
+
+            # replace geom center to template coordinate 
+            # and save for output
+            reta = copy.copy(al[0])
+            reta.x = x/count
+            reta.y = y/count
+            reta.z = z/count
+            ats.append(reta)
+
+        return ats        
+
+    # output residue contact by dist cutoff and seqcutoff
+    # no redundancy 
+    def contactbycutoff(self, atomset, cutoff, seqcutoff=0.0):
+        cgs = []
+        for i in xrange(0, len(atomset)):
+            for j in xrange(i+1, len(atomset)):
+                a = atomset[i]
+                b = atomset[j]
+                dist =  np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z)))                
+                if dist <= cutoff and abs(a.resSeq-b.resSeq) > seqcutoff:
+                    cgs.append((a,b))
+        return cgs
+
+    # output residue contact by nearest neighbor
+    # redundant contact removed
+    def contactbynearest(self, atomset, size):
+        cgs = []
+        ncgArray = []
+        for a in atomset:
+            c = ncg(a, size)
+            ncgArray.append(c)
+
+        # grow by nearest neighbor
+        # remove duplicate
+        dup = set()
+        for c in ncgArray:
+            c.grow(atomset)
+            key = ' '.join(sorted(['%s%d' % (a.chainID, a.resSeq) for a in c.atoms]))
+            #if key in dup:
+            #    print 'duplicate key: %s' % key
+            if key not in dup:            
+                cgs.append(c.atoms)
+                dup.add(key)
+        return cgs
 
     
     # print PDB content
@@ -106,6 +205,9 @@ class protein(object):
         last_resSeq = -1
         seqPos = 0
         resArray = []
+
+        resAtomsAll = []
+        resatoms = []
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
             if last_resSeq != a.resSeq:
@@ -117,7 +219,19 @@ class protein(object):
                 seqPos+=1
 
                 resArray.append(a.chainID+aamap.getAAmap(a.resName)+str(a.resSeq))
-        return seq, resArray       
+
+                if len(resatoms)>0:
+                    resAtomsAll.append(resatoms)
+                    resatoms=[]
+
+            resatoms.append(a)
+
+        # after loop add the last res into resatoms
+        # only resSeq change trigger adding above
+        if len(resatoms)>0:
+            resAtomsAll.append(resatoms)
+
+        return seq, resArray, resAtomsAll       
            
     # print PDB sequence into fasta file
     def writeFASTA(self):
@@ -172,10 +286,99 @@ class protein(object):
         if count==0:
             print "No atom written in [%s]!" % (filename)
 
-			
+
+    # get tip atom list
+    def atomsbytip(self, profile):
+        cgs=[]
+        # loading tip atoms records
+        fp=open(profile, 'r')
+        lines = fp.readlines()
+        fp.close()
+        AAtipDict={}
+        for i in xrange(0,len(lines)):  
+            line = lines[i].strip()
+            AAstr = line.split(',')
+            AAname = AAstr[0]
+            AAtips = AAstr[2]
+           
+            AAtipDict[AAname]=AAtips.split(' ')
+#            print '%s %s' % (AAname, AAtipDict[AAname])
+
+        # iterate all atoms
+        #fd=open(filename, 'w') 
+        lastAtom = self.atoms[0]
+        currentResi = lastAtom.resSeq    
+        matchCount=0  
+        outputCount=0
+        X=0.0
+        Y=0.0
+        Z=0.0 
+        isDone = 0
+        for i in xrange(0,len(self.atoms)):
+            a = copy.copy(self.atoms[i])
+            #if a.chainID!='A':
+            #    continue
+            if a.resName not in AAtipDict:
+                print '%s:: non AA atom %s %d [%s]]' % (self.pdb, a.resName, a.resSeq, a.name.strip())
+                continue
+
+            if a.resSeq == currentResi: # if in the same residue
+                if isDone == 0:
+                    # check against all the tip atoms
+                    for tipAtom in AAtipDict[a.resName]:
+                        
+                        # summing up coordinates if matching
+                        if a.name.strip()==tipAtom:
+                            
+                            X+=a.x
+                            Y+=a.y
+                            Z+=a.z
+                            matchCount+=1
+#                            print '%s:: matching %s %d [%s] with [%s], matchCount: %d' % (self.pdb, a.resName, a.resSeq, a.name.strip(), tipAtom, matchCount)
+                    # output final coordinates and change flow control variables
+                    if matchCount == len(AAtipDict[a.resName]):
+#                        print '%s:: matching complete %s %d' % (self.pdb, a.resName, a.resSeq)
+                        a.x = X/matchCount
+                        a.y = Y/matchCount
+                        a.z = Z/matchCount
+#                        print '[%s]\n' % a.writeAtom()
+                        #fd.write(a.writeAtom())
+                        cgs.append(a)
+                        outputCount+=1
+                        X=0.0
+                        Y=0.0
+                        Z=0.0 
+                        isDone = 1
+#                lastAtom = a
+#                print 'matchCount trace : %d' % (matchCount)
+            else: # residue number changed
+                if matchCount!=len(AAtipDict[lastAtom.resName]):
+                    #print "%s:: Tip atom not found for [%d] [%s], use last atom [%s] instead. matchCount: %d, tipCount: %d" % (self.pdb, lastAtom.resSeq, lastAtom.resName, lastAtom.name, matchCount, len(AAtipDict[lastAtom.resName]))
+                    #fd.write(lastAtom.writeAtom())
+                    X=0.0
+                    Y=0.0
+                    Z=0.0                     
+                if a.name.strip()!='N':
+                    print "%s:: No leading [N] for RESI [%d] [%s]" % (self.pdb, a.resSeq, a.resName)
+                currentResi = a.resSeq
+                matchCount=0
+                isDone=0
+            lastAtom = a # save last atom after all business' done
+        
+        # for the last residue (there is no residue number change for it)
+        if matchCount!=len(AAtipDict[lastAtom.resName]):
+            print "%s:: Tip atom not found for [%d] [%s]" % (self.pdb, lastAtom.resSeq, lastAtom.resName)
+            #fd.write(a.writeAtom())
+        if outputCount==0:
+            print "No atom written from [%s]!" % (filename)            
+
+        return cgs
+
+		
     # tip atom extraction
     # not for chain A only
     # def writeChainATips(self, profile, filename):
+    # this will change the original atoms!!!!
     def writeTips(self, profile, filename):
         # loading tip atoms records
         fp=open(profile, 'r')
@@ -202,7 +405,8 @@ class protein(object):
         Z=0.0 
         isDone = 0
         for i in xrange(0,len(self.atoms)):
-            a = self.atoms[i]
+            #a = self.atoms[i]
+            a = copy.copy(self.atoms[i])
             #if a.chainID!='A':
             #    continue
             if a.resName not in AAtipDict:
@@ -257,6 +461,7 @@ class protein(object):
             #fd.write(a.writeAtom())
         if outputCount==0:
             print "No atom written from [%s]!" % (filename)            
+
 
 
     # write concise version of a tip file 

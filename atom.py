@@ -31,7 +31,7 @@ class atom(object):
 
     def dump(self):
          outStr=self.writeAtom()
-         print '%s' % outStr
+         print '%s' % outStr,
 		#print self.inputStr	
 		#print self.outputStr	
 		# print ('recName:[%s]\n' + 
