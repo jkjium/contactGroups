@@ -13,7 +13,11 @@ def mp_rcg(arglist):
 def rcg(plist, method, cgsize, cutoff, seqdist, title):
 	# init stat table
 	sm = {}
-	AA = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+	AA = [
+		'A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 
+		'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y',
+		'U'
+		]
 	for i in xrange(0, len(AA)):
 		for j in xrange(i, len(AA)):
 			sm['%s%s' % (AA[i], AA[j])] = 0
