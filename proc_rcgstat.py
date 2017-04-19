@@ -88,7 +88,7 @@ def main():
 	# each sm is accumulative for each pdblist
 	for name, sm in mpret:
 		fout.write('%s,%s\n' % (name,' '.join([str(sm[k]) for k in sorted(sm.keys())])))
-	fout.write('%s,%s\n' % ('title', repr([k for k in sorted(sm.keys())])))
+	print '%s,%s\n' % ('title', repr([k for k in sorted(sm.keys())]))
 	fout.close()
 	print '\nsave to %s.' % outfile
 
