@@ -13,10 +13,10 @@ def mp_rcg(arglist):
 def rcg(plist, method, cgsize, cutoff, seqdist, title):
 	# init stat table
 	sm = {}
+	# U!!!
 	AA = [
 		'A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 
-		'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y',
-		'U'
+		'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U','V', 'W', 'Y',
 		]
 	for i in xrange(0, len(AA)):
 		for j in xrange(i, len(AA)):
@@ -37,7 +37,7 @@ def rcg(plist, method, cgsize, cutoff, seqdist, title):
 		fout.close()	
 
 	elif method == 'cutoff': # just for pairwise for now
-		outfile = '%s.%s.%d_%d.cg' % (title, method, cutoff, seqdist)
+		outfile = '%s.%s.%s_%d.cg' % (title, method, str(cutoff), seqdist)
 		fout = open(outfile, 'w')
 		for p in plist:
 			cglist = [] 
