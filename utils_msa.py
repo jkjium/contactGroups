@@ -1151,7 +1151,8 @@ def ncg2colpair():
 	msaGroupArray = ncg2msa(ncgfile, rtmap) # unsorted [[86, 83, 198, 127, 120], [138, 76, 82, 127, 132]]
 
 	# output msa column pair list
-	colset = []
+	#colset = []
+	colset = set()
 	for i in orderlist:
 		for g in msaGroupArray:
 			rg = g[0:i] # get ith order contact group
@@ -1161,7 +1162,8 @@ def ncg2colpair():
 				#print 'ncg2sdiicol(): discard group: %s for low sdii' % sdiikey
 				continue
 			#print (sdiikey, sdiidict[sdiikey])			
-			colset.append(sdiikey)
+			#colset.append(sdiikey)
+			colset.add(sdiikey) # to remove redundancy
 			#for resi in rg: # for significant ncg, add corresponding MSA column index
 			#	colset.add(resi)
 
