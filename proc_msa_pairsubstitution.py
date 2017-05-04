@@ -6,6 +6,10 @@ import math
 from msa import msa
 from protein import protein
 
+'''
+calculate distinct pair substitution frequency for each pfam
+'''
+
 def mp_count(args):
 	return calc_psm(*args)
 

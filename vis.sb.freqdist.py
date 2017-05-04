@@ -55,7 +55,7 @@ plt.xticks(index+bar_width/2, xt[0:105], rotation='vertical', fontname = "monosp
 plt.legend()
 
 
-index  = np.arange(104)
+#index  = np.arange(104)
 ax[1].bar(index, data[105:], bar_width,
 			alpha=opacity,
 			color = '#75a8b9',

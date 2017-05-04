@@ -37,6 +37,7 @@ h.sort(key=operator.itemgetter(1), reverse=True) # sort by value
 data = [v for k,v in h]
 xt = [k for k,v in h]
 
+print(len(xt))
 bar_width = 0.3
 opacity = 0.8
 spnum = 2
@@ -56,7 +57,8 @@ plt.xticks(index+bar_width/2, xt[0:105], rotation='vertical', fontname = "monosp
 plt.legend()
 
 
-index  = np.arange(104)
+index  = np.arange(105)
+
 ax[1].bar(index, data[105:], bar_width,
 			alpha=opacity,
 			color = '#75a8b9',

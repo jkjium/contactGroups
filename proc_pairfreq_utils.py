@@ -262,33 +262,86 @@ def dist210():
 	outfile = infile+'.dist210'
 
 	smdict = {}
-	print 'dispatching ..'
-	with open(infile) as pf:
-		# WYYW 155254 0.000418
-		for line in pf:
-			strarr = line.strip().split(' ')
-			if len(strarr) != 3:
-				continue
+	print 'dispatching forward and backward ..'
+	with open(infile) as fp:
+		lines = fp.readlines()
 
-			subdict = {}
-			for i in xrange(0, len(cm.aas01)):
-				for j in xrange(0, len(cm.aas01)):			
-					subdict['%s%s' % (cm.aas01[i], cm.aas01[j])] = 0.0
+	# forward scan
+	# WYYW 155254 0.000418
+	for line in lines:
+		strarr = line.strip().split(' ')
+		if len(strarr) != 3:
+			continue
 
-			mainkey = strarr[0][0:2] # should be sorted
-			subkey = strarr[0][2:]
-			rawcount = float(strarr[1]) # use raw count instead of the nfreq
+		subdict = {}
+		for i in xrange(0, len(cm.aas01)):
+			for j in xrange(0, len(cm.aas01)):			
+				subdict['%s%s' % (cm.aas01[i], cm.aas01[j])] = 0.0
 
-			if mainkey not in smdict:
-				subdict[subkey] = rawcount
-				smdict[mainkey] = subdict
-			else:
-				if smdict[mainkey][subkey]!=0.0:
-					print 'error::line: %s' % line
-					print 'error::subdict[%s] not zero: %f' % (subkey, subdict[subkey])
-					return
+		rawcount = float(strarr[1]) # use raw count instead of the nfreq
+		a0 = strarr[0][0]
+		a1 = strarr[0][1]
+		a2 = strarr[0][2]
+		a3 = strarr[0][3]
+
+		mainkey = '%s%s' % (a0, a1)
+		subkey = '%s%s' % (a2, a3)
+
+		print line.strip()
+		print 'forward::smdict[%s][%s]: %d' % (mainkey, subkey, rawcount)
+		if mainkey not in smdict:
+			subdict[subkey] = rawcount
+			smdict[mainkey] = subdict
+		else:
+			if smdict[mainkey][subkey]!=0.0:
+				#print 'error::line: %s' % line
+				print 'error::forwards[%s] -> smdict[%s][%s] not zero: %d\n' % (strarr[0], mainkey, subkey, smdict[mainkey][subkey])
+				return
+			else:	
 				# before normalized
 				smdict[mainkey][subkey] = rawcount # mainkey + subkey are unique in .2 and .1 files
+
+
+	# backwards count WWAC
+	for line in lines:
+		strarr = line.strip().split(' ')
+		if len(strarr) != 3:
+			continue
+
+		subdict = {}
+		for i in xrange(0, len(cm.aas01)):
+			for j in xrange(0, len(cm.aas01)):			
+				subdict['%s%s' % (cm.aas01[i], cm.aas01[j])] = 0.0
+
+		rawcount = float(strarr[1]) # use raw count instead of the nfreq
+		a0 = strarr[0][0]
+		a1 = strarr[0][1]
+		a2 = strarr[0][2]
+		a3 = strarr[0][3]
+
+		if a2 <= a3:
+			mainkey = '%s%s' % (a2, a3)
+			subkey = '%s%s' % (a0, a1)
+			print 'mainkey not change: %s' % mainkey
+		else:
+			mainkey = '%s%s' % (a3, a2)
+			subkey = '%s%s' % (a1, a0)
+			print 'mainkey switch: %s' % mainkey
+
+		print 'backward::smdict[%s][%s]: %d\n' % (mainkey, subkey, rawcount)
+		if mainkey not in smdict:
+			subdict[subkey] = rawcount
+			smdict[mainkey] = subdict
+		else:
+			if smdict[mainkey][subkey]!=0.0:
+				#print 'error::backwards counting'
+				#print 'error::line: %s' % line
+				print 'info::backwards[%s] -> smdict[%s][%s] not zero: %d\n' % (strarr[0], mainkey, subkey, smdict[mainkey][subkey])
+				smdict[mainkey][subkey] += rawcount 
+			else:
+				# before normalized
+				smdict[mainkey][subkey] = rawcount 
+
 
 	#process output
 	smlist = [(k,sum(smdict[k].itervalues())) for k in smdict]
