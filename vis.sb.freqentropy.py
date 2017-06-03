@@ -21,20 +21,20 @@ spnum = 2
 
 h = []
 #xt =[]
-with open('pairfreq.list.allpairfreq.dist210') as fp:
+with open('pairfreq.list.allpairfreq.dist210.n1') as fp:
 	for line in fp:
 		strarr = line.strip().split(' ')
 		if len(strarr)!=404:
 			print('invalid line length')
 		h.append(('%s-%s' % (strarr[1][0], strarr[1][1]), float(strarr[3])))
 
-#nh = np.array([v[1] for v in h])
-#m = np.min(nh[np.nonzero(nh)])
+nh = np.array([v[1] for v in h])
+m = np.min(nh[np.nonzero(nh)])
 #print(m)
 
-h.sort(key=operator.itemgetter(1), reverse=True) # sort by value
+#h.sort(key=operator.itemgetter(1), reverse=True) # sort by value
 
-data = [v for k,v in h]
+data = [v-m for k,v in h]
 xt = [k for k,v in h]
 
 print(len(xt))

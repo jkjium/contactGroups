@@ -20,7 +20,7 @@ spnum = 2
 freq = []
 h = []
 xt =[]
-with open('pairfreq.list.allpairfreq.dist210') as fp:
+with open('pairfreq.list.allpairfreq.dist210.n1') as fp:
 	for line in fp:
 		strarr = line.strip().split(' ')
 		if len(strarr)!=404:

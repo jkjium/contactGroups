@@ -4,31 +4,33 @@ import subprocess
 '''
 Matching a given sequence to a sequence pool
 sequence pool in flat sequence format:
-[length] [seqName] [sequence]
+[seqName] [sequence]
 '''
 def fetchflatseq(seqline):
 	seqArray = seqline.split(' ')
-	if len(seqArray)!=3:
+	if len(seqArray)!=2:
 		print 'invalid sequence line found.\n%s' % seqline
 		return
-	return (seqArray[1], seqArray[2].strip())
+	return (seqArray[0], seqArray[1].strip())
 
 
 def main():
-	if len(sys.argv) < 5:
-		print 'Usage: python proc_seqmatch.py target seqpool {local, global} {B62, SU}'
-		print 'Usage: python proc_seqmatch.py 4msp.flatseq seqpool.flat local B62'
-		print 'target.seq is in flat format as well'
-		exit(1)
+	if len(sys.argv) < 6:
+		print 'Usage: python proc_seqmatch.py target seqpool local|global B62|SU pidcutoff'
+		print 'Usage: python proc_seqmatch.py 4msp.flatseq seqpool.flat local B62 25'
+		return
 
+	'''
 	for p in sys.argv:
 		print p,
 	print ''
+	'''
 
 	targetfile = sys.argv[1]
 	seqpoolfile = sys.argv[2]
 	method = sys.argv[3]
 	sm = sys.argv[4]
+	pidcutoff = float(sys.argv[5])
 
 	cmd = './global.sh'
 
@@ -42,14 +44,14 @@ def main():
 	#print 'Taget name: %s' % targetName
 	#print 'Taget seq:  %s' % targetSeq
 
-	maxpid = 0.0
+	pidcutoff = 0.0
 	with open(seqpoolfile) as fp:
 		for line in fp:
 			name, seq = fetchflatseq(line)
 			#print '%s\n%s' % (name, seq)
 			# output = subprocess.Popen(['ls', '-l'], stdout=subprocess.PIPE).communicate()[0]
 			# ret = sp.check_output(['./aln.sh',si,sj])
-			ret = subprocess.Popen([cmd, targetSeq, seq, '-data', sm], stdout=subprocess.PIPE).communicate()[0].strip()
+			ret = subprocess.Popen([cmd, targetSeq, seq, '-data', sm, '-gapopen', '15'], stdout=subprocess.PIPE).communicate()[0].strip()
 			strpid= ret[ret.index('(')+1:ret.index('%')].strip()
 			pid = float(strpid)			
 
@@ -57,8 +59,8 @@ def main():
 			idstrArray = rettsv.split(' ')
 			nid = int(idstrArray[2][0:idstrArray[2].index('/')])
 
-
-			print '%s %d %.1f %d %.1f' % (name, len(seq), pid, nid, 100.0*nid/len(targetSeq))
+			if pid >= pidcutoff:
+ 				print '%s %d %.1f %d %.1f' % (name, len(seq), pid, nid, 100.0*nid/len(targetSeq))
 			'''
 			if int(strpid[0]) < 10:
 				strpid = '0'

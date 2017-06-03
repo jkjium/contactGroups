@@ -303,6 +303,7 @@ def dist210():
 
 
 	# backwards count WWAC
+	# WYYW 155254 0.000418
 	for line in lines:
 		strarr = line.strip().split(' ')
 		if len(strarr) != 3:
@@ -342,12 +343,25 @@ def dist210():
 				# before normalized
 				smdict[mainkey][subkey] = rawcount 
 
+	# single nfreq calculation
+	# WYYW 155254 0.000418
+	snfreq = defaultdict(lambda:0.0)
+	for line in lines:
+		strarr = line.strip().split(' ')
+		if len(strarr)!=3:
+			continue
+		a0 = strarr[0][0]
+		a1 = strarr[0][1]
+		ncount = float(strarr[1])
+		snfreq[a0]+=ncount
+		snfreq[a1]+=ncount
 
-	#process output
+
 	smlist = [(k,sum(smdict[k].itervalues())) for k in smdict]
 	totaltotal = sum([sum(smdict[k].itervalues()) for k in smdict])
 	print 'total total: %.1f' % totaltotal
 	smlist.sort(key=operator.itemgetter(1), reverse=True) # sort based on sum of nfreq to get rank i
+	print 'len(smlist):%d' % len(smlist)
 
 	# init dist xtick (key) order
 	sk = []
@@ -355,22 +369,82 @@ def dist210():
 	for i in xrange(0, len(cm.aas01)):
 		for j in xrange(0, len(cm.aas01)):
 			sk.append('%s%s' % (cm.aas01[i], cm.aas01[j]))
-	print repr(sk)
+#	print repr(sk)
 	print len(sk)
 
-	#
-	fout = open(outfile, 'w')
+	# normalized by prefix 
+	fout1 = open(outfile+'.n1', 'w')
+	fout2 = open(outfile+'.n2', 'w')
+	fout3 = open(outfile+'.n3', 'w')
 	for i in xrange(0, len(smlist)):
 		mk, nfreq = smlist[i]
 		h = sentropy(smdict[mk])
 
-		dist = ' '.join([('%.6f' % (smdict[mk][k]/totaltotal)) for k in sk])
-		outstr = '%d %s %.6f %.6f %s\n' % (i+1, mk, (nfreq/totaltotal), h, dist)
-		fout.write(outstr)
+		dist_n1 = ' '.join([('%.6f' % (smdict[mk][k]/nfreq)) for k in sk])
+		outstr_n1 = '%d %s %.6f %.6f %s\n' % (i+1, mk, (nfreq/totaltotal), h, dist_n1)
+		fout1.write(outstr_n1)
 
-	
-	print 'save to %s.' % outfile
+		dist = []
+		for k in sk: # for all the suffix pairs
+			suffixkey = ''.join(sorted(list(k)))
+			nfreq2 = sum(smdict[suffixkey].itervalues())
+			dist.append('%.6f' % (smdict[mk][k]/(nfreq+nfreq2)))
+		dist_n2 = ' '.join(dist)
+		outstr_n2 = '%d %s %.6f %.6f %s\n' % (i+1, mk, (nfreq/totaltotal), h, dist_n2)
+		fout2.write(outstr_n2)
+
+		# normalized by n0 + n1 + n2 + n3
+		dist_s = []
+		n0 = mk[0]
+		n1 = mk[1]
+		for k in sk:
+			n2 = k[0]
+			n3 = k[1]
+			nfreq3 = snfreq[n0]+snfreq[n1]+snfreq[n2]+snfreq[n3]
+			dist_s.append('%.6f' % (smdict[mk][k]/nfreq3))
+		dist_n3 = ' '.join(dist_s)
+		outstr_n3 = '%d %s %.6f %.6f %s\n' % (i+1, mk, (nfreq/totaltotal), h, dist_n3)
+		fout3.write(outstr_n3)
+
+	print 'save to %s.n1, %s.n2, %s.n3' % (outfile, outfile, outfile)
+	fout1.close()
+	fout2.close()
+	fout3.close()
+
+
+# calculate linear distance between two 210dist vectors.
+# just for n1 normalization
+def distcorr():
+	if len(sys.argv) < 3:
+		print 'Usage: python proc_pairfreq_utils.py distcorrelation pairfreq.list.allpairfreq.n1'
+		print 'output: distcorrelation pairfreq.list.allpairfreq.n1.dictcorr'
+		return
+
+	infile = sys.argv[2]
+	outfile = infile + '.distcorr'
+	alldist = []
+	with open(infile) as fp:
+		for line in fp:
+			strarr = line.strip().split(' ')
+			if len(strarr)!=404:
+				print 'error::invalid line: %s' % line
+				return
+			pair = strarr[1]
+			dist = np.array([float(v) for v in strarr[4:]]) 
+			alldist.append((pair,dist))
+			if abs(sum(dist)-1)>0.001:
+				print 'error:: wrong dist\n%s' % (sum(dist))
+
+	fout = open(outfile, 'w')
+	for i in xrange(0, len(alldist)):
+		for j in xrange(i+1, len(alldist)):
+			title = '%s-%s' % (alldist[i][0], alldist[j][0])
+			a = alldist[i][1]
+			b = alldist[j][1]
+			corr = np.linalg.norm(a-b)
+			fout.write('%s %f\n' % (title, corr))
 	fout.close()
+	print 'save to %s.' % outfile
 
 
 # main entrance for pair substitution frequency stats
@@ -381,6 +455,7 @@ def main():
 		'composition':composition,
 		'ssentropy':ssentropy,
 		'dist210':dist210,
+		'distcorr':distcorr,
 		#'memo': proc_memo
 	}
 

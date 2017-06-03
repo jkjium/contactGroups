@@ -60,7 +60,7 @@ class protein(object):
             if line[0:6]=='ATOM  ':
                 at = atom(lines[i])
                 if (at.name == lastname) and (at.resSeq == lastres):
-                    print 'alter loc: %s' % lines[i]
+                    print '[%s]::alter loc:\n%s' % (self.pdbfile, lines[i])
                     #if (line[16]==' ' or line[16]=='A'): # to avoid alternative location
                     continue
                 else:

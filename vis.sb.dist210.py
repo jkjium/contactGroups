@@ -16,13 +16,17 @@ bar_width = 0.3
 opacity = 0.8
 spnum = 4
 
-with open('pairfreq.list.allpairfreq.dist210') as fp:
+
+outtitle = 'n3'
+infile = 'pairfreq.list.allpairfreq.dist210.'+outtitle
+
+with open(infile) as fp:
 	for line in fp:
 		strarr = line.strip().split(' ')
 		if len(strarr)!=404:
 			print('invalid line length')
 			continue
-		outfile = 'pf.%03d_%s_%s.png' % (int(strarr[0]), strarr[1], strarr[2])
+		outfile = 'pf.%03d_%s_%s.png' % (int(strarr[0]), strarr[1],outtitle )
 		print(outfile)
 		nfreq = np.array([float(v) for v in strarr[4:]])
 
