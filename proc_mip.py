@@ -34,7 +34,7 @@ def calc_MIp(arglist):
 	#print sdiidict
 
 	avgMI = sum(sdiidict.itervalues()) / len(sdiidict)
-	print 'average MI: %.8f' % avgMI
+	#print 'average MI: %.8f' % avgMI
 
 	MIax = {}
 	for i in xrange(0, len(cols)):
@@ -43,12 +43,12 @@ def calc_MIp(arglist):
 			if i == j:
 				continue
 			k = ('%s-%s' % (cols[i], cols[j])) if i < j else ('%s-%s' % (cols[j], cols[i]))
-			print k, sdiidict[k]
+			#print k, sdiidict[k]
 			marginMI+= sdiidict[k]
-		print marginMI, len(cols)-1
+		#print marginMI, len(cols)-1
 		MIax[cols[i]] = marginMI / (len(cols)-1)
 	
-	print repr(MIax)
+	#print repr(MIax)
 
 	MIp = 0.0
 	fout = open(outfile, 'w')

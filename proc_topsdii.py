@@ -4,13 +4,14 @@ import numpy as np
 # from shadpw algorithm
 
 def main():
-	if len(sys.argv) < 3:
-		print 'Usage: python proc_topsdii.py PF00001_full.txt.2_sdii int(cutoff level)=3'
+	if len(sys.argv) < 4:
+		print 'Usage: python proc_topsdii.py PF00001_full.txt.2_sdii int(cutoff level)=3 colidx'
 		print 'output: PF00001_full.txt.2_sdii.top'
 		exit()
 
 	sdiifile = sys.argv[1]
 	d = int(sys.argv[2])
+	col = int(sys.argv[3])
 	outfile = sdiifile+('.%d.top' % d)
 
 	# Array of tuple (2-3, 0.25)
@@ -22,9 +23,11 @@ def main():
 			if len(line) < 1:
 				print 'error sdii line: %s' % line
 			valueArray = line.split(' ')
-			sdiiArray.append((valueArray[0], float(valueArray[1])))
-			sdiiValue.append(float(valueArray[1]))
+			sdiiArray.append((valueArray[0], float(valueArray[col])))
+			sdiiValue.append(float(valueArray[col]))
 
+	#for a in sdiiArray:
+	#	print repr(a)
 	#print 'sdiiArray: %s' % (repr(sdiiArray))
 	#print 'sdiiValue: %s' % (repr(sdiiValue))
 
@@ -46,7 +49,7 @@ def main():
 			c+=1
 	fout.close()
 
-	print '%s: bgMI: %.4f cutoff: %.4f #ofIPV: %d/%d' % (outfile, sdiinp.mean(), cutoff, c, len(sdiiValue))
+	print '%s: meanMI: %.4f cutoff: %.4f #ofIPV: %d/%d' % (outfile, sdiinp.mean(), cutoff, c, len(sdiiValue))
 
 if __name__ == '__main__':
 	main()

@@ -171,9 +171,8 @@ def main():
 
 	if cmd not in dispatch:
 		print 'invalid cmd string: %s' % cmd
-	for key in dispatch:
-		if key == cmd:
-			dispatch[key]()
+	else:
+		dispatch[key]()
 
 
 if __name__ == '__main__':

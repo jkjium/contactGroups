@@ -1649,7 +1649,8 @@ def sdii2blosum():
 		sum_qij = 0
 		for j in xrange(i+1, len(AAlist)): # i should not = j
 			B = AAlist[j]
-			sum_qij += sm[A+B]/2
+			sum_qij += sm[A+B]
+			#sum_qij += sm[A+B]/2
 		pi[A] = sm[A+A] + sum_qij
 	print 'sum(pi): %f' % sum(pi.itervalues())
 	#print repr(pi)[0:10]	
