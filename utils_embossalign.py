@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import commp as cp
 
 '''
 new version of alignflat and proc_testcase.py
@@ -35,23 +36,23 @@ class embossalign(object):
 	# dump object to stdout
 	def dump(self):
 		print '\n-----------------------------'
-		print 'name: %s' % self.name
-		print 'program: %s' % self.program
-		print 'matrix: %s' % self.matrix
-		print 'gap open penalty: %f' % self.gapopen
-		print 'gap extend penalty: %f' % self.gapextend
-		print 'alignment length: %d' % self.alignlen
-		print 'number of identity: %d' % self.nid
-		print 'percent of identity: %f' % self.pid
-		print 'number of similarity: %d' % self.nsm
-		print 'percent of similarity: %f' % self.psm
-		print 'number of gaps: %d' % self.ngp
-		print 'percent of gaps: %f' % self.pgp
-		print 'alignment score: %f' % self.score
-		print 'seq A length: %d' % self.seqAlen
-		print 'aligned seq A: %s' % self.seqA
-		print 'seq B length: %d' % self.seqBlen
-		print 'aligned seq B: %s' % self.seqB
+		print 'title:      %s' % self.name
+		print 'cmd:        %s' % self.program
+		print 'matrix:     %s' % self.matrix
+		print 'gap-open:   %f' % self.gapopen
+		print 'gap-extend: %f' % self.gapextend
+		print 'align-len:  %d' % self.alignlen
+		print 'nid:        %d' % self.nid
+		print 'pid:        %f' % self.pid
+		print 'nsm:        %d' % self.nsm
+		print 'psm:        %f' % self.psm
+		print 'ngp:        %d' % self.ngp
+		print 'pgp:        %f' % self.pgp
+		print 'score:      %f' % self.score
+		print 'seq-A-len:  %d' % self.seqAlen
+		print 'aligned-A:  %s' % self.seqA
+		print 'seq-B-len:  %d' % self.seqBlen
+		print 'aligned-B:  %s' % self.seqB
 		print '-----------------------------\n'
 
 
@@ -59,12 +60,18 @@ class embossalign(object):
 # needle <(echo -e ">a\n$1") <(echo -e ">b\n$2") "${@:3}" -filter
 def align_exec(s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
 	#$ ./align.sh needle "ALIGN" "LINE" B62 8 2
-	if (('%d.%d') % (sys.version_info.major, sys.varsion_info.minor)) == '2.6':
+	if (('%d.%d') % (sys.version_info.major, sys.version_info.minor)) == '2.6':
 		ret = subprocess.Popen(['align.sh', cmd, s1, s2, matrix, gapopen, gapextend], stdout=subprocess.PIPE).communicate()[0].strip()
 	else:	
 		ret = subprocess.check_output(['align.sh', cmd, s1, s2, matrix, gapopen, gapextend])
 	return ret
- 
+
+def parseFasta(lines, i):
+	fastalines = []
+	while lines[i][0] in cp.aafull:
+		fastalines.append(lines[i].strip())
+		i+=1
+	return (''.join(fastalines), i-1) 
 
 # parse markx3 format into flat format
 def alignparse(title, alignstr):
@@ -182,6 +189,33 @@ def alignparse(title, alignstr):
 
 	return ' '.join(out)
 
+def findsimilar(arglist):
+	if len(arglist)!= 4:
+		print 'Usage: python utils_embossalign.py findsimilar target_seq_file MSAfile'
+		return
+
+	targetfile = arglist[2]
+	msafile = arglist[3]
+
+	target = ''
+	with open(targetfile) as fp:
+		target = fp.readline().strip()
+
+	print 'target: %s' % target
+
+	ealist = []
+	msadict = {}
+	for s in cp.fasta_iter(msafile):
+		# remove gaps
+		msadict[s[0]] = s[1]
+		msaseq = s[1].translate(None, ''.join(cp.gaps))
+		alignflat = alignparse('%s::%s' % (targetfile, '.'.join(s[0].split())), align_exec(target, msaseq))
+		ea = embossalign(alignflat)
+		#ea.dump()
+		ealist.append(ea)
+	ealist.sort(key=lambda x: x.pid, reverse=True)
+	ealist[0].dump()
+
 
 def help(d):
 	print '--------------------'
@@ -192,8 +226,7 @@ def help(d):
 
 def main():
 	dispatch = {
-		'printpair':printpair,
-		'testpool':testpool
+		'findsimilar': findsimilar
 	}
 
 	if len(sys.argv) < 2:

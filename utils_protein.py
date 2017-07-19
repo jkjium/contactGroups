@@ -78,15 +78,19 @@ def pdbcut():
 
 
 def writeseq():
-	if len(sys.argv) < 4:
-		print 'writeseq(): write pdb sequence'
-		print 'writeseq(): python utils_protein.py writeseq 1t3r.pdb A'
-		print 'writeseq(): output: 1t3r.pdb.A.seq'
+	if len(sys.argv) == 4:
+		chainid = sys.argv[3]
+		outfile = '%s.%s.seq' % (sys.argv[2], chainid)
+	elif len(sys.argv) == 3:
+		chainid = 'all'
+		outfile = '%s.seq' % sys.argv[2]
+	else:
+		print 'Usage: python utils_protein.py writeseq 1t3r.pdb {A}'
+		print 'output: 1t3r.pdb.{A.}seq'
 		return
 
 	pdbfile = sys.argv[2]
-	chainid = sys.argv[3]
-	outfile = '%s.%s.seq' % (sys.argv[2], chainid)
+
 
 	p = protein(pdbfile, chain=chainid)
 	fout = open(outfile, 'w')
