@@ -365,6 +365,53 @@ class msa(object):
 		return (seqboard, scoreboard, indices_rc, indices_rr)
 
 
+	# return 3 values: 
+	#	complete scoreboard
+	#	indices of redueced columns
+	#	indices of redueced rows
+	# gap_cutoff: non-gap proportion
+	# hamming_cutoff: not closer(similar) than this distance
+	def msareduction_notarget(self, gap_cutoff, hamming_cutoff):
+		print 'Converting msa to scoreboard ...'
+		scoreboard = []
+		addboard = np.zeros(self.seqlen)
+		seqboard = []
+		for s in self.msaArray:
+			scoreboard.append([self.scoreValue[a.upper()] for a in s[1]])
+			addboard+=np.array([self.scoreBinary[a.upper()] for a in s[1]]) # calculate gap proportion
+			seqboard.append(list(s[1]))
+
+		#print [addboard[i]/self.seqNum for i in xrange(0, self.seqlen)]
+		indices_rc = [i for i in xrange(0, self.seqlen) if (addboard[i]/self.seqNum  > gap_cutoff)]
+		#print np.array(scoreboard)		
+
+		scoreboard_rc = np.array(scoreboard)[:,indices_rc]
+		indices_rr = []
+		(rc_row, rc_column) = scoreboard_rc.shape
+		count = 0
+		if hamming_cutoff >= 0:
+			indices_rr.append(self.target_index)
+			for i in xrange(0, rc_row): # iterate row
+				add_flag = True
+				for j in indices_rr:
+					if (scoreboard_rc[i, :]!=scoreboard_rc[j,:]).mean() <= hamming_cutoff: # discard any sequence has a counterpart in the set with a hamming distance less than cutoff
+						add_flag = False
+						break
+				if add_flag == True:
+					count+=1
+					#print 'adding %d: [%d]' % (count, i)
+					indices_rr.append(i)
+		else:
+			print 'get_msaboard_RC_RR(): no reduction on row'
+			indices_rr = [ i for i in xrange(0, rc_row)]
+		
+		print '%s :: reduced MSA size: (%d, %d)' % (self.msafile, len(indices_rr), len(indices_rc))
+		indices_rc.sort()
+		indices_rr.sort()
+		return (seqboard, scoreboard, indices_rc, indices_rr)
+
+
+
 	'''
 	W = (1./(1+sum(squareform(pdist(encoded_focus_alignment, 'hamm')<theta))));
 	'''

@@ -452,6 +452,7 @@ def MSAReduction():
 		print 'msareduction: reduce columns and rows by cutoffs'
 		print 'example: python utils_msa.py msareduction PF07714_full.fa BTK_HUMAN 0.8 0.38'
 		print 'python utils_msa.py msareduction PF13855_full.txt RTN4R_HUMAN 0.8 -1'
+		print 'python utils_msa.py msareduction PF13855_full.txt null 0.9 -1'
 		return
 
 	msafile = sys.argv[2]
@@ -466,9 +467,13 @@ def MSAReduction():
 
 	print 'loading msa file ...'
 	m = msa(msafile)
-	m.setTarget(target)
 
-	(seqboard, scoreboard, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
+	if target != 'null':
+		m.setTarget(target)
+		(seqboard, scoreboard, column_index, row_index) = m.get_msaboard_RC_RR(gap_cutoff, hamming_cutoff)
+	else:
+		(seqboard, scoreboard, column_index, row_index) = m.msareduction_notarget(gap_cutoff, hamming_cutoff)
+
 
 	'''
 	print 'score matrix:'
