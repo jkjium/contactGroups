@@ -32,13 +32,14 @@ class pfamscan(object):
 		}
 	]
 	'''
-	def __init__(self, jdata):
+	def __init__(self, jsonstring):
+		jdata = json.loads(jsonstring)[0]
 		self.model_length = int(jdata['model_length'])
 		aln = jdata['align']
-		self.alnhmm   = aln[0][len('#HMM       '):]
-		self.alnmatch = aln[1][len('#MATCH     '):]
-		self.alnpp    = aln[2][len('#PP        '):]
-		self.alnseq   = aln[3][len('#SEQ       '):]
+		self.alnhmm   = str(aln[0][len('#HMM       '):])
+		self.alnmatch = str(aln[1][len('#MATCH     '):])
+		self.alnpp    = str(aln[2][len('#PP        '):])
+		self.alnseq   = str(aln[3][len('#SEQ       '):])
 		self.envfrom = int(jdata['env']['from']) - 1 
 		self.envto   = int(jdata['env']['to']) - 1
 		self.acc = jdata['acc']
@@ -56,6 +57,8 @@ class pfamscan(object):
 		self.seqname    = jdata['seq']['name']
 
 		self.pfamid = self.acc[:7]
+
+
 
 	def dump(self):
 		print '\n-----------------------------'
@@ -83,7 +86,16 @@ class pfamscan(object):
 		print '-----------------------------\n'
 
 
+	# write matched HMM to as fasta file
+	def writeHMMfa(self, outfile):
+		with open(outfile, 'w') as fp:
+			fp.write('>%s\n%s' % (self.seqname ,self.alnhmm.upper()))
+
+
+# one json file may contain multiple matches
+# parse all the matches into a list
 class utils_pfamscan(object):
+	#use generator!!
 	def __init__(self, jsonfile):
 		with open(jsonfile) as fp:
 			line = fp.readline()
@@ -94,10 +106,58 @@ class utils_pfamscan(object):
 			ps.dump()
 		print '%d pfamscan records printed' % len(self.pslist)
 
+	# return the first PFXXXXX match
+	def getMatch(self, pfamid):
+		for ps in self.pslist:
+			if ps.pfamid[0:7] == pfamid:
+				return ps
 
-def main():
+
+def test():
+
 	ups = utils_pfamscan('t.json')
+	print 'json loaded: -----------------------'
 	ups.dump()
+	print 'get PF02576 match -----------------------'
+	ps = ups.getMatch('PF02576')
+	ps.dump()
+
+
+
+	'''
+	# test writeHMMfa
+	with open('t.json') as fp:
+		jsonstr = fp.readline()
+	pfs = pfamscan(jsonstr)
+	pfs.dump()
+	outfile = 't.hmmfa'
+	pfs.writeHMMfa(outfile)
+	print 'file %s saved.' % outfile
+	'''
+
+
+
+# main routine
+def main():
+	if len(sys.argv)<2:
+		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
+		return
+
+	dispatch = {
+		'test':test
+	}
+
+	cmd = sys.argv[1]
+
+	if sys.argv[1] not in dispatch:
+		print 'invalid cmd: %s' % sys.argv[1]
+		return
+	else:
+		dispatch[sys.argv[1]]()
+
+
+
+
 
 if __name__ == '__main__':
 	main()

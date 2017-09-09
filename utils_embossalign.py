@@ -56,8 +56,35 @@ class embossalign(object):
 		print '-----------------------------\n'
 
 
+	# return readable alignment string
+	def getreadable(self):
+		return ''.join([
+			'title:      %s\n' % self.name,
+			'cmd:        %s\n' % self.program,
+			'matrix:     %s\n' % self.matrix,
+			'gap-open:   %f\n' % self.gapopen,
+			'gap-extend: %f\n' % self.gapextend,
+			'align-len:  %d\n' % self.alignlen,
+			'nid:        %d\n' % self.nid,
+			'pid:        %f\n' % self.pid,
+			'nsm:        %d\n' % self.nsm,
+			'psm:        %f\n' % self.psm,
+			'ngp:        %d\n' % self.ngp,
+			'pgp:        %f\n' % self.pgp,
+			'score:      %f\n' % self.score,
+			'seq-A-len:  %d\n' % self.seqAlen,
+			'seq-B-len:  %d\n' % self.seqBlen,
+			'aligned-A:  %s\n' % self.seqA,
+			'            %s\n' % (''.join(['|' if (self.seqA[i] == self.seqB[i] and self.seqA[i] not in cp.gaps) else ' ' for i in xrange(0,len(self.seqA)) ]))
+			'aligned-B:  %s\n' % self.seqB
+		])
+
+
 # call needle or water to get the alignment 
-# needle <(echo -e ">a\n$1") <(echo -e ">b\n$2") "${@:3}" -filter
+# [kjia@lhb-ps1 bin]$ cat align.sh
+# #!/bin/bash
+# $1 <(echo -e ">A\n$2") <(echo -e ">B\n$3") -filter -data $4 -gapopen $5 -gapextend $6 -aformat markx3
+# return output in markx3 format
 def align_exec(s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
 	#$ ./align.sh needle "ALIGN" "LINE" B62 8 2
 	if (('%d.%d') % (sys.version_info.major, sys.version_info.minor)) == '2.6':
@@ -74,7 +101,7 @@ def parseFasta(lines, i):
 	return (''.join(fastalines), i-1) 
 
 # parse markx3 format into flat format
-def alignparse(title, alignstr):
+def getflat(title, alignstr):
 	lines = filter(None, alignstr.split('\n'))
 
 	i = 0
@@ -209,7 +236,7 @@ def findsimilar(arglist):
 		# remove gaps
 		msadict[s[0]] = s[1]
 		msaseq = s[1].translate(None, ''.join(cp.gaps))
-		alignflat = alignparse('%s::%s' % (targetfile, '.'.join(s[0].split())), align_exec(target, msaseq))
+		alignflat = getflat('%s::%s' % (targetfile, '.'.join(s[0].split())), align_exec(target, msaseq))
 		ea = embossalign(alignflat)
 		#ea.dump()
 		ealist.append(ea)
@@ -224,9 +251,56 @@ def help(d):
 		print ''
 	print '--------------------'
 
+
+
+# align s1,s2 with cmd={needle, water}
+# call align_exec(s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
+# output two files: readable alignment and flat file
+def flatenalign(title, s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
+	# exec emboss
+	cmdret = align_exec(s1,s2,cmd,matrix,gapopen,gapextend)
+
+	# convert output
+	flatstr = getflat(title, cmdret)
+	ea = embossalign(flatstr)
+	ea.dump()
+
+	readablestr = ea.getreadable()
+
+	# save to readable file
+	readable_output = title+'.aln'
+	with open(readable_output, 'w') as fp:
+		fp.write(readablestr)
+	print 'save readable %s.' % readable_output
+
+	# save to flat file
+	flat_output = title+'.flat'
+	with open(flat_output, 'w') as fp:
+		fp.write(flatstr)
+	print 'save flat %s.' % flat_output
+
+
+
+def test():
+	# test flatenalign
+	f1='t1.fa'
+	f2='t2.fa'
+
+	s1 = [s for s in cp.fasta_iter(f1)][0]
+	print 's1: %s' % s1
+	s2 = [s for s in cp.fasta_iter(f2)][0]
+	print 's2: %s' % s2
+
+	title = '%s-%s' % (f1,f2)
+
+	flatenalign(title, s1, s2)
+
+
+
 def main():
 	dispatch = {
 		'findsimilar': findsimilar
+		'test':test
 	}
 
 	if len(sys.argv) < 2:

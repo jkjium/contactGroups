@@ -1,8 +1,11 @@
 import sys
 import math
 from itertools import groupby
+import operator as op
 
-gaps = ['.','-']
+import inspect
+
+gaps = ['.','-',' ']
 
 abaa = ['.','-','X','Z','U','B','O']
 
@@ -62,6 +65,26 @@ aadef={
 	'U':('Cysteine',103.1448,86,7)
 	}
 
+def _fatal():
+	exit(1)
+
+def _warning():
+	return False
+
+def _err(errcallback, msg):
+	curframe = inspect.currentframe()
+	calframe = inspect.getouterframes(curframe, 1)
+	print 'err:%s:%s(): %s' % (' '.join(sys.argv),calframe[1][3], msg)
+	errcallback()
+
+
+def ncr(n, r):
+    r = min(r, n-r)
+    if r == 0: return 1
+    numer = reduce(op.mul, xrange(n, n-r, -1))
+    denom = reduce(op.mul, xrange(1, r+1))
+    return numer//denom
+
 # jaccard distance for two sets
 def jaccard(a, b):
 	c = a.intersection(b)
@@ -80,6 +103,38 @@ def rmsd(v, w):
 	d = [((v[i][0]-w[i][0])*(v[i][0]-w[i][0]) + (v[i][1]-w[i][1])*(v[i][1]-w[i][1]) + (v[i][2]-w[i][2])*(v[i][2]-w[i][2])) for i in xrange(0, len(v))] 
 	#print repr(d)
 	return math.sqrt(sum(d)/len(d))
+
+
+def getPDBUniprotMap(mapfile):
+	# duplicate from utils_msa.py
+	# called in utils_msa.py ncg2sdiicol()
+	# load map between pdb residue ID and MSA uniprot position ID 
+	# dictionary element: ('A9', (14, 'V')) : (chain+resi, (MSA position index, resn))
+	# mapfile:
+	# AT284 1218 T  : chain A residue T resn 284 => position 1218 (start from 0) resn T
+	# AE285 1220 e  : lowercase exists!
+	# AR286 -1 -	: residue number that cannot map to MSA position (does not exist)
+	posmap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) < 1:
+				print 'getPDBUniprotMap: error loading map: %s' % mapfile
+			strArray = line.split(' ')
+			key = strArray[0][0] + strArray[0][2:]
+			value = (int(strArray[1]), strArray[2].upper())
+			posmap[key] = value
+	print 'getPDBUniprotMap: %s %d maps loaded' % (mapfile, len(posmap))
+	return posmap
+
+# generate fasta entries from a fasta file
+def fasta_iter(fastafile):
+	fh = open(fastafile)
+	faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))	
+	for header in faiter:
+		header = header.next()[1:].strip()
+		seq = "".join(s.strip() for s in faiter.next())
+		yield header, seq	
 
 
 # given two strings
@@ -121,68 +176,97 @@ def posmap1(s1, s2, key=1):
 
 	return retmap
 
-# given two strings
+
+# map between two gap extened sequences with the same original sequence
 # normal sequence or aligned sequence
-# return map pos[s1] = s2; 
-def posmap(s1, s2):
-	gap = ['.', '-', '_']
-	ps1 = s1.translate(None, ''.join(gap))
-	ps2 = s2.translate(None, ''.join(gap))
+# return map pos[s1_index] = s2_index; 
+# index starts from 0
+def posmap_homoseq(s1, s2):
+	ps1 = s1.translate(None, ''.join(gaps))
+	ps2 = s2.translate(None, ''.join(gaps))
 
 	if ps1!=ps2:
-		print 'error: unmatched raw sequence\ns1: %s\ns2: %s\n' % (ps1, ps2)
-		return False
-	#print 's1: %s\ns2: %s' % (s1, s2)
+		_err(_fatal, 'unmatched raw sequence\ns1: %s\ns2: %s\n' % (ps1, ps2))
 
 	i=0
 	j=0
-	retmap={}
+	retmap=[]
 	while(i<len(s1) and j<len(s2)):
-		if s1[i] in gap:
+		if s1[i] in gaps:
 			i+=1
 			continue
-		if s2[j] in gap:
+		if s2[j] in gaps:
 			j+=1
 			continue
 		if s1[i]==s2[j]:
-			retmap[i] = j
+			retmap.append((i, j))
 			i+=1
 			j+=1
 
 	if len(retmap)!=len(ps1):
 		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
 		return False
-
 	return retmap
 
 
-def getPDBUniprotMap(mapfile):
-	# duplicate from utils_msa.py
-	# called in utils_msa.py ncg2sdiicol()
-	# load map between pdb residue ID and MSA uniprot position ID 
-	# dictionary element: ('A9', (14, 'V')) : (chain+resi, (MSA position index, resn))
-	# mapfile:
-	# AT284 1218 T  : chain A residue T resn 284 => position 1218 (start from 0) resn T
-	# AE285 1220 e  : lowercase exists!
-	# AR286 -1 -	: residue number that cannot map to MSA position (does not exist)
-	posmap = {}
-	with open(mapfile) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) < 1:
-				print 'getPDBUniprotMap: error loading map: %s' % mapfile
-			strArray = line.split(' ')
-			key = strArray[0][0] + strArray[0][2:]
-			value = (int(strArray[1]), strArray[2].upper())
-			posmap[key] = value
-	print 'getPDBUniprotMap: %s %d maps loaded' % (mapfile, len(posmap))
-	return posmap
+# called in posmap_subseq()
+# return a list of tuples: [(idx_long, idx_short), (, ), ...]
+def subseq_align(longseq, shortseq, start):
+	if start == -1:
+		_err(_fatal, 'unmatched sub sequence\nlong str: %s\nshort str: %s\n' % (longseq, shortseq))
+
+	retset = []
+	i, j = start, 0
+	while (i<len(longseq) and j<len(shortseq)):
+		if longseq[i] in gaps:
+			i+=1
+			continue
+		if shortseq[j] in gaps:
+			j+=1
+			continue
+		if longseq[i] == shortseq[j]:
+			retset.append((i,j))
+			i+=1
+			j+=1
+	return retset	
 
 
-def fasta_iter(fastafile):
-	fh = open(fastafile)
-	faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))	
-	for header in faiter:
-		header = header.next()[1:].strip()
-		seq = "".join(s.strip() for s in faiter.next())
-		yield header, seq	
+# extend version of posmap_homoseq() 
+# map between two gap extened sequences with one substring to the another without gaps
+# 	after pfamscan, a MSA sequence will be trimmed and insert gaps in different positions
+# normal sequence or aligned sequence
+# return map pos[s1_index] = s2_index; 
+# index starts from 0
+def posmap_subseq(s1, s2):
+	ps1 = s1.translate(None, ''.join(gaps))
+	ps2 = s2.translate(None, ''.join(gaps))
+
+	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) > len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
+
+	if reverse == True:
+		retmap = [(v, k) for (k, v) in idx_set]
+	else:
+		retmap = idx_set
+	return retmap
+
+
+def main():
+	# test posmap_homoseq
+	s1 = '.j..kj...'
+	s2 = 'j.....k..j.'
+	retmap = posmap_homoseq(s1, s2)
+	# test posmap_subseq
+	'''
+	s2 = 'aa..jk.j.a'
+	s1 = '.j.kj.'
+
+	retmap = posmap_subseq(s1,s2)
+	'''
+	print 's1: [%s]' % s1
+	print 's2: [%s]' % s2
+	for k,v in retmap:
+		print 's1: %s %d -> s2: %s %d' % (s1[k], k, s2[v], v)
+
+
+if __name__ == '__main__':
+	main()

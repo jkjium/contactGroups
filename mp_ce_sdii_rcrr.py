@@ -5,9 +5,9 @@ import math
 import os
 import sys
 import time
+import commp as cp 
 from sdii import sdii
 from msa import msa
-from scipy.special import binom
 
 
 def init():
@@ -65,12 +65,13 @@ def init():
 
 	# tasklist init
 	# calculating total tasks
+	totalnum = cp.ncr(len(varlist), order)
 	tasks = []
 	if targetVar == 'all':
 		print 'generating tasks for all ...'
 		for s in set(itertools.combinations(list(range(len(varlist))), order)):
 			tasks.append(list(s))
-		print 'In total %d/%d for order %d.' % (len(tasks), binom(len(varlist), order), order)
+		print 'In total %d/%d for order %d.' % (len(tasks), totalnum, order)
 	else:
 		print 'generating tasks for variable %s' % targetVar
 		for s in set(itertools.combinations(list(range(len(varlist))), order-1)):
@@ -79,7 +80,7 @@ def init():
  				st = list(s)
  				st.append(target_idx)
  				tasks.append(st)
-		print 'In total %d/%d for order %d.' % (len(tasks), binom(len(varlist), order), order)
+		print 'In total %d/%d for order %d.' % (len(tasks), totalnum, order)
 
 	sdii_core.setTotalTask(len(tasks))
 	# split tasks into blocks

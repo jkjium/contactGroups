@@ -1,5 +1,6 @@
 import sys
 import math
+import operator as op
 
 abaa = ['.','-','X','Z','U','B','O']
 
@@ -53,6 +54,16 @@ aadef={
 	'V':('Valine',99.1326,105,4),
 	'U':('Cysteine',103.1448,86,7)
 	}
+
+
+# calculate n choose r
+def ncr(n, r):
+    r = min(r, n-r)
+    if r == 0: return 1
+    numer = reduce(op.mul, xrange(n, n-r, -1))
+    denom = reduce(op.mul, xrange(1, r+1))
+    return numer//denom
+
 
 # jaccard distance for two sets
 def jaccard(a, b):
