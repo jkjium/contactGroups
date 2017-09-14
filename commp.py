@@ -40,6 +40,7 @@ a2t={'D':'C','E':'C','H':'C','K':'C','R':'C',
 	 'F':'H','W':'H','G':'G','A':'H','C':'C',
 	 'T':'P','Q':'P','N':'P','Y':'P','S':'P'}
 
+smaa1 = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '*']
 # average resi mass, van der waals volume, polarities
 aadef={
 	'A':('Alanine',71.0788,67,9),
@@ -71,10 +72,10 @@ def _fatal():
 def _warning():
 	return False
 
-def _err(errcallback, msg):
+def _err(msg, errcallback=_fatal):
 	curframe = inspect.currentframe()
 	calframe = inspect.getouterframes(curframe, 1)
-	print 'err:%s:%s(): %s' % (' '.join(sys.argv),calframe[1][3], msg)
+	print '[err:%s:%s()] %s' % (' '.join(sys.argv),calframe[1][3], msg)
 	errcallback()
 
 
@@ -241,7 +242,7 @@ def posmap_subseq(s1, s2):
 	ps1 = s1.translate(None, ''.join(gaps))
 	ps2 = s2.translate(None, ''.join(gaps))
 
-	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) > len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
+	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) >= len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
 
 	if reverse == True:
 		retmap = [(v, k) for (k, v) in idx_set]
@@ -254,7 +255,8 @@ def main():
 	# test posmap_homoseq
 	s1 = '.j..kj...'
 	s2 = 'j.....k..j.'
-	retmap = posmap_homoseq(s1, s2)
+	#retmap = posmap_homoseq(s1, s2)
+	retmap = posmap_subseq(s1,s2)
 	# test posmap_subseq
 	'''
 	s2 = 'aa..jk.j.a'

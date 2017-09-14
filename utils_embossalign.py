@@ -59,24 +59,24 @@ class embossalign(object):
 	# return readable alignment string
 	def getreadable(self):
 		return ''.join([
-			'title:      %s\n' % self.name,
-			'cmd:        %s\n' % self.program,
-			'matrix:     %s\n' % self.matrix,
-			'gap-open:   %f\n' % self.gapopen,
-			'gap-extend: %f\n' % self.gapextend,
-			'align-len:  %d\n' % self.alignlen,
-			'nid:        %d\n' % self.nid,
-			'pid:        %f\n' % self.pid,
-			'nsm:        %d\n' % self.nsm,
-			'psm:        %f\n' % self.psm,
-			'ngp:        %d\n' % self.ngp,
-			'pgp:        %f\n' % self.pgp,
-			'score:      %f\n' % self.score,
-			'seq-A-len:  %d\n' % self.seqAlen,
-			'seq-B-len:  %d\n' % self.seqBlen,
-			'aligned-A:  %s\n' % self.seqA,
-			'            %s\n' % (''.join(['|' if (self.seqA[i] == self.seqB[i] and self.seqA[i] not in cp.gaps) else ' ' for i in xrange(0,len(self.seqA)) ]))
-			'aligned-B:  %s\n' % self.seqB
+			('title:      %s\n' % self.name),
+			('cmd:        %s\n' % self.program),
+			('matrix:     %s\n' % self.matrix),
+			('gap-open:   %f\n' % self.gapopen),
+			('gap-extend: %f\n' % self.gapextend),
+			('align-len:  %d\n' % self.alignlen),
+			('nid:        %d\n' % self.nid),
+			('pid:        %f\n' % self.pid),
+			('nsm:        %d\n' % self.nsm),
+			('psm:        %f\n' % self.psm),
+			('ngp:        %d\n' % self.ngp),
+			('pgp:        %f\n' % self.pgp),
+			('score:      %f\n' % self.score),
+			('seq-A-len:  %d\n' % self.seqAlen),
+			('seq-B-len:  %d\n' % self.seqBlen),
+			('aligned-A:  %s\n' % self.seqA),
+			('            %s\n' % (''.join(['|' if (self.seqA[i] == self.seqB[i] and self.seqA[i] not in cp.gaps) else ' ' for i in xrange(0,len(self.seqA)) ])) ),
+			('aligned-B:  %s\n' % self.seqB)
 		])
 
 
@@ -87,7 +87,8 @@ class embossalign(object):
 # return output in markx3 format
 def align_exec(s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
 	#$ ./align.sh needle "ALIGN" "LINE" B62 8 2
-	if (('%d.%d') % (sys.version_info.major, sys.version_info.minor)) == '2.6':
+	#if (('%d.%d') % (sys.version_info.major, sys.version_info.minor)) == '2.6':
+	if (('%d.%d') % (sys.version_info[0], sys.version_info[1])) == '2.6':
 		ret = subprocess.Popen(['align.sh', cmd, s1, s2, matrix, gapopen, gapextend], stdout=subprocess.PIPE).communicate()[0].strip()
 	else:	
 		ret = subprocess.check_output(['align.sh', cmd, s1, s2, matrix, gapopen, gapextend])
@@ -281,25 +282,25 @@ def flatenalign(title, s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapex
 
 
 
-def test():
+def test(arglist):
 	# test flatenalign
-	f1='t1.fa'
-	f2='t2.fa'
+	f1='t.pdb.fa'
+	f2='t.pfam.fa'
 
-	s1 = [s for s in cp.fasta_iter(f1)][0]
+	s1 = [s for s in cp.fasta_iter(f1)][0][1]
 	print 's1: %s' % s1
-	s2 = [s for s in cp.fasta_iter(f2)][0]
+	s2 = [s for s in cp.fasta_iter(f2)][0][1]
 	print 's2: %s' % s2
 
 	title = '%s-%s' % (f1,f2)
-
+	# perform needle alignment and save flat file
 	flatenalign(title, s1, s2)
 
 
 
 def main():
 	dispatch = {
-		'findsimilar': findsimilar
+		'findsimilar': findsimilar,
 		'test':test
 	}
 

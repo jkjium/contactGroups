@@ -4,6 +4,7 @@ get resid list of varname
 import sys
 from protein import protein
 from AAmap import AAmap
+import commp as cp
 
 def resn2bfactor():
 	if len(sys.argv) < 3:
@@ -156,7 +157,6 @@ def dumpseqflat():
 	p = protein(pdbfile, chain=chain)
 	print '%d %s %s' % (len(p.seq), pdbfile, p.seq)
 
-
 def main():
 	if len(sys.argv)<2:
 		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
@@ -164,7 +164,7 @@ def main():
 
 	dispatch = {
 		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
-		'writeca':writeca, 'writesgc':writesgc
+		'writeca':writeca, 'writesgc':writesgc, 'getmutantseq':getMutantSeq
 	}
 
 	cmd = sys.argv[1]

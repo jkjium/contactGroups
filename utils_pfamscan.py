@@ -32,8 +32,9 @@ class pfamscan(object):
 		}
 	]
 	'''
-	def __init__(self, jsonstring):
-		jdata = json.loads(jsonstring)[0]
+	#def __init__(self, jsonstring):
+#		jdata = json.loads(jsonstring)[0]
+	def __init__(self, jdata):
 		self.model_length = int(jdata['model_length'])
 		aln = jdata['align']
 		self.alnhmm   = str(aln[0][len('#HMM       '):])
@@ -97,9 +98,9 @@ class pfamscan(object):
 class utils_pfamscan(object):
 	#use generator!!
 	def __init__(self, jsonfile):
+		self.name = jsonfile
 		with open(jsonfile) as fp:
-			line = fp.readline()
-		self.pslist = [pfamscan(js) for js in json.loads(line.strip())]
+			self.pslist = [pfamscan(js) for js in json.loads(fp.read())] # empty line does not matter
 
 	def dump(self):
 		for ps in self.pslist:
@@ -107,10 +108,23 @@ class utils_pfamscan(object):
 		print '%d pfamscan records printed' % len(self.pslist)
 
 	# return the first PFXXXXX match
-	def getMatch(self, pfamid):
+	def getMatchpfs(self, pfamid):
 		for ps in self.pslist:
 			if ps.pfamid[0:7] == pfamid:
 				return ps
+		return False
+
+	# get hmm sequence in json
+	def getHmmSeq(self, opt='first'):
+		if opt == 'first':
+			hmmfa = self.pslist[0].alnhmm
+		elif 'PF' in opt and len(opt) == 7:
+			ps = self.getMatchfs(opt)
+			if ps == False:
+				cp._err('%s not found.' % opt)
+			hmmfa = ps.alnhmm
+		elif opt == 'all':
+			hmmfa = '\n'.join([ '>%s_hmm\n%s' % (ps.seqname, ps.alnhmm) for ps in self.pslist])
 
 
 def test():
@@ -119,21 +133,21 @@ def test():
 	print 'json loaded: -----------------------'
 	ups.dump()
 	print 'get PF02576 match -----------------------'
-	ps = ups.getMatch('PF02576')
+	ps = ups.getMatchpfs('PF02576')
 	ps.dump()
 
 
 
-	'''
 	# test writeHMMfa
+	'''
 	with open('t.json') as fp:
 		jsonstr = fp.readline()
 	pfs = pfamscan(jsonstr)
 	pfs.dump()
-	outfile = 't.hmmfa'
-	pfs.writeHMMfa(outfile)
-	print 'file %s saved.' % outfile
 	'''
+	#outfile = 't.hmmfa'
+	#pfs.writeHMMfa(outfile)
+	#print 'file %s saved.' % outfile
 
 
 

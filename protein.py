@@ -60,7 +60,7 @@ class protein(object):
             if line[0:6]=='ATOM  ':
                 at = atom(lines[i])
                 if (at.name == lastname) and (at.resSeq == lastres):
-                    print '[%s]::alter loc:\n%s' % (self.pdbfile, lines[i])
+                    #print '[%s]::alter loc:\n%s' % (self.pdbfile, lines[i])
                     #if (line[16]==' ' or line[16]=='A'): # to avoid alternative location
                     continue
                 else:
@@ -560,7 +560,7 @@ class protein(object):
                 v2 = np.array((self.atoms[j].x, self.atoms[j].y, self.atoms[j].z))
                 self.pairwiseDict[key]= np.linalg.norm(v1-v2)
     
-    # print pairwise distance between atom[i] and other atoms   
+    # print pairwise distance between atom[i] and /other atoms   
     # index starts from 0         
     def getPairwiseOf(self, index):
             a = self.atoms[index]
