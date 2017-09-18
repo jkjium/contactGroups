@@ -280,7 +280,8 @@ def flatenalign(title, s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapex
 		fp.write(flatstr)
 	print 'save flat %s.' % flat_output
 
-
+	return readablestr
+	
 
 def test(arglist):
 	# test flatenalign

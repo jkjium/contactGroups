@@ -257,15 +257,20 @@ class protein(object):
 
 
     # extract all the CA atoms from the pdb file
-    def writeCA(self, filename):
+    def writeCA(self, filename, chain='all'):
         fd=open(filename, 'w')
         count=0
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
             #a.dump()
-            if 'CA' in a.name:
-                fd.write(a.writeAtom())
-                count=count+1
+            if chain == 'all':
+                if 'CA' in a.name:
+                    fd.write(a.writeAtom())
+                    count=count+1
+            else:
+                if 'CA' in a.name and a.chainID == chain:
+                    fd.write(a.writeAtom())
+                    count=count+1
         fd.close()
         if count==0:
             print "No atom written in [%s]!" % (filename)      

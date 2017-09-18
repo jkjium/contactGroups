@@ -4,7 +4,6 @@ get resid list of varname
 import sys
 from protein import protein
 from AAmap import AAmap
-import commp as cp
 
 def resn2bfactor():
 	if len(sys.argv) < 3:
@@ -99,7 +98,32 @@ def writeseq():
 	fout.close()
 	print 'writeseq(): outfile: %s' % outfile
 
-# write tip pdb
+
+def writeseqfa():
+	if len(sys.argv) == 4:
+		chainid = sys.argv[3]
+		outfile = '%s.%s.fa' % (sys.argv[2], chainid)
+		head = '%s_%s' % (sys.argv[2], chainid)
+	elif len(sys.argv) == 3:
+		chainid = 'all'
+		outfile = '%s.fa' % sys.argv[2]
+		head = sys.argv[2]
+	else:
+		print 'Usage: python utils_protein.py writeseq 1t3r.pdb {A}'
+		print 'output: 1t3r.pdb.{A.}seq'
+		return
+
+	pdbfile = sys.argv[2]
+
+
+	p = protein(pdbfile, chain=chainid)
+	fout = open(outfile, 'w')
+	fout.write('>%s\n%s\n' % (head, p.seq.lower()))
+	fout.close()
+	print 'writeseq(): outfile: %s' % outfile
+
+
+# irite tip pdb
 def writetip():
 	if len(sys.argv) < 3:
 		print 'writetip(): write tip pdb file'
@@ -134,14 +158,17 @@ def writesgc():
 
 def writeca():
 	if len(sys.argv) < 3:
-		print 'writeca(): python utils_protein.py writeca pdbfile outcafile'
-		print 'writeca(): output: 1k2p.pdb.ca'
+		print 'writeca(): python utils_protein.py writeca pdbfile {chain}'
+		print 'writeca(): output: 1k2p.pdb.chain.ca'
 		return
-
+	chain = 'all'
 	pdbfile = sys.argv[2]
-	outfile = pdbfile + '.ca'
+	if len(sys.argv) == 4:
+		chain = sys.argv[3]
+
+	outfile = pdbfile + '.ca' if chain == 'all' else '%s.%s.ca' % (pdbfile, chain)
 	p = protein(pdbfile)
-	p.writeCA(outfile)
+	p.writeCA(outfile, chain)
 	print 'save to %s' % outfile
 
 
@@ -157,6 +184,7 @@ def dumpseqflat():
 	p = protein(pdbfile, chain=chain)
 	print '%d %s %s' % (len(p.seq), pdbfile, p.seq)
 
+
 def main():
 	if len(sys.argv)<2:
 		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
@@ -164,7 +192,7 @@ def main():
 
 	dispatch = {
 		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
-		'writeca':writeca, 'writesgc':writesgc, 'getmutantseq':getMutantSeq
+		'writeca':writeca, 'writesgc':writesgc, 'writeseqfa':writeseqfa
 	}
 
 	cmd = sys.argv[1]
