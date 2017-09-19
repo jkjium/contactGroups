@@ -55,7 +55,7 @@ class pfamscan(object):
 		self.clan = jdata['clan']
 		self.seqfrom = int(jdata['seq']['from']) - 1
 		self.seqto   = int(jdata['seq']['to']) - 1
-		self.seqname    = jdata['seq']['name']
+		self.seqname    = str(jdata['seq']['name'])
 
 		self.pfamid = self.acc[:7]
 

@@ -241,6 +241,13 @@ class msa(object):
 				 out.append(s[1])
 		return out
 
+	# get raw score
+	def msascore(self):
+		score = []
+		for s in self.msaArray:
+			score.append([self.scoreValue[a.upper()] for a in s[1]])
+		return np.array(score)
+
 	# generate concised msa scoreboard
 	# cutoff: 0% ~ 100%, critera for dropping msa columns. how many gaps in the column
 	# weight_cutoff: 0 ~ 1.0 hamming distance between two sequences in msa. How much similar between two sequences in msa.

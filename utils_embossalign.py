@@ -32,6 +32,9 @@ class embossalign(object):
 		self.seqBlen = float(flatArray[15])
 		self.seqB = flatArray[16]
 
+	def getAlignedpos(self):
+		return [i for i in xrange(0, self.alignlen) if self.seqA[i] == self.seqB[i]]
+
 
 	# dump object to stdout
 	def dump(self):
@@ -51,6 +54,7 @@ class embossalign(object):
 		print 'score:      %f' % self.score
 		print 'seq-A-len:  %d' % self.seqAlen
 		print 'aligned-A:  %s' % self.seqA
+		print '            %s' % (''.join(['+' if (self.seqA[i] == self.seqB[i] and self.seqA[i] not in cp.gaps) else '.' for i in xrange(0,len(self.seqA)) ]))
 		print 'seq-B-len:  %d' % self.seqBlen
 		print 'aligned-B:  %s' % self.seqB
 		print '-----------------------------\n'
@@ -75,7 +79,7 @@ class embossalign(object):
 			('seq-A-len:  %d\n' % self.seqAlen),
 			('seq-B-len:  %d\n' % self.seqBlen),
 			('aligned-A:  %s\n' % self.seqA),
-			('            %s\n' % (''.join(['|' if (self.seqA[i] == self.seqB[i] and self.seqA[i] not in cp.gaps) else ' ' for i in xrange(0,len(self.seqA)) ])) ),
+			('            %s\n' % (''.join(['|' if (self.seqA[i] == self.seqB[i] and self.seqA[i] not in cp.gaps) else '.' for i in xrange(0,len(self.seqA)) ])) ),
 			('aligned-B:  %s\n' % self.seqB)
 		])
 
@@ -264,7 +268,7 @@ def flatenalign(title, s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapex
 	# convert output
 	flatstr = getflat(title, cmdret)
 	ea = embossalign(flatstr)
-	ea.dump()
+	#ea.dump()
 
 	readablestr = ea.getreadable()
 
@@ -280,8 +284,8 @@ def flatenalign(title, s1, s2, cmd='needle', matrix='B62', gapopen='10.0', gapex
 		fp.write(flatstr)
 	print 'save flat %s.' % flat_output
 
-	return readablestr
-	
+	return flatstr
+
 
 def test(arglist):
 	# test flatenalign

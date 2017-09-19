@@ -5,6 +5,8 @@ import operator as op
 
 import inspect
 
+illab =['/', '+', '?', '*', '&', '$', '\\']
+
 gaps = ['.','-',' ']
 
 abaa = ['.','-','X','Z','U','B','O']
@@ -65,6 +67,65 @@ aadef={
 	'V':('Valine',99.1326,105,4),
 	'U':('Cysteine',103.1448,86,7)
 	}
+
+'''
+Column Headings:
+
+1)  One-letter code (key)
+2)  Three-letter code
+3)  Name
+4)  Chou-Fasman code for helix propensity
+5)  Chou-Fasman code for sheet propensity
+6)  Chou-Fasman helix propensity values
+7)  Chou-Fasman sheet propensity values
+8)  Amino acid molecular weight
+9)  pKa value for free amino acid carboxylate
+10) pKa value for free amino acid amine
+11) pKa value for amino acid side chain 
+12) Number of carbon atoms in amino acid
+13) Number of hydrogen atoms in amino acid zwitterion 
+14) Number of nitrogen atoms in amino acid
+15) Number of oxygen atoms in amino acid
+16) Number of sulfur atoms in amino acid
+17) Area in the standard state (standard state accessibility is defined
+        as the average surface area that residue has in a ensemble 
+        of Gly-X-Gly tripeptides)
+18) Average accessible area in proteins
+19) Average are buried upon transfer from the standard state to the folded protein.
+20) Mean fractional area loss, equal to the average area buried normalized
+        by the standard state area
+21) Residue mass
+22) Monoisotopic Mass
+23) Total number of heavy atom
+'''
+aaprop = {
+	'A':('ALA' ,  'Alanine'       ,  'H',  'I'   ,1.45  ,0.97   ,89.09  ,2.3 ,9.9   ,0    ,3 ,7 ,1,2,0,118.1,31.5 ,86.6 ,.74,71.08 ,71.03711 , 6),
+	'C':('CYS' ,  'Cysteine'      ,  'i',  'h'   ,0.77  ,1.30   ,121.16 ,1.8 ,10.8  ,8.65 ,3 ,7 ,1,2,1,146.1,13.9 ,132.3,.91,103.14,103.00919, 7),
+	'D':('ASP' ,  'Aspartic Acid' ,  'i',  'i'   ,0.98  ,0.80   ,133.10 ,2.0 ,10.0  ,4.04 ,4 ,7 ,1,4,0,158.7,60.9 ,97.8 ,.62,115.09,115.02694, 9),
+	'E':('GLU' ,  'Glutamic Acid' ,  'H',  'B'   ,1.53  ,0.26   ,147.13 ,2.2 ,9.7   ,4.39 ,5 ,9 ,1,4,0,186.2,72.3 ,113.9,.62,129.12,129.04259,10),
+	'F':('PHE' ,  'Phenylalanine' ,  'h',  'h'   ,1.12  ,1.28   ,165.19 ,1.8 ,9.1   ,0    ,9 ,11,1,2,0,222.8,28.7 ,194.1,.88,147.18,147.06841,12),
+	'G':('GLY' ,  'Glycine'       ,  'B',  'i'   ,0.53  ,0.81   ,75.07  ,2.4 ,9.8   ,0    ,2 ,5 ,1,2,0,88.1 ,25.2 ,62.9 ,.72,57.05 ,57.02146 , 5),
+	'H':('HIS' ,  'Histidine'     ,  'h',  'b'   ,1.24  ,0.71   ,155.16 ,1.8 ,9.2   ,6.75 ,6 ,9 ,3,2,0,202.5,46.7 ,155.8,.78,137.14,137.05891,11),
+	'I':('ILE' ,  'Isoleucine'    ,  'I',  'H'   ,1.00  ,1.60   ,131.17 ,2.4 ,9.7   ,0    ,6 ,13,1,2,0,181  ,23   ,158  ,.88,113.16,113.08406, 9),
+	'K':('LYS' ,  'Lysine'        ,  'I',  'b'   ,1.07  ,0.74   ,146.19 ,2.2 ,9.2   ,11.0 ,6 ,14,2,2,0,225.8,110.3,115.5,.52,128.17,128.09496,10),
+	'L':('LEU' ,  'Leucine'       ,  'H',  'h'   ,1.34  ,1.22   ,131.17 ,2.4 ,9.60  ,0    ,6 ,13,1,2,0,193.1,29   ,164.1,.85,113.16,113.08406, 9),
+	'M':('MET' ,  'Methionine'    ,  'h',  'H'   ,1.20  ,1.67   ,149.21 ,2.3 ,9.2   ,0    ,5 ,11,1,2,1,203.4,30.5 ,172.9,.85,131.19,131.04049, 9),
+	'N':('ASN' ,  'Asparagine'    ,  'b',  'b'   ,0.73  ,0.65   ,132.12 ,2.0 ,8.8   ,0    ,4 ,8 ,2,3,0,165.5,62.2 ,103.3,.63,114.10,114.04293, 9),
+	'P':('PRO' ,  'Proline'       ,  'B',  'b'   ,0.59  ,0.62   ,115.13 ,2.0 ,10.6  ,0    ,5 ,9 ,1,2,0,146.8,53.7 ,92.9 ,.64,97.12 ,97.05276 , 8),
+	'Q':('GLN' ,  'Glutamine'     ,  'h',  'h'   ,1.17  ,1.23   ,146.15 ,2.2 ,9.1   ,0    ,5 ,10,2,3,0,193.2,74   ,119.2,.62,128.13,128.05858,10),
+	'R':('ARG' ,  'Arginine'      ,  'i',  'i'   ,0.79  ,0.90   ,174.20 ,1.8 ,9.0   ,12.5 ,6 ,14,4,2,0,256  ,93.8 ,162.2,.64,156.19,156.10111,12),
+	'S':('SER' ,  'Serine'        ,  'i',  'b'   ,0.79  ,0.72   ,105.09 ,2.1 ,9.2   ,0    ,3 ,7 ,1,3,0,129.8,44.2 ,85.6 ,.66,87.08 ,87.03203 , 7),
+	'T':('THR' ,  'Threonine'     ,  'i',  'h'   ,0.82  ,1.20   ,119.12 ,2.6 ,10.4  ,0    ,4 ,9 ,1,3,0,152.5,46   ,106.5,.70,101.11,101.04768, 8),
+	'V':('VAL' ,  'Valine'        ,  'h',  'H'   ,1.14  ,1.65   ,117.15 ,2.3 ,9.6   ,0    ,5 ,11,1,2,0,164.5,23.5 ,141  ,.86,99.13 ,99.06841 , 8),
+	'W':('TRP' ,  'Tryptophan'    ,  'h',  'h'   ,1.14  ,1.19   ,204.22 ,2.4 ,9.4   ,0    ,11,12,2,2,0,266.3,41.7 ,224.6,.85,186.21,186.07931,15),
+	'Y':('TYR' ,  'Tyrosine'      ,  'b',  'h'   ,0.61  ,1.29   ,181.19 ,2.20,9.1   ,9.75 ,9 ,11,1,3,0,236.8,59.1 ,177.7,.76,163.18,163.06333,13),
+	'.':('gap' ,  'gap'           ,  '.' , '.'   ,0     ,0      ,0      ,0   ,0     ,0    ,0 ,0 ,0,0,0,0    ,0    ,0    ,0  ,0     ,0        ,0 )	
+}
+
+scorerdict = {
+				0:'.',1:'A',2:'C',3:'D',4:'E',5:'F',6:'G',7:'H',8:'I',9:'K',
+				10:'L',11:'M',12:'N',13:'P',14:'Q',15:'R',16:'S',17:'T',18:'V',19:'W',20:'Y'
+			}
 
 def _fatal():
 	exit(1)
@@ -212,13 +273,24 @@ def posmap_homoseq(s1, s2):
 
 # called in posmap_subseq()
 # return a list of tuples: [(idx_long, idx_short), (, ), ...]
-def subseq_align(longseq, shortseq, start):
-	if start == -1:
-		_err(_fatal, 'unmatched sub sequence\nlong str: %s\nshort str: %s\n' % (longseq, shortseq))
+def subseq_align(longseq, shortseq, prefix):
+	if prefix == -1:
+		_err('unmatched sub sequence\nlong str: %s\nshort str: %s\n' % (longseq, shortseq))
 
+	#print 'longseq:\n%s\n' % longseq
+	#print 'shortseq:\n%s\n' % shortseq
+	#print 'prefix: %d' % prefix
+	# skip prefix # non-gapped alphabets
+	k = 0
+	while (prefix>0):
+		if longseq[k] not in gaps:
+			prefix-=1
+		k+=1	
+	#print 'k: %d' % k
 	retset = []
-	i, j = start, 0
+	i, j = k, 0
 	while (i<len(longseq) and j<len(shortseq)):
+		#print 'i:%d - %s, j:%d - %s' % (i, longseq[i], j, shortseq[j])
 		if longseq[i] in gaps:
 			i+=1
 			continue
@@ -239,8 +311,12 @@ def subseq_align(longseq, shortseq, start):
 # return map pos[s1_index] = s2_index; 
 # index starts from 0
 def posmap_subseq(s1, s2):
+	s1=s1.upper()
+	s2=s2.upper()
 	ps1 = s1.translate(None, ''.join(gaps))
 	ps2 = s2.translate(None, ''.join(gaps))
+	#print 'ps1:\n%s\n' % ps1
+	#print 'ps2:\n%s\n' % ps2
 
 	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) >= len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
 
@@ -252,9 +328,18 @@ def posmap_subseq(s1, s2):
 
 
 def main():
+	s1 = '.........................................G.IAFSGGLDTSVAVAWMRQKG....ALPCAY.TA.........D..L...G...Q..Y.....................D......ESN...I...E.S...I.A.S....R.AK.EYG...A...E...I....A..RL.IDC..K..N.SL...VE.E.G.L..A..A............LAS..G.A...FH....IRSAGK....I....Y.FN.TTPL.G....RA.VT...G.TLLVRAML..EDN.VL.....IWG..DG.....ST.........Y.K...G..............N............D....................I...................E..R.FYRYGL.L.AN.P..........E.LKI.YKPWLDS.E.F.VAE....LGGR.KEMSD....WLKSHNLP.Y...R...D...........S........A........E........K....A..YST..DANILG.A..THE.......A....KK.LE..EL..S.....TS......IE.....I....V....E.P..............I.M......G..V....KF..W.......D...P.A....V.A.I..............T.Q..EDV..KITFKS..GR...PVAI..N......................NKD..F.SD.....PVELMKQANLIG..GRHGLG.MS.DQIENRI..IEAKS....RGI.......YEA..................PGMALLFIAYERLLSAVH.NE.E.TLA.NY.Y.Q.S.G.R.K.LGRLL.YE.........G......RW..............LDPQSL.ML.R.E.S.L.TRWV.ASA.V.SG.EVVLR.......LR...R.G.DDY.S.I.I.D.T.K.G...E...NF...S.YHPE....KLSM..E..R...T...Q.....SA.....AF.G..P..EDRIGQLTM..........RNLDIADT.....................................................................................'
+	s2 = 'IAFSGGLDTSVAVAWMRQKG-ALPCAYTADLGQYDEsNIESIASRAKEYGAEIARLIDCKNSLVEEGL-AALASGAFHIrsagKIYFNTTPLGRAVTGTLLVRAMLEDNVLIWGDGSTYKGNDIERFYRYGLLANPELKIYKPWLDSEFVaelggRKEMSDWLKSHNLPYRDSAEKAYSTDANILGATHEAKKLEELSTsiEIVEPIMGVkFWDPAVAI-TQEDVKITFKSGRPVAINNKDFSDpVELMKQANLIGGRHGLGMSDQIENRIIEAKSRGIYEAPGMALLFIAYERLLSAVHNEETLANYYQSGRKLGRLLYEGRWLDPQSLMLRESLTRwVASAVSGEVVLRLRRGDdYSIIDTKGENFSYHPEKLSMERTQSaaFGPEDRIGQLT'
+	#s1 = 'vLaysGGlDtsviikllkeklgeeviavavdvGqeeedldevkekalklgavksvvvDakeefvedyifpaikanalYedrYllgtalaRPliakklvevakkegaeavahGctGkGnDqvRfevsirslaPdlkviaPvRelelt....ReeeieyakekgipvevtkkkpysiDenllgrsieagiLedpknappediyeltkdpakapdepeeveiefekGvPvald....geelsv.lelieklneiagkhGvGRiDivedRlvglksReiYeapaalvLikahkdlekltlerevakfkkiveekyaelvYkGlwfsPlkealdafiektqervtGtvrvklfkGsvvvlgReseeslYdeelasydeedefdqkeaeGfikihglqakly'
+	#s2 = 'vLaysGGlDtsviikllkeklgeeviavavdvGqeeedldevkekalklgavksvvvDakeefvedyifpaikanalYedrYllgtalaRPliakklvevakkegaeavahGctGkGnDqvRfevsirslaPdlkviaPvReleltReeeieyakekgipvevtkkkpysiDenllgrsieagiLedpknappediyeltkdpakapdepeeveiefekGvPvaldgeelsvlelieklneiagkhGvGRiDivedRlvglksReiYeapaalvLikahkdlekltlerevakfkkiveekyaelvYkGlwfsPlkealdafiektqervtGtvrvklfkGsvvvlgReseeslYdeelasydeedefdqkeaeGfikihglqakly'
+
+	#s1 = 'VLAYSGGLDTSCILVWLKEQG-YDVIAYLANIGQK-EDFEEARKKALKLGAKKVFIEDVSREFVEEFIWPAIQSSALYEDRYLLGTSLARPCIARKQVEIAQREGAKYVSHGATGKGNDQVRFELSCYSLAPQIKVIAPWRMPEFYnrfkRNDLMEYAKQHGIPIPVTPKNPWSMDENLMHISYEAGILENPKNQAPPGLYTKTQDPAKAPNTPDILEIEFKKGVPVKVTnvkdGTTHQTsLELFMYLNEVAGKHGVGRIDIVENRFIGMKSRGIYETPAGTILYHAHLDIEAFTMDREVRKIKQGLGLKFAELVYTGFWHSPECEFVRHCIAKSQERVEGKVQVSVLKGQVYILGRESPLSLYNEELVSNV-QGDYEPTDATGFININSLRLKEY'
+	#s2 = 'kgsvvlaysggldtscilvwlkeqgydviaylanigqkedfeearkkalklgakkvfiedvsrefveefiwpaiqssalyedryllgtslarpciarkqveiaqregakyvshgatgkgndqvrfelscyslapqikviapwrmpefynrfkrndlmeyakqhgipipvtpknpwsmdenlmhisyeagilenpknqappglytktqdpakapntpdileiefkkgvpvkvtnvkdgtthqtslelfmylnevagkhgvgridivenrfigmksrgiyetpagtilyhahldieaftmdrevrkikqglglkfaelvytgfwhspecefvrhciaksqervegkvqvsvlkgqvyilgresplslyneelvsnvqgdyeptdatgfininslrlkeyhrlqs'	
 	# test posmap_homoseq
+	'''
 	s1 = '.j..kj...'
 	s2 = 'j.....k..j.'
+	'''
 	#retmap = posmap_homoseq(s1, s2)
 	retmap = posmap_subseq(s1,s2)
 	# test posmap_subseq
