@@ -1,5 +1,6 @@
 import sys
 import json
+import commp as cp
 
 '''
 advanced version of proc_pfamscan_json.py
@@ -126,15 +127,23 @@ class utils_pfamscan(object):
 		elif opt == 'all':
 			hmmfa = '\n'.join([ '>%s_hmm\n%s' % (ps.seqname, ps.alnhmm) for ps in self.pslist])
 
+	def getPDBseq(self, pfamid):
+		ps = self.getMatchpfs(pfamid)
+		return ps.alnseq.upper().translate(None, ''.join(cp.gaps))
+
 
 def test():
 
 	ups = utils_pfamscan('t.json')
+	pfamid = 'PF02576'
 	print 'json loaded: -----------------------'
 	ups.dump()
 	print 'get PF02576 match -----------------------'
 	ps = ups.getMatchpfs('PF02576')
 	ps.dump()
+	print 'pdb seq ----------------------------'
+	print ups.getPDBseq(pfamid)
+
 
 
 
@@ -158,7 +167,8 @@ def main():
 		return
 
 	dispatch = {
-		'test':test
+		'test':test,
+		'writepdbfa': proc_writepdbfa
 	}
 
 	cmd = sys.argv[1]

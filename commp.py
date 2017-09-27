@@ -2,8 +2,10 @@ import sys
 import math
 from itertools import groupby
 import operator as op
-
+import numpy as np
+import itertools
 import inspect
+
 
 illab =['/', '+', '?', '*', '&', '$', '\\']
 
@@ -327,9 +329,39 @@ def posmap_subseq(s1, s2):
 	return retmap
 
 
+# (joint) entropy calculation
+# input: a list of np.array()
+def entropy(X):
+	return np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
+
+
+
 def main():
 	s1 = '.........................................G.IAFSGGLDTSVAVAWMRQKG....ALPCAY.TA.........D..L...G...Q..Y.....................D......ESN...I...E.S...I.A.S....R.AK.EYG...A...E...I....A..RL.IDC..K..N.SL...VE.E.G.L..A..A............LAS..G.A...FH....IRSAGK....I....Y.FN.TTPL.G....RA.VT...G.TLLVRAML..EDN.VL.....IWG..DG.....ST.........Y.K...G..............N............D....................I...................E..R.FYRYGL.L.AN.P..........E.LKI.YKPWLDS.E.F.VAE....LGGR.KEMSD....WLKSHNLP.Y...R...D...........S........A........E........K....A..YST..DANILG.A..THE.......A....KK.LE..EL..S.....TS......IE.....I....V....E.P..............I.M......G..V....KF..W.......D...P.A....V.A.I..............T.Q..EDV..KITFKS..GR...PVAI..N......................NKD..F.SD.....PVELMKQANLIG..GRHGLG.MS.DQIENRI..IEAKS....RGI.......YEA..................PGMALLFIAYERLLSAVH.NE.E.TLA.NY.Y.Q.S.G.R.K.LGRLL.YE.........G......RW..............LDPQSL.ML.R.E.S.L.TRWV.ASA.V.SG.EVVLR.......LR...R.G.DDY.S.I.I.D.T.K.G...E...NF...S.YHPE....KLSM..E..R...T...Q.....SA.....AF.G..P..EDRIGQLTM..........RNLDIADT.....................................................................................'
 	s2 = 'IAFSGGLDTSVAVAWMRQKG-ALPCAYTADLGQYDEsNIESIASRAKEYGAEIARLIDCKNSLVEEGL-AALASGAFHIrsagKIYFNTTPLGRAVTGTLLVRAMLEDNVLIWGDGSTYKGNDIERFYRYGLLANPELKIYKPWLDSEFVaelggRKEMSDWLKSHNLPYRDSAEKAYSTDANILGATHEAKKLEELSTsiEIVEPIMGVkFWDPAVAI-TQEDVKITFKSGRPVAINNKDFSDpVELMKQANLIGGRHGLGMSDQIENRIIEAKSRGIYEAPGMALLFIAYERLLSAVHNEETLANYYQSGRKLGRLLYEGRWLDPQSLMLRESLTRwVASAVSGEVVLRLRRGDdYSIIDTKGENFSYHPEKLSMERTQSaaFGPEDRIGQLT'
+
+	s1='00113405'
+	'''
+	>>> entropy("1223334444")
+	1.8464393446710154
+	'''
+	s1='1223334444'
+	s2 = ['8.7', '9.6', '9.8', '8.8', '9.6', '10.9', '9.9', '13.9', '0.0', '10.9']
+	print 'list(s1): %s' % repr(list(s1))
+	b = np.array([int(i) for i in s1])
+	print repr(b)
+	#print 'H1: %.4f' % entropy([[float(f) for f in s2]])
+	print 'H2: %.4f' % entropy([np.array([float(f) for f in s2])])
+	print repr(s1)
+	print 'H1: %.4f' % entropy([b])
+
+	c = ['a','a','b','b','c']
+	c = [1.2,3.4,1.2,5.5,0.0,0.0]
+	print repr(c)
+	print 'H(c): %.4f' % entropy([c])
+	print 'H(np.array(c)): %.4f' % entropy([np.array(c)])
+
+
 	#s1 = 'vLaysGGlDtsviikllkeklgeeviavavdvGqeeedldevkekalklgavksvvvDakeefvedyifpaikanalYedrYllgtalaRPliakklvevakkegaeavahGctGkGnDqvRfevsirslaPdlkviaPvRelelt....ReeeieyakekgipvevtkkkpysiDenllgrsieagiLedpknappediyeltkdpakapdepeeveiefekGvPvald....geelsv.lelieklneiagkhGvGRiDivedRlvglksReiYeapaalvLikahkdlekltlerevakfkkiveekyaelvYkGlwfsPlkealdafiektqervtGtvrvklfkGsvvvlgReseeslYdeelasydeedefdqkeaeGfikihglqakly'
 	#s2 = 'vLaysGGlDtsviikllkeklgeeviavavdvGqeeedldevkekalklgavksvvvDakeefvedyifpaikanalYedrYllgtalaRPliakklvevakkegaeavahGctGkGnDqvRfevsirslaPdlkviaPvReleltReeeieyakekgipvevtkkkpysiDenllgrsieagiLedpknappediyeltkdpakapdepeeveiefekGvPvaldgeelsvlelieklneiagkhGvGRiDivedRlvglksReiYeapaalvLikahkdlekltlerevakfkkiveekyaelvYkGlwfsPlkealdafiektqervtGtvrvklfkGsvvvlgReseeslYdeelasydeedefdqkeaeGfikihglqakly'
 
@@ -341,7 +373,7 @@ def main():
 	s2 = 'j.....k..j.'
 	'''
 	#retmap = posmap_homoseq(s1, s2)
-	retmap = posmap_subseq(s1,s2)
+	#retmap = posmap_subseq(s1,s2)
 	# test posmap_subseq
 	'''
 	s2 = 'aa..jk.j.a'
@@ -349,10 +381,10 @@ def main():
 
 	retmap = posmap_subseq(s1,s2)
 	'''
-	print 's1: [%s]' % s1
-	print 's2: [%s]' % s2
-	for k,v in retmap:
-		print 's1: %s %d -> s2: %s %d' % (s1[k], k, s2[v], v)
+	#print 's1: [%s]' % s1
+	#print 's2: [%s]' % s2
+	#for k,v in retmap:
+	#	print 's1: %s %d -> s2: %s %d' % (s1[k], k, s2[v], v)
 
 
 if __name__ == '__main__':

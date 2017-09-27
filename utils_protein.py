@@ -103,7 +103,7 @@ def writeseqfa():
 	if len(sys.argv) == 4:
 		chainid = sys.argv[3]
 		outfile = '%s.%s.fa' % (sys.argv[2], chainid)
-		head = '%s_%s' % (sys.argv[2], chainid)
+		head = '%s.%s' % (sys.argv[2], chainid)
 	elif len(sys.argv) == 3:
 		chainid = 'all'
 		outfile = '%s.fa' % sys.argv[2]
