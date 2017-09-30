@@ -5,7 +5,9 @@ import operator as op
 import numpy as np
 import itertools
 import inspect
-
+import collections
+# for testing drun dcall
+import subprocess
 
 illab =['/', '+', '?', '*', '&', '$', '\\']
 
@@ -129,6 +131,11 @@ scorerdict = {
 				10:'L',11:'M',12:'N',13:'P',14:'Q',15:'R',16:'S',17:'T',18:'V',19:'W',20:'Y'
 			}
 
+msaaa = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 
+		'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '.', '-']
+
+
+
 def _fatal():
 	exit(1)
 
@@ -141,7 +148,17 @@ def _err(msg, errcallback=_fatal):
 	print '[err:%s:%s()] %s' % (' '.join(sys.argv),calframe[1][3], msg)
 	errcallback()
 
+# return the freuency table for a given string
+def freq(word):
+	# 2.7+
+	# return letters = collections.Counter('google')
+	letters = collections.defaultdict(int)
+	for letter in word:
+		letters[letter] += 1
+	return letters
 
+
+# calculate n choose r
 def ncr(n, r):
     r = min(r, n-r)
     if r == 0: return 1
@@ -335,16 +352,56 @@ def entropy(X):
 	return np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
 
 
+# mp constant definition
+mp_info = 0
+mp_log = 1
+mp_checkin = 2
+
+# 
+def dcall(callstr):
+	strarr = callstr.split()
+	modu = strarr[1][:-3] # to ignore '.py'
+	func = strarr[2]
+	param = strarr[3:]
+
+	print 'module: %s' % modu
+	print 'function: %s' % func
+	print 'parameters: %s' % param
+
+	ins_func = getattr(__import__(modu), func)
+	return ins_func(param)
+
+
+def drun(runstr):
+	#print 'runstr: %s' % runstr
+	return subprocess.Popen(runstr.split(), stdout=subprocess.PIPE).communicate()[0].strip()	
+
 
 def main():
+
+	# test drun
+	#runstr = 'ls PF*|sort' # doesn't work
+	#runstr = 'sh t.sh'
+	#ret = drun(runstr)
+	#print 'ret:\n%s\n' % ret
+
+	# test dcall
+	ret = dcall('python utils_pfammsa.py aafreq PF00764_p90.txt')
+	print 'ret:\n%s\n' % ret
+	#dcall('python utils_pfammsa.py aafreq')
+
+	# test freq
+	# print freq('jkjium')
+	# defaultdict(<type 'int'>, {'i': 1, 'm': 1, 'k': 1, 'j': 2, 'u': 1})
+
+	# test entropy
+	'''
 	s1 = '.........................................G.IAFSGGLDTSVAVAWMRQKG....ALPCAY.TA.........D..L...G...Q..Y.....................D......ESN...I...E.S...I.A.S....R.AK.EYG...A...E...I....A..RL.IDC..K..N.SL...VE.E.G.L..A..A............LAS..G.A...FH....IRSAGK....I....Y.FN.TTPL.G....RA.VT...G.TLLVRAML..EDN.VL.....IWG..DG.....ST.........Y.K...G..............N............D....................I...................E..R.FYRYGL.L.AN.P..........E.LKI.YKPWLDS.E.F.VAE....LGGR.KEMSD....WLKSHNLP.Y...R...D...........S........A........E........K....A..YST..DANILG.A..THE.......A....KK.LE..EL..S.....TS......IE.....I....V....E.P..............I.M......G..V....KF..W.......D...P.A....V.A.I..............T.Q..EDV..KITFKS..GR...PVAI..N......................NKD..F.SD.....PVELMKQANLIG..GRHGLG.MS.DQIENRI..IEAKS....RGI.......YEA..................PGMALLFIAYERLLSAVH.NE.E.TLA.NY.Y.Q.S.G.R.K.LGRLL.YE.........G......RW..............LDPQSL.ML.R.E.S.L.TRWV.ASA.V.SG.EVVLR.......LR...R.G.DDY.S.I.I.D.T.K.G...E...NF...S.YHPE....KLSM..E..R...T...Q.....SA.....AF.G..P..EDRIGQLTM..........RNLDIADT.....................................................................................'
 	s2 = 'IAFSGGLDTSVAVAWMRQKG-ALPCAYTADLGQYDEsNIESIASRAKEYGAEIARLIDCKNSLVEEGL-AALASGAFHIrsagKIYFNTTPLGRAVTGTLLVRAMLEDNVLIWGDGSTYKGNDIERFYRYGLLANPELKIYKPWLDSEFVaelggRKEMSDWLKSHNLPYRDSAEKAYSTDANILGATHEAKKLEELSTsiEIVEPIMGVkFWDPAVAI-TQEDVKITFKSGRPVAINNKDFSDpVELMKQANLIGGRHGLGMSDQIENRIIEAKSRGIYEAPGMALLFIAYERLLSAVHNEETLANYYQSGRKLGRLLYEGRWLDPQSLMLRESLTRwVASAVSGEVVLRLRRGDdYSIIDTKGENFSYHPEKLSMERTQSaaFGPEDRIGQLT'
 
 	s1='00113405'
-	'''
-	>>> entropy("1223334444")
-	1.8464393446710154
-	'''
+	#>>> entropy("1223334444")
+	#1.8464393446710154
 	s1='1223334444'
 	s2 = ['8.7', '9.6', '9.8', '8.8', '9.6', '10.9', '9.9', '13.9', '0.0', '10.9']
 	print 'list(s1): %s' % repr(list(s1))
@@ -360,7 +417,7 @@ def main():
 	print repr(c)
 	print 'H(c): %.4f' % entropy([c])
 	print 'H(np.array(c)): %.4f' % entropy([np.array(c)])
-
+	'''
 
 	#s1 = 'vLaysGGlDtsviikllkeklgeeviavavdvGqeeedldevkekalklgavksvvvDakeefvedyifpaikanalYedrYllgtalaRPliakklvevakkegaeavahGctGkGnDqvRfevsirslaPdlkviaPvRelelt....ReeeieyakekgipvevtkkkpysiDenllgrsieagiLedpknappediyeltkdpakapdepeeveiefekGvPvald....geelsv.lelieklneiagkhGvGRiDivedRlvglksReiYeapaalvLikahkdlekltlerevakfkkiveekyaelvYkGlwfsPlkealdafiektqervtGtvrvklfkGsvvvlgReseeslYdeelasydeedefdqkeaeGfikihglqakly'
 	#s2 = 'vLaysGGlDtsviikllkeklgeeviavavdvGqeeedldevkekalklgavksvvvDakeefvedyifpaikanalYedrYllgtalaRPliakklvevakkegaeavahGctGkGnDqvRfevsirslaPdlkviaPvReleltReeeieyakekgipvevtkkkpysiDenllgrsieagiLedpknappediyeltkdpakapdepeeveiefekGvPvaldgeelsvlelieklneiagkhGvGRiDivedRlvglksReiYeapaalvLikahkdlekltlerevakfkkiveekyaelvYkGlwfsPlkealdafiektqervtGtvrvklfkGsvvvlgReseeslYdeelasydeedefdqkeaeGfikihglqakly'
