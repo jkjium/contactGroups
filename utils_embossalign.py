@@ -33,8 +33,9 @@ class embossalign(object):
 		self.seqB = flatArray[16]
 
 	def getAlignedpos(self):
-		return [i for i in xrange(0, self.alignlen) if self.seqA[i] == self.seqB[i]]
-
+		alnpos = [i for i in xrange(0, self.alignlen) if (self.seqA[i] == self.seqB[i]) and (self.seqA[i] not in cp.gaps)]
+		alnpercent = (len(alnpos)/self.seqAlen) if self.seqAlen < self.seqBlen else (len(alnpos)/self.seqBlen)
+		return (alnpercent, alnpos)
 
 	# dump object to stdout
 	def dump(self):

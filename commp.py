@@ -1,4 +1,6 @@
 import sys
+import os
+import time
 import math
 from itertools import groupby
 import operator as op
@@ -126,6 +128,16 @@ aaprop = {
 	'.':('gap' ,  'gap'           ,  '.' , '.'   ,0     ,0      ,0      ,0   ,0     ,0    ,0 ,0 ,0,0,0,0    ,0    ,0    ,0  ,0     ,0        ,0 )	
 }
 
+# from MSA score
+aascore = {
+	'aa' : 	{
+			'O':0, 'Z':0, 'U':0,'X':0,'-': 0,'.': 0,'A': 1,'C': 2,'D': 3,'E': 4,'F': 5,'G': 6,'H': 7,'I': 8,'K': 9,
+			'L': 10,'M': 11,'N': 12,'P': 13,'Q': 14,'R': 15,'S': 16,'T': 17,'V': 18,'W': 19,'Y': 20, 'B': 3
+			},
+
+	'ssp': {'.':0, 'H':1, 'I':2, 'B':3, 'h':4, 'i':5, 'b':6}
+}
+
 scorerdict = {
 				0:'.',1:'A',2:'C',3:'D',4:'E',5:'F',6:'G',7:'H',8:'I',9:'K',
 				10:'L',11:'M',12:'N',13:'P',14:'Q',15:'R',16:'S',17:'T',18:'V',19:'W',20:'Y'
@@ -147,6 +159,13 @@ def _err(msg, errcallback=_fatal):
 	calframe = inspect.getouterframes(curframe, 1)
 	print '[err:%s:%s()] %s' % (' '.join(sys.argv),calframe[1][3], msg)
 	errcallback()
+
+# for mprun output
+def _info(msg):
+	curframe = inspect.currentframe()
+	calframe = inspect.getouterframes(curframe, 1)	
+	info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
+	print '[%s] - %s' % (info, msg)
 
 # return the freuency table for a given string
 def freq(word):
@@ -357,37 +376,83 @@ mp_info = 0
 mp_log = 1
 mp_checkin = 2
 
-# 
+# used in utils_mprun.py
 def dcall(callstr):
 	strarr = callstr.split()
 	modu = strarr[1][:-3] # to ignore '.py'
 	func = strarr[2]
 	param = strarr[3:]
 
-	print 'module: %s' % modu
-	print 'function: %s' % func
-	print 'parameters: %s' % param
+	#print 'module: %s' % modu
+	#print 'function: %s' % func
+	#print 'parameters: %s' % param
 
 	ins_func = getattr(__import__(modu), func)
 	return ins_func(param)
 
-
+# used in utils_mprun.py
 def drun(runstr):
 	#print 'runstr: %s' % runstr
-	return subprocess.Popen(runstr.split(), stdout=subprocess.PIPE).communicate()[0].strip()	
+	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()	
+
+
+# pairwise substitution
+# return unified key
+def quad_permu(pair1, pair2):
+	'''
+	rank = 0  rank = 1  rank = 2  rank = 3
+	A 0  C 1  C 0  A 1  D 0  G 1  G 0  D 1
+	D 2  G 3  G 2  D 3  A 2  C 3  C 2  A 3
+	'''
+	quad = [pair1[0], pair1[1], pair2[0], pair2[1]]
+	#print quad
+
+	rank = quad.index(min(quad))
+
+	if rank == 1:
+		quad[0],quad[1]=quad[1],quad[0]
+		quad[2],quad[3]=quad[3],quad[2]
+		#ret = (('%s%s' % (quad[1], quad[0]), freq1), ('%s%s' % (quad[3], quad[2]), freq2))
+	elif rank == 2:
+		quad[0],quad[2] = quad[2],quad[0]
+		quad[1],quad[3] = quad[3],quad[1]
+		#ret = (('%s%s' % (quad[2], quad[3]), freq2), ('%s%s' % (quad[0], quad[1]), freq1))
+	elif rank == 3:
+		quad[0],quad[3] = quad[3],quad[0]
+		quad[2],quad[1] = quad[1],quad[2]
+		#ret = (('%s%s' % (quad[3], quad[2]), freq2), ('%s%s' % (quad[1], quad[0]), freq1))
+	#else: # rank == 0 no permutation
+	#	ret = (pfreq1, pfreq2)
+
+	# tuple of two tuple
+	# (('AC', 3), ('DG', 2))
+	# return ret
+	return ''.join(quad)
+
+# calculate tuple frequency from colum tuples
+def tuplefreq(collist):
+	pass
 
 
 def main():
 
+	# test pair_permu
+	#qlist = [(('AC', 2), ('DG', 3)), (('CA', 12),('GD', 13)), (('DG',22), ('AC', 23)), (('GD', 32), ('CA', 33))]
+	qlist = [('AC','DG'), ('CA','GD'), ('DG','AC'), ('GD','CA')]
+	for q in qlist:
+		print q
+		print quad_permu(q[0], q[1])
+		print 
+
 	# test drun
 	#runstr = 'ls PF*|sort' # doesn't work
-	#runstr = 'sh t.sh'
+	#runstr = 'pfamscan 1uhr.pdb.A.fa -json > t.json'
 	#ret = drun(runstr)
 	#print 'ret:\n%s\n' % ret
 
 	# test dcall
-	ret = dcall('python utils_pfammsa.py aafreq PF00764_p90.txt')
-	print 'ret:\n%s\n' % ret
+	#ret = dcall('python utils_pfammsa.py aafreq PF00764_p90.txt')
+	#print 'ret:\n%s\n' % ret
 	#dcall('python utils_pfammsa.py aafreq')
 
 	# test freq

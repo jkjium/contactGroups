@@ -28,8 +28,11 @@ def map_hmm2hmm(seq1, json1, seq2, json2):
 	embosshmm = ea(uea.flatenalign(title, hmm1, hmm2))
 	#embosshmm.dump()
 
-	hmmmap = embosshmm.getAlignedpos()
-	#print repr(hmmmap)
+	match_level, hmmmap = embosshmm.getAlignedpos()
+	cp._info('info:%s hmm match level: %.2f' % (title, match_level))
+	if match_level < 0.9:
+		cp._info('err:%s hmm match less than 90% : %.2f' % (title, match_level))
+		exit()
 
 	# map between pfamscan hmm sequence and emboss hmm sequence
 	# use emboss alignment index as key
@@ -77,6 +80,11 @@ def map_hmm2hmm(seq1, json1, seq2, json2):
 
 
 # map pdb resi to msa index
+# pdbfile: 		pdb structure file
+# pdbseqfafile: get from utils_protein writeseqfa pdbfile {chain}
+# pdbjsonfile: 	get from pfamscan pdbseqfafile
+# msafafile:	MSA sequence WITH GAPs extracted from pfam MSA
+# msajsonfile:	get from pfamscan MSA sequence WITHOUT GAPs
 def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfamid):
 	p = protein(pdbfile)
 
@@ -86,7 +94,13 @@ def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfam
 
 	# load pfamscan json object
 	pdbjson = ups(pdbjsonfile).getMatchpfs(pfamid)
+	if pdbjson == False:
+		cp._info('err: %s not found in %s' % (pfamid, pdbjsonfile))
+		return
 	msajson = ups(msajsonfile).getMatchpfs(pfamid)
+	if msajson == False:
+		cp._info('err: %s not found in %s' % (pfamid, msajsonfile))
+		return
 
 	# get map between pdb pos and msa pos
 	pdbpos2msapos = dict((k,v) for k,v in map_hmm2hmm(pdbseq, pdbjson, msaseq, msajson))
@@ -98,7 +112,7 @@ def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfam
 	outstr = '\n'.join(['%d %s %d %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v]) for (k,v) in resi2msa])
 	with open(outfile, 'w') as fp:
 		fp.write(outstr)
-	print 'save to %s' % outfile
+	#print 'save to %s' % outfile
 	'''
 	for k,v in resi2msa:
 		print 'pdb %d - %s, msa %d - %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v])
@@ -106,12 +120,13 @@ def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfam
 
 	return outstr	
 
-def resi2msa():
-	if len(sys.argv) < 8:
+def resi2msa(arglist):
+	if len(arglist) < 6:
 		print 'Usage: python utils_resimap.py resi2msa pdbfile pdbseqfafile pdbjsonfile msafafile msajsonfile pfamid'
-		print '$ python utils_resimap.py resi2msa 1ni3.pdb PF06071_pdb.fa PF06071_1ni3.json PF06071_MSA.fa PF06071.json PF06071'
+		print '$ python utils_resimap.py resi2msa 1ni3.pdb 1ni3.pdb.fa 1ni3.pdb.fa.json PF06071_MSA.fa PF06071.json PF06071'
 		exit()
-	print pdbResi2MSA(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+	#pdbResi2MSA(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5])
 
 
 def test():
@@ -134,13 +149,11 @@ def main():
 		'resi2msa':resi2msa
 	}
 
-	cmd = sys.argv[1]
-
 	if sys.argv[1] not in dispatch:
 		print 'invalid cmd: %s' % sys.argv[1]
 		return
 	else:
-		dispatch[sys.argv[1]]()
+		dispatch[sys.argv[1]](sys.argv[2:])
 
 if __name__ == '__main__':
 	main()

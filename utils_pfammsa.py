@@ -23,6 +23,10 @@ class pfammsa(object):
 		self.msalen = len(self.msalist[0][1])
 		self.msanum = len(self.msalist)
 
+		if len(self.msalist) == 0:
+			cp._err('No MSA found in %s' % msafile)
+
+
 	def dump(self):
 		for s in self.msalist:
 			print ">%s\n%s\n" % (s[0], s[1])
@@ -49,7 +53,38 @@ def aafreq(arglist):
 	outfile = msafile + '.aafreq'
 	with open(outfile, 'w') as fp:
 		fp.write(repr(output))
-	print 'save to %s' % outfile
+	return cp._info('save to %s' % outfile)
+
+
+# get single MSA gapped / ungapped fa with sequence name or null
+def getsinglemsa(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_pfammsa.py getsinglemsa PF00000.txt head PF00000')
+
+	msafile = arglist[0]
+	head = arglist[1]
+	outprefix = arglist[2]
+
+	pfm = pfammsa(msafile)
+	# with head
+	if head!='null':
+		for s in pfm.msalist:
+			if head in s:
+				msa = s
+	# no head, get the first MSA
+	else:
+		msa = pfm.msalist[0]
+
+	outseqfile = '%s_seq.fa' % outprefix
+	with open(outseqfile, 'w') as fp:
+		fp.write('>%s\n%s' % (msa[0],msa[1].translate(None, ''.join(cp.gaps))))
+
+	outmsafile = '%s_MSA.fa' % outprefix
+	with open(outmsafile, 'w') as fp:
+		fp.write('>%s\n%s' % (msa[0],msa[1]))
+
+	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
+
 
 
 # testing routine
@@ -66,7 +101,8 @@ def main():
 
 	dispatch = {
 		'test':test,
-		'aafreq': aafreq
+		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
+		'getsinglemsa': getsinglemsa # get single MSA gapped / ungapped fa with sequence name or null
 	}
 
 	if sys.argv[1] not in dispatch:

@@ -94,7 +94,7 @@ def permu(pairlist):
 		pairlist[1],pairlist[3] = pairlist[3],pairlist[1]
 	elif rank == 3:
 		pairlist[0],pairlist[3] = pairlist[3],pairlist[0]
-		pairlist[1],pairlist[2] = pairlist[1],pairlist[2]
+		pairlist[2],pairlist[1] = pairlist[1],pairlist[2]
 
 	#return ''.join(pairlist), rank
 	return ''.join(pairlist)
