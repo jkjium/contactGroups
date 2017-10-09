@@ -124,7 +124,7 @@ def getsinglemsa(arglist):
 # output: PF0000.txt.{stag.score, col, row}
 def msareduce(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.1 0.62')
+		cp._err('Usage: $ python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.7 0.62') 
 
 	msafile = arglist[0]
 	scoretags = arglist[1].split(',')
@@ -132,7 +132,7 @@ def msareduce(arglist):
 	weightcutoff = float(arglist[3])
 
 	pfm = pfammsa(msafile)
-	pfm.dump()
+	#pfm.dump()
 	scores, idx_rc = pfm.msareduce(scoretags, gapcutoff, weightcutoff)
 
 	'''
