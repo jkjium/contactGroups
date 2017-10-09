@@ -21,7 +21,7 @@ class mprun(object):
 
 	def dump(self):
 		print 'task file: %s (%d tasks)' % (self.taskfile, len(self.tasklist))
-		print 'use %d cpus' % self.ncpu
+		print 'use %d processors' % self.ncpu
 		#for i in xrange(0, len(self.tasklist)):
 		#	print '%d. %s' % (i, self.tasklist[i])
 
