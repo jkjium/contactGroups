@@ -31,6 +31,13 @@ class pfammsa(object):
 		for s in self.msalist:
 			print ">%s\n%s\n" % (s[0], s[1])
 
+	# return ith column AA list
+	def msacol(self, i):
+		return [s[1][i] for s in self.msalist]
+
+	# return a dictionary with dict['A'] = 10
+	# cp.freq returns a dictionary for the current sequence
+	#
 	def aafreq(self):
 		sumfreq = dict((k,0) for k in cp.msaaa)
 		freqlist = [cp.freq(fa[1]) for fa in self.msalist]
@@ -40,6 +47,32 @@ class pfammsa(object):
 		return sumfreq
 
 
+	# improved msa reduction 
+	# converting AA alphabet to aaprop values
+	# reduce column by gap percentage
+	# assign row weight by hamming distance cluster
+	def msareduce(self, scoretags, gapcutoff, weightcutoff):
+		# scores = { 'aa':[], 'ssp':[] }
+		scores = dict((tag, []) for tag in scoretags)
+		for s in self.msalist:
+			for t in scores:
+				scores[t].append([cp.aascore[t][a] for a in s[1]])
+
+		# calculate gap percentage. 0 is reserved for gap
+		# generating cp.aascore: //print repr([cp.freq(self.msacol(i))['.']/float(self.msanum) for i in xrange(0, self.msalen)])
+		idx_rc = [i for i in xrange(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff]
+
+		# output column reduced scores
+		scores_rc = {}
+		for t in scores:
+			scores_rc[t] = np.array(scores[t])[:,idx_rc]
+
+		# weight row
+		# add code here
+
+		return scores_rc, idx_rc
+
+
 def aafreq(arglist):
 	if len(arglist) < 1 or arglist == False:
 		cp._err('Usage: python utils_pfammsa.py aafreq PF00000.txt')
@@ -47,7 +80,7 @@ def aafreq(arglist):
 	msafile = arglist[0]
 
 	pfm = pfammsa(msafile)
-	output =[(k, v) for k,v in pfm.aafreq().items() if v > 0]
+	output =[(k, float(v)/pfm.seqnum) for k,v in pfm.aafreq().items() if v > 0]
 	output.sort(key=operator.itemgetter(1), reverse=True)
 
 	outfile = msafile + '.aafreq'
@@ -86,11 +119,63 @@ def getsinglemsa(arglist):
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
 
 
+# improved version of utils_msa.MSAReduction()
+# input : PF0000.txt, scoretags, gapcutoff(max gap percentage), weightcutoff
+# output: PF0000.txt.{stag.score, col, row}
+def msareduce(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.1 0.62')
+
+	msafile = arglist[0]
+	scoretags = arglist[1].split(',')
+	gapcutoff = float(arglist[2])
+	weightcutoff = float(arglist[3])
+
+	pfm = pfammsa(msafile)
+	pfm.dump()
+	scores, idx_rc = pfm.msareduce(scoretags, gapcutoff, weightcutoff)
+
+	'''
+	print repr(idx_rc)
+	for sc in scores:
+		print sc
+		print repr(scores[sc])
+	'''
+	# output column
+	outcolfile = msafile + '.rcol'
+	with open(outcolfile, 'w') as fp:
+		fp.write(','.join([str(i) for i in idx_rc]))
+		cp._info('save %s' % outcolfile)
+
+	# output scores
+	for t in scoretags:
+		outscorefile = '%s.%s.score' % (msafile, t)
+		np.savetxt(outscorefile, scores[t], fmt='%d', delimiter=',')
+		cp._info('save %s' % outscorefile)
+
 
 # testing routine
-def test():
-	pfm = pfammsa('t.pfam.txt')
+def test(arglist):
+	'''
+	>A2SSP0_METLZ/1-86
+	MH..E..F
+
+	>A3CU99_METMJ/1-86
+	MH..E..D
+
+	>A5UJB7_METS3/1-88
+	MY..A.AC
+
+	'''
+	# test pfm.msareduce()
+	pfm = pfammsa('PF00000.txt')
 	pfm.dump()
+	#print pfm.msacol(1)
+	scores, idx_rc = pfm.msareduce(['aa', 'ssp'],0.7,0.0)
+	print repr(idx_rc)
+	for sc in scores:
+		print sc
+		print repr(scores[sc])
 
 
 
@@ -102,7 +187,8 @@ def main():
 	dispatch = {
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
-		'getsinglemsa': getsinglemsa # get single MSA gapped / ungapped fa with sequence name or null
+		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
+		'msareduce': msareduce
 	}
 
 	if sys.argv[1] not in dispatch:
@@ -110,10 +196,6 @@ def main():
 		return
 	else:
 		dispatch[sys.argv[1]](sys.argv[2:])
-	#up = utils_pfammsa('t.pfam.txt')
-	#up.dump()
-	#up.aafreq()
-	#print up.fetchbyname('F7E5S2_MACMU/1044-1120')
 
 if __name__ == '__main__':
 	main()
