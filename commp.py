@@ -198,6 +198,9 @@ def freq(word):
 	return letters
 
 # return ith column of matrix (list(list))
+# 	[...]
+# [ [...] ]
+# 	[...]
 def column(mat, i):
 	return [row[i] for row in mat]
 
@@ -423,52 +426,57 @@ def drun(runstr):
 
 # pairwise substitution
 # return unified key
-def quad_permu(pair1, pair2):
+#def quad_permu(pair1, pair2):
+# quad: list : ['A', 'C', 'D', 'G']
+def quad_permu(quad):
 	'''
 	rank = 0  rank = 1  rank = 2  rank = 3
 	A 0  C 1  C 0  A 1  D 0  G 1  G 0  D 1
 	D 2  G 3  G 2  D 3  A 2  C 3  C 2  A 3
 	'''
-	quad = [pair1[0], pair1[1], pair2[0], pair2[1]]
-	#print quad
-
 	rank = quad.index(min(quad))
-
 	if rank == 1:
 		quad[0],quad[1]=quad[1],quad[0]
 		quad[2],quad[3]=quad[3],quad[2]
-		#ret = (('%s%s' % (quad[1], quad[0]), freq1), ('%s%s' % (quad[3], quad[2]), freq2))
 	elif rank == 2:
 		quad[0],quad[2] = quad[2],quad[0]
 		quad[1],quad[3] = quad[3],quad[1]
-		#ret = (('%s%s' % (quad[2], quad[3]), freq2), ('%s%s' % (quad[0], quad[1]), freq1))
 	elif rank == 3:
 		quad[0],quad[3] = quad[3],quad[0]
 		quad[2],quad[1] = quad[1],quad[2]
-		#ret = (('%s%s' % (quad[3], quad[2]), freq2), ('%s%s' % (quad[1], quad[0]), freq1))
-	#else: # rank == 0 no permutation
-	#	ret = (pfreq1, pfreq2)
-
-	# tuple of two tuple
-	# (('AC', 3), ('DG', 2))
-	# return ret
 	return ''.join(quad)
 
-# calculate tuple frequency from colum tuples
-def tuplefreq(collist):
-	pass
+
+# return which type of pair substitution the quadstr is
+# quadstr = 'ACDG'
+def quadtype(quadstr):
+	count = 0
+	pA = quadstr[0:2] # 'AC'
+	pB = quadstr[2:]  # 'DG'
+	#print (pA,pB)
+	for i in [0,1]:
+		if pA[i]!=pB[i]:
+			count+=1
+	return 't%d' % count
 
 
 def main():
+	# test quadtype()
+	qstr = ['ACAC', 'ACDG', 'ACAG', 'ACGC']
+	for q in qstr:
+		print (q, quadtype(q))
 
 	# test pair_permu
 	#qlist = [(('AC', 2), ('DG', 3)), (('CA', 12),('GD', 13)), (('DG',22), ('AC', 23)), (('GD', 32), ('CA', 33))]
-	qlist = [('AC','DG'), ('CA','GD'), ('DG','AC'), ('GD','CA')]
+	#qlist = [('AC','DG'), ('CA','GD'), ('DG','AC'), ('GD','CA')]
+	'''
+	qlist = [['A','C','D','G'], ['C','A','G','D'], ['D','G','A','C'], ['G','D','C','A']]
 	for q in qlist:
 		print q
-		print quad_permu(q[0], q[1])
+		print quad_permu(q)
 		print 
-
+	'''
+	
 	# test drun
 	#runstr = 'ls PF*|sort' # doesn't work
 	#runstr = 'pfamscan 1uhr.pdb.A.fa -json > t.json'

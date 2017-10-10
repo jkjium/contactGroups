@@ -2,6 +2,7 @@ import sys
 import operator
 import commp as cp
 import numpy as np
+import collections
 
 
 """
@@ -72,6 +73,25 @@ class pfammsa(object):
 
 		return scores_rc, idx_rc
 
+	# calculate pair substitution for column i and column j
+	def pairsubstitution(self, i, j):
+		# frequency of the pairs from two column
+		pfreq = cp.freq(['%s%s' % (s[1][i],s[1][j]) for s in self.msalist])
+		#print repr(pfreq)
+		k = pfreq.keys()
+		#print repr(k)
+		# count pair substitutions 
+		pairsubcount = [('%s%s' % (k[i],k[j]), pfreq[k[i]]*(pfreq[k[j]]-1)/2) if k[i] == k[j] else ('%s%s' % (k[i],k[j]), pfreq[k[i]]*pfreq[k[j]]) for i in xrange(0, len(k)) for j in xrange(i, len(k))]
+		#print repr(pairsubcount)
+
+		# combining equivalent quad
+		pairsubdict = collections.defaultdict(int)
+		for quad, count in pairsubcount:
+			pairsubdict[cp.quad_permu(list(quad))]+=count
+
+		return pairsubdict
+
+
 
 def aafreq(arglist):
 	if len(arglist) < 1 or arglist == False:
@@ -135,12 +155,6 @@ def msareduce(arglist):
 	#pfm.dump()
 	scores, idx_rc = pfm.msareduce(scoretags, gapcutoff, weightcutoff)
 
-	'''
-	print repr(idx_rc)
-	for sc in scores:
-		print sc
-		print repr(scores[sc])
-	'''
 	# output column
 	outcolfile = msafile + '.rcol'
 	with open(outcolfile, 'w') as fp:
@@ -154,6 +168,44 @@ def msareduce(arglist):
 		cp._info('save %s' % outscorefile)
 
 
+# calculate the pair substitution for one PFam MSA
+# input: PF00000.txt, PF00000.txt.selected.col
+# output: tsv file with quad subsitution count
+def pairsubstitution(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py pairsubstitution PF00000.txt PF00000.txt.selected.col')
+
+	msafile = arglist[0]
+	scolfile = arglist[1]
+
+	# load selected columns 
+	# 1,2 5,8 3,10
+	with open(scolfile) as fp:
+		line = fp.readline().strip()
+		if len(line) == 0:
+			cp._info('no column loaded for %s, %s' % (msafile, scolfile))
+			return
+		else:
+			scollist = [[int(c) for c in p.split(',')] for p in line.split(' ')]
+
+	pfm = pfammsa(msafile)
+	psubdictall = collections.defaultdict(int)
+	for c in scollist:
+		psubdict = pfm.pairsubstitution(c[0], c[1])
+		for k in psubdict:
+			psubdictall[k]+=psubdict[k]
+
+	outfile = '%s.psub' % msafile
+	with open(outfile, 'w') as fp:
+		for k in psubdictall:
+			fp.write('%s %d %s\n' % (k, psubdictall[k]), cp.quadtype(k))
+	cp._info('save %s' % outfile)
+
+	# return for mp_run reduce
+	return psubdictall
+
+
+
 # testing routine
 def test(arglist):
 	'''
@@ -165,9 +217,14 @@ def test(arglist):
 
 	>A5UJB7_METS3/1-88
 	MY..A.AC
-
 	'''
+	pfm = pfammsa('PF00000.txt')
+	pfm.dump()
+	ret = pfm.pairsubstitution(0,1)
+	print repr(ret)
+
 	# test pfm.msareduce()
+	'''
 	pfm = pfammsa('PF00000.txt')
 	pfm.dump()
 	#print pfm.msacol(1)
@@ -176,7 +233,7 @@ def test(arglist):
 	for sc in scores:
 		print sc
 		print repr(scores[sc])
-
+	'''
 
 
 def main():
@@ -188,7 +245,8 @@ def main():
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
-		'msareduce': msareduce
+		'msareduce': msareduce,
+		'pairsubstitution': pairsubstitution
 	}
 
 	if sys.argv[1] not in dispatch:

@@ -4,6 +4,7 @@ get resid list of varname
 import sys
 from protein import protein
 from AAmap import AAmap
+import commp as cp
 
 def resn2bfactor():
 	if len(sys.argv) < 3:
@@ -150,7 +151,7 @@ def writesgc():
 
 	fout = open(outfile, 'w')
 	p = protein(pdbfile)
-	for a in p.atomsbygmcenter():
+	for a in p.atomsbyscgmcenter():
 		fout.write(a.writeAtom())
 	fout.close()
 	print 'save to %s' % outfile
@@ -184,6 +185,41 @@ def dumpseqflat():
 	p = protein(pdbfile, chain=chain)
 	print '%d %s %s' % (len(p.seq), pdbfile, p.seq)
 
+# write cutoff contact by specific method
+# output: 1. method residue pdb file
+# 		  2. contact file	
+def contactbycutoff():
+	if len(sys.argv) < 6:
+		cp._err('Usage: python utils_protein.py contactbycutoff 1t3r.pdb chain sgc cutoff')
+	pdbfile = sys.argv[2]
+	chainid = sys.argv[3]
+	method = sys.argv[4]
+	cutoff = float(sys.argv[5])
+
+	if method not in ['sgc', 'tip', 'ca']:
+		cp._err('invalid method: %s' % method)
+
+	p = protein(pdbfile, chain=chainid)
+	if method =='sgc':
+		ralist = p.atomsbyscgmcenter()
+	elif method == 'tip:':
+		ralist = p.atomsbytip('AAtips.py')
+	# elif method == 'ca':
+	# continue ...
+	cglist = p.contactbycutoff(ralist, cutoff)
+
+	outrafile = '%s.%s.%s' % (pdbfile, chainid, method)
+	with open(outrafile, 'w') as fp:
+		for a in ralist:
+			fp.write(a.writeAtom())
+	cp._info('save residue pdb: %s' % outrafile)
+
+	outcgfile = '%s.%s.%s.cg' % (pdbfile, chainid, method)
+	with open(outcgfile, 'w') as fp:
+		for a,b in cglist:
+			fp.write('%d %s %d %s\n' % (a.resSeq, cp.aa2a[a.resName], b.resSeq, cp.aa2a[b.resName]))
+	cp._info('save cg file: %s' % outcgfile)
+
 
 def main():
 	if len(sys.argv)<2:
@@ -192,7 +228,8 @@ def main():
 
 	dispatch = {
 		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
-		'writeca':writeca, 'writesgc':writesgc, 'writeseqfa':writeseqfa
+		'writeca':writeca, 'writesgc':writesgc, 'writeseqfa':writeseqfa,
+		'contactbycutoff':contactbycutoff
 	}
 
 	cmd = sys.argv[1]
