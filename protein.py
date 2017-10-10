@@ -8,6 +8,7 @@ from atom import atom
 from AAmap import AAmap
 from cluster import cluster
 from ncg import ncg
+import commp as cp
 #from sklearn.cluster import spectral_clustering
 #from scipy.sparse import coo_matrix
 
@@ -143,7 +144,7 @@ class protein(object):
             # and save for output
             reta = copy.copy(al[0])
             if count == 0:
-                cp._info('err:incomplete residue: %s %d %s' % self.pdbfile, reta.resSeq, reta.resSeq)
+                cp._info('err:incomplete residue: %s %d %s' % (self.pdbfile, reta.resSeq, reta.resName))
                 continue
             reta.x = x/count
             reta.y = y/count

@@ -173,7 +173,7 @@ def msareduce(arglist):
 # output: tsv file with quad subsitution count
 def pairsubstitution(arglist):
 	if len(arglist) < 2:
-		cp._err('Usage: python utils_pfammsa.py pairsubstitution PF00000.txt PF00000.txt.selected.col')
+		cp._err('Usage: python utils_pfammsa.py pairsubstitution PF00000.txt PF00000.txt.scol')
 
 	msafile = arglist[0]
 	scolfile = arglist[1]
@@ -186,7 +186,7 @@ def pairsubstitution(arglist):
 			cp._info('no column loaded for %s, %s' % (msafile, scolfile))
 			return
 		else:
-			scollist = [[int(c) for c in p.split(',')] for p in line.split(' ')]
+			scollist = [[int(c) for c in p.split('-')] for p in line.split(' ')]
 
 	pfm = pfammsa(msafile)
 	psubdictall = collections.defaultdict(int)
@@ -205,9 +205,66 @@ def pairsubstitution(arglist):
 	return psubdictall
 
 
+# select key columns by residue contact & top sdii
+# input: 1a0p.pdb.A.sgc.cg, 1a0p.pdb-PF00589.map, PF00589.mip.3.top
+# $ head PF00589_p90.mip.3.top
+#	271-274 0.25128949
+# $ head 1a0p.pdb.A.sgc.cg
+#	3 Q 7 R
+# $ tail 1a0p.pdb-PF00589.map
+#	280 T 1318 I
+# output: PF00589_p90.scol
+def columnselect(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py columnselect 1a0p.pdb.A.sgc.cg 1a0p.pdb-PF00589.map PF00589_p90.mip.3.top')
+
+	cgfile = arglist[0]
+	with open(cgfile) as fp:
+		# [['3', 'Q', '7', 'R'], ['4', 'D', '7', 'R']...]
+		cglist = [line.strip().split(' ') for line in fp]
+	print repr(cglist)
+
+	mapfile = arglist[1]
+	with open(mapfile) as fp:
+		maplist = [line.strip().split(' ') for line in fp]
+	print repr(maplist)
+
+	topsdiifile = arglist[2]
+	with open(topsdiifile) as fp:
+		topsdiiset = set([line.strip().split(' ')[0] for line in fp])
+	print repr(topsdiiset)
+
+	# convert maplist to resid -> msa dictionary
+	mapdict = dict((m[0], m[2]) for m in maplist)
+	print repr(mapdict)
+	
+	scollist = []
+	# choose pair that in contact and top sdii	
+	for c in cglist:
+		# c: ['113', 'L', '170', 'I']
+		# contact resi not in mapdict
+		if (c[0] in mapdict) and (c[2] in mapdict):
+			continue
+		p1 = int(mapdict[c[0]])
+		p2 = int(mapdict[c[2]])
+		key = '%d-%d' % (p1, p2) if p1 <= p2 else '%d-%d' % (p2, p1)
+		if key in topsdiiset:
+			scollist.append(key)
+
+	if len(scollist) == 0:
+		cp._info('no significant columnt selected for %s' % topsdiifile[0:7])
+
+	outscolfile = '%s_p90.scol' % (topsdiifile[0:7])
+	with open(outscolfile, 'w') as fp:
+		fp.write(' '.join([sp for sp in scollist]))
+
+	print cp._info('save select column: %s' % outscolfile)
+
 
 # testing routine
 def test(arglist):
+	# test columnselect
+
 	'''
 	>A2SSP0_METLZ/1-86
 	MH..E..F
@@ -218,11 +275,12 @@ def test(arglist):
 	>A5UJB7_METS3/1-88
 	MY..A.AC
 	'''
+	'''
 	pfm = pfammsa('PF00000.txt')
 	pfm.dump()
 	ret = pfm.pairsubstitution(0,1)
 	print repr(ret)
-
+	'''
 	# test pfm.msareduce()
 	'''
 	pfm = pfammsa('PF00000.txt')
@@ -246,7 +304,8 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
-		'pairsubstitution': pairsubstitution
+		'pairsubstitution': pairsubstitution,
+		'columnselect': columnselect
 	}
 
 	if sys.argv[1] not in dispatch:

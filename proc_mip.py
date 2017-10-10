@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import commp as cp
 
 def mi2dict(sdiifile):
 	ret = {}
@@ -31,9 +32,15 @@ def calc_MIp(arglist):
 
 	cols = sorted([int(j) for j in np.loadtxt(colfile, delimiter=',')])
 	#print repr(cols), len(cols)
+	if len(cols) == 0:
+		cp._info('err:empty column file: %s' % colfile)
+		return
 
 	sdiidict = mi2dict(sdiifile)
 	#print sdiidict
+	if len(sdiidict) == 0:
+		cp._info('err:empty sdii file: %s' % sdiifile)
+		return
 
 	avgMI = sum(sdiidict.itervalues()) / len(sdiidict)
 	#print 'average MI: %.8f' % avgMI
