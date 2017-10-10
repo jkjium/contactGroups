@@ -243,7 +243,7 @@ def columnselect(arglist):
 	for c in cglist:
 		# c: ['113', 'L', '170', 'I']
 		# contact resi not in mapdict
-		if (c[0] in mapdict) and (c[2] in mapdict):
+		if (c[0] not in mapdict) or (c[2] not in mapdict):
 			continue
 		p1 = int(mapdict[c[0]])
 		p2 = int(mapdict[c[2]])
@@ -252,13 +252,14 @@ def columnselect(arglist):
 			scollist.append(key)
 
 	if len(scollist) == 0:
-		cp._info('no significant columnt selected for %s' % topsdiifile[0:7])
+		cp._info('err:no significant columnt selected for %s' % topsdiifile[0:7])
+		return
 
 	outscolfile = '%s_p90.scol' % (topsdiifile[0:7])
 	with open(outscolfile, 'w') as fp:
 		fp.write(' '.join([sp for sp in scollist]))
 
-	print cp._info('save select column: %s' % outscolfile)
+	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
 # testing routine
