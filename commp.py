@@ -461,7 +461,7 @@ def quadtype(quadstr):
 		count = 21
 	if '.' in quadstr:
 		count = 9
-	return 't%02d' % count
+	return 't%d' % count
 
 
 def main():
