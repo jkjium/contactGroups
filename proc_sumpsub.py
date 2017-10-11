@@ -21,7 +21,7 @@ def main():
 		# ERNY 15096 t2
 		for line in fp:
 			sarr = line.strip().split(' ')
-			psdict[sarr[0]]+=int(sarr[1])
+			psdict[sarr[0]]+=float(sarr[1])
 			total+=float(sarr[1])
 
 	outpsfile = allpsubfile + '.ps'

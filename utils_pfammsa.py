@@ -198,7 +198,7 @@ def pairsubstitution(arglist):
 	outfile = '%s.psub' % msafile
 	with open(outfile, 'w') as fp:
 		for k in psubdictall:
-			fp.write('%s %d %s\n' % (k, float(psubdictall[k])/pfm.msanum, psubdictall[k], cp.quadtype(k)))
+			fp.write('%s %.8f %d %s\n' % (k, float(psubdictall[k])/pfm.msanum, psubdictall[k], cp.quadtype(k)))
 	cp._info('save %s' % outfile)
 
 	# return for mp_run reduce
