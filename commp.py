@@ -457,9 +457,11 @@ def quadtype(quadstr):
 	for i in [0,1]:
 		if pA[i]!=pB[i]:
 			count+=1
+	if (quadstr[0] == quadstr[3]) and (quadstr[1] == quadstr[2]):
+		count = 21
 	if '.' in quadstr:
 		count = 9
-	return 't%d' % count
+	return 't%02d' % count
 
 
 def main():
