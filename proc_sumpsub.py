@@ -16,6 +16,7 @@ def main():
 	allpsubfile = sys.argv[1]
 	psdict = collections.defaultdict(int)
 	total = 0
+	cp._info('loading psub ...')
 	with open(allpsubfile) as fp:
 		# ERNY 15096 t2
 		for line in fp:
@@ -24,6 +25,7 @@ def main():
 			total+=float(sarr[1])
 
 	outpsfile = allpsubfile + '.ps'
+	cp._info('writing %s' % outpsfile)
 	with open(outpsfile, 'w') as fp:
 		for k in psdict:
 			fp.write('%s %s %.6f %d\n' % (cp.quadtype(k), k, psdict[k]/total, quaddhat(k)))
