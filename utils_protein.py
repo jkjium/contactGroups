@@ -202,7 +202,7 @@ def contactbycutoff():
 	p = protein(pdbfile, chain=chainid)
 	if method =='sgc':
 		ralist = p.atomsbyscgmcenter()
-	elif method == 'tip:':
+	elif method == 'tip':
 		ralist = p.atomsbytip('AAtips.py')
 	# elif method == 'ca':
 	# continue ...
