@@ -198,11 +198,11 @@ def pairsubstitution(arglist):
 	outfile = '%s.psub' % msafile
 	with open(outfile, 'w') as fp:
 		for k in psubdictall:
-			fp.write('%s %d %s\n' % (k, psubdictall[k]), cp.quadtype(k))
+			fp.write('%s %d %s\n' % (k, psubdictall[k], cp.quadtype(k)))
 	cp._info('save %s' % outfile)
 
 	# return for mp_run reduce
-	return psubdictall
+	#return psubdictall
 
 
 # select key columns by residue contact & top sdii
@@ -222,21 +222,21 @@ def columnselect(arglist):
 	with open(cgfile) as fp:
 		# [['3', 'Q', '7', 'R'], ['4', 'D', '7', 'R']...]
 		cglist = [line.strip().split(' ') for line in fp]
-	print repr(cglist)
+	#print repr(cglist)
 
 	mapfile = arglist[1]
 	with open(mapfile) as fp:
 		maplist = [line.strip().split(' ') for line in fp]
-	print repr(maplist)
+	#print repr(maplist)
 
 	topsdiifile = arglist[2]
 	with open(topsdiifile) as fp:
 		topsdiiset = set([line.strip().split(' ')[0] for line in fp])
-	print repr(topsdiiset)
+	#print repr(topsdiiset)
 
 	# convert maplist to resid -> msa dictionary
 	mapdict = dict((m[0], m[2]) for m in maplist)
-	print repr(mapdict)
+	#print repr(mapdict)
 	
 	scollist = []
 	# choose pair that in contact and top sdii	
