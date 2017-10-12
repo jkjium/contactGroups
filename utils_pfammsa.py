@@ -215,8 +215,8 @@ def pairsubstitution(arglist):
 #	280 T 1318 I
 # output: PF00589_p90.scol
 def columnselect(arglist):
-	if len(arglist) < 3:
-		cp._err('Usage: python utils_pfammsa.py columnselect 1a0p.pdb.A.sgc.cg 1a0p.pdb-PF00589.map PF00589_p90.mip.3.top')
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py columnselect 1a0p.pdb.A.sgc.cg 1a0p.pdb-PF00589.map PF00589_p90.mip.3.top PF00589_p90_tip.scol')
 
 	cgfile = arglist[0]
 	with open(cgfile) as fp:
@@ -255,7 +255,7 @@ def columnselect(arglist):
 		cp._info('err:no significant columnt selected for %s' % topsdiifile[0:7])
 		return
 
-	outscolfile = '%s_p90.scol' % (topsdiifile[0:7])
+	outscolfile = arglist[3]
 	with open(outscolfile, 'w') as fp:
 		fp.write(' '.join([sp for sp in scollist]))
 
