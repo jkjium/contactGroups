@@ -188,14 +188,6 @@ def _info(msg):
 	info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
 	print '[%s] - %s' % (info, msg)
 
-# return the freuency table for a given string
-def freq(word):
-	# 2.7+
-	# return letters = collections.Counter('google')
-	letters = collections.defaultdict(int)
-	for letter in word:
-		letters[letter] += 1
-	return letters
 
 # return ith column of matrix (list(list))
 # 	[...]
@@ -203,200 +195,6 @@ def freq(word):
 # 	[...]
 def column(mat, i):
 	return [row[i] for row in mat]
-
-
-# calculate n choose r
-def ncr(n, r):
-    r = min(r, n-r)
-    if r == 0: return 1
-    numer = reduce(op.mul, xrange(n, n-r, -1))
-    denom = reduce(op.mul, xrange(1, r+1))
-    return numer//denom
-
-# jaccard distance for two sets
-def jaccard(a, b):
-	c = a.intersection(b)
-	print repr(a), repr(b)
-	print repr(c)
-	return 1 - (float(len(c)) / (len(a) + len(b) - len(c)))
-
-# given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format
-# return RMSD
-# RMSD = sqrt( 1/n * \sum_i (|| v_i - w_i ||^2)   )
-def rmsd(v, w):
-	if len(v) != len(w):
-		print 'error: vector length mismatch. v: %d w: %d' % (len(v), len(w))
-		exit(1)
-	#print repr(v), repr(w)
-	d = [((v[i][0]-w[i][0])*(v[i][0]-w[i][0]) + (v[i][1]-w[i][1])*(v[i][1]-w[i][1]) + (v[i][2]-w[i][2])*(v[i][2]-w[i][2])) for i in xrange(0, len(v))] 
-	#print repr(d)
-	return math.sqrt(sum(d)/len(d))
-
-
-def getPDBUniprotMap(mapfile):
-	# duplicate from utils_msa.py
-	# called in utils_msa.py ncg2sdiicol()
-	# load map between pdb residue ID and MSA uniprot position ID 
-	# dictionary element: ('A9', (14, 'V')) : (chain+resi, (MSA position index, resn))
-	# mapfile:
-	# AT284 1218 T  : chain A residue T resn 284 => position 1218 (start from 0) resn T
-	# AE285 1220 e  : lowercase exists!
-	# AR286 -1 -	: residue number that cannot map to MSA position (does not exist)
-	posmap = {}
-	with open(mapfile) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) < 1:
-				print 'getPDBUniprotMap: error loading map: %s' % mapfile
-			strArray = line.split(' ')
-			key = strArray[0][0] + strArray[0][2:]
-			value = (int(strArray[1]), strArray[2].upper())
-			posmap[key] = value
-	print 'getPDBUniprotMap: %s %d maps loaded' % (mapfile, len(posmap))
-	return posmap
-
-# generate fasta entries from a fasta file
-def fasta_iter(fastafile):
-	fh = open(fastafile)
-	faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))	
-	for header in faiter:
-		header = header.next()[1:].strip()
-		seq = "".join(s.strip() for s in faiter.next())
-		yield header, seq	
-
-
-# given two strings
-# normal sequence & aligned sequence
-# return map 1. key=1  pos[s1] = s2; 2. key=2 pos[s2] = s1
-# s1: aligned string index, s2: pdb sequence index
-def posmap1(s1, s2, key=1):
-	gap = ['.', '-', '_']
-	ps1 = s1.translate(None, ''.join(gap))
-	ps2 = s2.translate(None, ''.join(gap))
-	#print 'ps1: %s\nps2: %s' % (ps1, ps2)
-
-	retmap={}
-	if ps1!=ps2:
-		print 'error: not homo-str'
-		print 'ps1: %s\nps2: %s' % (ps1, ps2)
-		return retmap
-
-	i=0
-	j=0
-	while(i<len(s1) and j<len(s2)):
-		if s1[i] in gap:
-			i+=1
-			continue
-		if s2[j] in gap:
-			j+=1
-			continue
-		if s1[i]==s2[j]:
-			if key == 1:
-				retmap[i] = j
-			else:
-				retmap[j] = i
-			i+=1
-			j+=1
-
-	if len(retmap)!=len(ps1):
-		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
-		return False
-
-	return retmap
-
-
-# map between two gap extened sequences with the same original sequence
-# normal sequence or aligned sequence
-# return map pos[s1_index] = s2_index; 
-# index starts from 0
-def posmap_homoseq(s1, s2):
-	ps1 = s1.translate(None, ''.join(gaps))
-	ps2 = s2.translate(None, ''.join(gaps))
-
-	if ps1!=ps2:
-		_err(_fatal, 'unmatched raw sequence\ns1: %s\ns2: %s\n' % (ps1, ps2))
-
-	i=0
-	j=0
-	retmap=[]
-	while(i<len(s1) and j<len(s2)):
-		if s1[i] in gaps:
-			i+=1
-			continue
-		if s2[j] in gaps:
-			j+=1
-			continue
-		if s1[i]==s2[j]:
-			retmap.append((i, j))
-			i+=1
-			j+=1
-
-	if len(retmap)!=len(ps1):
-		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
-		return False
-	return retmap
-
-
-# called in posmap_subseq()
-# return a list of tuples: [(idx_long, idx_short), (, ), ...]
-def subseq_align(longseq, shortseq, prefix):
-	if prefix == -1:
-		_err('unmatched sub sequence\nlong str: %s\nshort str: %s\n' % (longseq, shortseq))
-
-	#print 'longseq:\n%s\n' % longseq
-	#print 'shortseq:\n%s\n' % shortseq
-	#print 'prefix: %d' % prefix
-	# skip prefix # non-gapped alphabets
-	k = 0
-	while (prefix>0):
-		if longseq[k] not in gaps:
-			prefix-=1
-		k+=1	
-	#print 'k: %d' % k
-	retset = []
-	i, j = k, 0
-	while (i<len(longseq) and j<len(shortseq)):
-		#print 'i:%d - %s, j:%d - %s' % (i, longseq[i], j, shortseq[j])
-		if longseq[i] in gaps:
-			i+=1
-			continue
-		if shortseq[j] in gaps:
-			j+=1
-			continue
-		if longseq[i] == shortseq[j]:
-			retset.append((i,j))
-			i+=1
-			j+=1
-	return retset	
-
-
-# extend version of posmap_homoseq() 
-# map between two gap extened sequences with one substring to the another without gaps
-# 	after pfamscan, a MSA sequence will be trimmed and insert gaps in different positions
-# normal sequence or aligned sequence
-# return map pos[s1_index] = s2_index; 
-# index starts from 0
-def posmap_subseq(s1, s2):
-	s1=s1.upper()
-	s2=s2.upper()
-	ps1 = s1.translate(None, ''.join(gaps))
-	ps2 = s2.translate(None, ''.join(gaps))
-	#print 'ps1:\n%s\n' % ps1
-	#print 'ps2:\n%s\n' % ps2
-
-	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) >= len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
-
-	if reverse == True:
-		retmap = [(v, k) for (k, v) in idx_set]
-	else:
-		retmap = idx_set
-	return retmap
-
-
-# (joint) entropy calculation
-# input: a list of np.array()
-def entropy(X):
-	return np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
 
 
 # mp constant definition
@@ -421,7 +219,165 @@ def dcall(callstr):
 # used in utils_mprun.py
 def drun(runstr):
 	#print 'runstr: %s' % runstr
-	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()	
+	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
+
+
+# (joint) entropy calculation
+# input: a list of np.array()
+def entropy(X):
+	return np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
+
+
+# generate fasta entries from a fasta file
+def fasta_iter(fastafile):
+	fh = open(fastafile)
+	faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))	
+	for header in faiter:
+		header = header.next()[1:].strip()
+		seq = "".join(s.strip() for s in faiter.next())
+		yield header, seq	
+
+
+# return the freuency table for a given string
+def freq(word):
+	# 2.7+
+	# return letters = collections.Counter('google')
+	letters = collections.defaultdict(int)
+	for letter in word:
+		letters[letter] += 1
+	return letters
+
+
+def getPDBUniprotMap(mapfile):
+	# duplicate from utils_msa.py
+	# called in utils_msa.py ncg2sdiicol()
+	# load map between pdb residue ID and MSA uniprot position ID 
+	# dictionary element: ('A9', (14, 'V')) : (chain+resi, (MSA position index, resn))
+	# mapfile:
+	# AT284 1218 T  : chain A residue T resn 284 => position 1218 (start from 0) resn T
+	# AE285 1220 e  : lowercase exists!
+	# AR286 -1 -	: residue number that cannot map to MSA position (does not exist)
+	posmap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) < 1:
+				print 'getPDBUniprotMap: error loading map: %s' % mapfile
+			strArray = line.split(' ')
+			key = strArray[0][0] + strArray[0][2:]
+			value = (int(strArray[1]), strArray[2].upper())
+			posmap[key] = value
+	print 'getPDBUniprotMap: %s %d maps loaded' % (mapfile, len(posmap))
+	return posmap
+
+
+# jaccard distance for two sets
+def jaccard(a, b):
+	c = a.intersection(b)
+	print repr(a), repr(b)
+	print repr(c)
+	return 1 - (float(len(c)) / (len(a) + len(b) - len(c)))
+
+
+# calculate n choose r
+def ncr(n, r):
+    r = min(r, n-r)
+    if r == 0: return 1
+    numer = reduce(op.mul, xrange(n, n-r, -1))
+    denom = reduce(op.mul, xrange(1, r+1))
+    return numer//denom
+
+
+# given two strings
+# normal sequence & aligned sequence
+# return map 1. key=1  pos[s1] = s2; 2. key=2 pos[s2] = s1
+# s1: aligned string index, s2: pdb sequence index
+def posmap1(s1, s2, key=1):
+	gap = ['.', '-', '_']
+	ps1 = s1.translate(None, ''.join(gap))
+	ps2 = s2.translate(None, ''.join(gap))
+
+	retmap={}
+	if ps1!=ps2:
+		print 'error: not homo-str'
+		print 'ps1: %s\nps2: %s' % (ps1, ps2)
+		return retmap
+	i=0
+	j=0
+	while(i<len(s1) and j<len(s2)):
+		if s1[i] in gap:
+			i+=1
+			continue
+		if s2[j] in gap:
+			j+=1
+			continue
+		if s1[i]==s2[j]:
+			if key == 1:
+				retmap[i] = j
+			else:
+				retmap[j] = i
+			i+=1
+			j+=1
+	if len(retmap)!=len(ps1):
+		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
+		return False
+
+	return retmap
+
+
+# map between two gap extened sequences with the same original sequence
+# normal sequence or aligned sequence
+# return map pos[s1_index] = s2_index; 
+# index starts from 0
+def posmap_homoseq(s1, s2):
+	ps1 = s1.translate(None, ''.join(gaps))
+	ps2 = s2.translate(None, ''.join(gaps))
+
+	if ps1!=ps2:
+		_err(_fatal, 'unmatched raw sequence\ns1: %s\ns2: %s\n' % (ps1, ps2))
+	i=0
+	j=0
+	retmap=[]
+	while(i<len(s1) and j<len(s2)):
+		if s1[i] in gaps:
+			i+=1
+			continue
+		if s2[j] in gaps:
+			j+=1
+			continue
+		if s1[i]==s2[j]:
+			retmap.append((i, j))
+			i+=1
+			j+=1
+
+	if len(retmap)!=len(ps1):
+		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
+		return False
+	return retmap
+
+
+# extend version of posmap_homoseq() 
+# map between two gap extened sequences with one substring to the another without gaps
+# 	after pfamscan, a MSA sequence will be trimmed and insert gaps in different positions
+# normal sequence or aligned sequence
+# return map pos[s1_index] = s2_index; 
+# index starts from 0
+def posmap_subseq(s1, s2):
+	s1=s1.upper()
+	s2=s2.upper()
+	ps1 = s1.translate(None, ''.join(gaps))
+	ps2 = s2.translate(None, ''.join(gaps))
+	#print 'ps1:\n%s\n' % ps1
+	#print 'ps2:\n%s\n' % ps2
+
+	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) >= len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
+
+	if reverse == True:
+		retmap = [(v, k) for (k, v) in idx_set]
+	else:
+		retmap = idx_set
+	return retmap
+
 
 
 # pairwise substitution
@@ -465,12 +421,78 @@ def quadtype(quadstr):
 	return 't%d' % count
 
 
+# transfer a set of float number into ranking of [0,1]
+# input a dictionary
+def rank01(d):
+	s = float(sum(d.values()))
+	return dict((k, d[k]/s) for k in d)
+
+
+# given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format
+# return RMSD
+# RMSD = sqrt( 1/n * \sum_i (|| v_i - w_i ||^2)   )
+def rmsd(v, w):
+	if len(v) != len(w):
+		print 'error: vector length mismatch. v: %d w: %d' % (len(v), len(w))
+		exit(1)
+	#print repr(v), repr(w)
+	d = [((v[i][0]-w[i][0])*(v[i][0]-w[i][0]) + (v[i][1]-w[i][1])*(v[i][1]-w[i][1]) + (v[i][2]-w[i][2])*(v[i][2]-w[i][2])) for i in xrange(0, len(v))] 
+	#print repr(d)
+	return math.sqrt(sum(d)/len(d))
+
+
+# called in posmap_subseq()
+# return a list of tuples: [(idx_long, idx_short), (, ), ...]
+def subseq_align(longseq, shortseq, prefix):
+	if prefix == -1:
+		_err('unmatched sub sequence\nlong str: %s\nshort str: %s\n' % (longseq, shortseq))
+
+	#print 'longseq:\n%s\n' % longseq
+	#print 'shortseq:\n%s\n' % shortseq
+	#print 'prefix: %d' % prefix
+	# skip prefix # non-gapped alphabets
+	k = 0
+	while (prefix>0):
+		if longseq[k] not in gaps:
+			prefix-=1
+		k+=1	
+	#print 'k: %d' % k
+	retset = []
+	i, j = k, 0
+	while (i<len(longseq) and j<len(shortseq)):
+		#print 'i:%d - %s, j:%d - %s' % (i, longseq[i], j, shortseq[j])
+		if longseq[i] in gaps:
+			i+=1
+			continue
+		if shortseq[j] in gaps:
+			j+=1
+			continue
+		if longseq[i] == shortseq[j]:
+			retset.append((i,j))
+			i+=1
+			j+=1
+	return retset	
+
+
+# main routine. for testing
 def main():
+	# test rank01
+	d = {'A': 0.00005, 'B': 0.00003, 'C': 0.00001, 'D': 0.00001, 'E': 0.00000}
+	d = {'A': 5, 'B': 3, 'C': 1, 'D': 1, 'E': 0}
+	for k in d:
+		print '%s: %.8f' % (k, d[k])
+	print '-----------------'
+	rd = rank01(d)
+	for k in rd:
+		print '%s: %.8f' % (k, rd[k])
+
+
 	# test quadtype()
+	'''
 	qstr = ['ACAC', 'ACDG', 'ACAG', 'ACGC']
 	for q in qstr:
 		print (q, quadtype(q))
-
+	'''
 	# test pair_permu
 	#qlist = [(('AC', 2), ('DG', 3)), (('CA', 12),('GD', 13)), (('DG',22), ('AC', 23)), (('GD', 32), ('CA', 33))]
 	#qlist = [('AC','DG'), ('CA','GD'), ('DG','AC'), ('GD','CA')]
