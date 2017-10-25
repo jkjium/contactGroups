@@ -3,6 +3,7 @@ import operator
 import commp as cp
 import numpy as np
 import collections
+import string
 
 
 """
@@ -14,12 +15,18 @@ class pfammsa(object):
 	data structure of pfam MSA
 
 	"""
-	def __init__(self, msafile):
+	def __init__(self, msafile, opt='full'):
 		self.msalist = []
 		count = 0
-		for head, seq in cp.fasta_iter(msafile):
-			#print '%d\n%s\n%s\n' % (count, head, seq)
-			self.msalist.append((head, seq))
+
+		if opt=='ambaa':
+			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
+			for head, seq in cp.fasta_iter(msafile):
+				self.msalist.append((head, seq.translate(trans)))
+		else:
+			for head, seq in cp.fasta_iter(msafile):
+				#print '%d\n%s\n%s\n' % (count, head, seq)
+				self.msalist.append((head, seq))
 
 		self.msalen = len(self.msalist[0][1])
 		self.msanum = len(self.msalist)
@@ -38,10 +45,11 @@ class pfammsa(object):
 
 	# return a dictionary with dict['A'] = 10
 	# cp.freq returns a dictionary for the current sequence
-	#
-	def aafreq(self):
+	# input: collist: column index in (int) type, start from 0
+	def aafreq(self, collist):
 		sumfreq = dict((k,0) for k in cp.msaaa)
-		freqlist = [cp.freq(fa[1]) for fa in self.msalist]
+		colAAlist = [self.msacol(i) for i in collist]
+		freqlist = [cp.freq(c) for c in colAAlist]
 		for dd in freqlist:
 			for k in sumfreq:
 				sumfreq[k]+=dd[k]
@@ -95,12 +103,19 @@ class pfammsa(object):
 
 def aafreq(arglist):
 	if len(arglist) < 1 or arglist == False:
-		cp._err('Usage: python utils_pfammsa.py aafreq PF00000.txt')
+		cp._err('Usage: python utils_pfammsa.py aafreq PF00000.txt col=all|1,2,3')
 
 	msafile = arglist[0]
-
 	pfm = pfammsa(msafile)
-	output =[(k, float(v)/pfm.seqnum) for k,v in pfm.aafreq().items() if v > 0]
+	if arglist[1] == 'all':
+		collist = [i for i in xrange(pfm.msalen)]
+	else:
+		collist = [int(i) for i in arglist[1].split(',')]
+	print repr(collist)
+
+	freqdict = pfm.aafreq(collist)
+	freqsum = sum(freqdict.values())
+	output =[(k, v, float(v)/freqsum) for k,v in freqdict.items() if v > 0]
 	output.sort(key=operator.itemgetter(1), reverse=True)
 
 	outfile = msafile + '.aafreq'
@@ -188,17 +203,36 @@ def pairsubstitution(arglist):
 		else:
 			scollist = [[int(c) for c in p.split('-')] for p in line.split(' ')]
 
-	pfm = pfammsa(msafile)
+	# get scol set from pairs list
+	scolset = set()
+	for p in scollist:
+		scolset.add(p[0])
+		scolset.add(p[1])
+
+	pfm = pfammsa(msafile, 'ambaa')
+	fq = pfm.aafreq(scolset)
 	psubdictall = collections.defaultdict(int)
+	# counting freq
 	for c in scollist:
 		psubdict = pfm.pairsubstitution(c[0], c[1])
 		for k in psubdict:
 			psubdictall[k]+=psubdict[k]
+	'''
+	for k in psubdictall:
+		print '%s: %d %d %d %d' % (k, fq[k[0]],fq[k[1]],fq[k[2]],fq[k[3]])
+	print repr(fq)
+	return
+	'''
+
+	# normalize by AA freq
+	# k[0] k[1] k[2] k[3] must in freqdict
+	norm_psubdictall = cp.rank01(dict((k, float(psubdictall[k])/(fq[k[0]]*fq[k[1]]*fq[k[2]]*fq[k[3]])) for k in psubdictall))
 
 	outfile = '%s.psub' % msafile
 	with open(outfile, 'w') as fp:
 		for k in psubdictall:
-			fp.write('%s %.8f %d %s\n' % (k, float(psubdictall[k])/pfm.msanum, psubdictall[k], cp.quadtype(k)))
+			#fp.write('%s %.8f %d %s\n' % (k, float(psubdictall[k])/pfm.msanum, psubdictall[k], cp.quadtype(k)))
+			fp.write('%s %.8f %d %s\n' % (k, norm_psubdictall[k], psubdictall[k], cp.quadtype(k)))
 	cp._info('save %s' % outfile)
 
 	# return for mp_run reduce
