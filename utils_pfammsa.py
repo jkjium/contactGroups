@@ -296,15 +296,16 @@ def columnselect(arglist):
 
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
+
 def psicovaln(arglist):
 	if len(arglist) < 1:
 		cp._err('Usage: python utils_pfammsa.py psicovaln PF00000_full.txt')
 	msafile = arglist[0]
 	outfile = msafile + '.aln'
-	pfm = pfammsa(msafile)
+	pfm = pfammsa(msafile,'ambaa')
 	with open(outfile, 'w') as fp:
 		for s in pfm.msalist:
-			fp.write('%s\n' % s[1])
+			fp.write('%s\n' % s[1].replace('.', '-'))
 	cp._info('save to %s' % outfile)
 
 
