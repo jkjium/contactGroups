@@ -209,6 +209,7 @@ def pairsubstitution(arglist):
 		scolset.add(p[0])
 		scolset.add(p[1])
 
+	#pfm = pfammsa(msafile)
 	pfm = pfammsa(msafile, 'ambaa')
 	fq = pfm.aafreq(scolset)
 	psubdictall = collections.defaultdict(int)
@@ -295,6 +296,18 @@ def columnselect(arglist):
 
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
+def psicovaln(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_pfammsa.py psicovaln PF00000_full.txt')
+	msafile = arglist[0]
+	outfile = msafile + '.aln'
+	pfm = pfammsa(msafile)
+	with open(outfile, 'w') as fp:
+		for s in pfm.msalist:
+			fp.write('%s\n' % s[1])
+	cp._info('save to %s' % outfile)
+
+
 
 # testing routine
 def test(arglist):
@@ -340,7 +353,8 @@ def main():
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
-		'columnselect': columnselect
+		'columnselect': columnselect,
+		'psicovaln': psicovaln
 	}
 
 	if sys.argv[1] not in dispatch:
