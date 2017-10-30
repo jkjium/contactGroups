@@ -119,7 +119,7 @@ def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonf
 	outstr = '\n'.join(['%d %s %d %s' % (k[2], k[1], v, msaseq[v]) for (k,v) in resi2msa])
 	with open(outfile, 'w') as fp:
 		fp.write(outstr)
-	cp._info('save to %s' % outfile)
+	cp._info('save map to %s' % outfile)
 	'''
 	for k,v in resi2msa:
 		print 'pdb %d - %s, msa %d - %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v])

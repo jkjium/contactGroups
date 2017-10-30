@@ -206,7 +206,8 @@ class protein(object):
     def getSeq(self):
         aamap = AAmap()
         seq=''
-        last_resSeq = -1
+        #last_resSeq = -1 # 1a8v the first resi starts from -1 !!!!
+        last_resSeq = -9999 # 1a8v the first resi starts from -1 !!!!
         seqPos = 0
         resArray = []
 
