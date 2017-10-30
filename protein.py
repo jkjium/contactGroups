@@ -75,7 +75,7 @@ class protein(object):
         # 'B529': (132, 'V')
         self.resDict = {} # assigned in self.getSeq() function
         # resAtoms, a list of lists, each (element) list contains atoms of residues
-        # resArray, gives a list of keys eg. AQ70,AI71, AV72 
+        # resArray, gives a list of keys eg. (A,Q,70), (A,I,71), (A,V,72)
         self.seq, self.resArray, self.resAtoms = self.getSeq()
 
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
@@ -222,7 +222,8 @@ class protein(object):
                 self.resDict[key] = (seqPos, seq[seqPos])
                 seqPos+=1
 
-                resArray.append(a.chainID+aamap.getAAmap(a.resName)+str(a.resSeq))
+                #resArray.append('%s %s %s' % (a.chainID,aamap.getAAmap(a.resName),str(a.resSeq)))
+                resArray.append((a.chainID,aamap.getAAmap(a.resName),str(a.resSeq)))
 
                 if len(resatoms)>0:
                     resAtomsAll.append(resatoms)

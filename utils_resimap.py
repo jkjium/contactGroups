@@ -85,12 +85,16 @@ def map_hmm2hmm(seq1, json1, seq2, json2):
 # pdbjsonfile: 	get from pfamscan pdbseqfafile
 # msafafile:	MSA sequence WITH GAPs extracted from pfam MSA
 # msajsonfile:	get from pfamscan MSA sequence WITHOUT GAPs
-def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfamid):
-	p = protein(pdbfile)
+def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfamid):
+	p = protein(pdbfile, chain=chainid)
 
 	# load sequences
 	pdbseq = [s for s in cp.fasta_iter(pdbseqfafile)][0][1]
-	msaseq = [s for s in cp.fasta_iter(msafafile)][0][1]
+	msa1 = [s for s in cp.fasta_iter(msafafile)][0]
+	msaseq = msa1[1]
+	fullhead = msa1[0]
+	strarr = fullhead[1:].split('/')
+	msahead = strarr[0]
 
 	# load pfamscan json object
 	pdbjson = ups(pdbjsonfile).getMatchpfs(pfamid)
@@ -106,10 +110,13 @@ def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfam
 	pdbpos2msapos = dict((k,v) for k,v in map_hmm2hmm(pdbseq, pdbjson, msaseq, msajson))
 
 	# replace pdb pos with pdb resi
-	resi2msa = [(p.ca[i], pdbpos2msapos[i]) for i in xrange(0, len(p.ca)) if i in pdbpos2msapos]
+	#resi2msa = [(p.ca[i], pdbpos2msapos[i]) for i in xrange(0, len(p.ca)) if i in pdbpos2msapos]
+	# resArray, gives a list of keys eg. (A,Q,70), (A,I,71), (A,V,72)
+	resi2msa = [(p.resArray[i], pdbpos2msapos[i]) for i in xrange(0, len(p.resArray)) if i in pdbpos2msapos]
 
-	outfile = '%s-%s.map' % (pdbfile, pfamid)
-	outstr = '\n'.join(['%d %s %d %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v]) for (k,v) in resi2msa])
+	outfile = '%s-%s-%s.map' % (pdbfile, msahead, pfamid)
+	#outstr = '\n'.join(['%d %s %d %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v]) for (k,v) in resi2msa])
+	outstr = '\n'.join(['%d %s %d %s' % (k[2], cp.aa2a[k[1]], v, msaseq[v]) for (k,v) in resi2msa])
 	with open(outfile, 'w') as fp:
 		fp.write(outstr)
 	#print 'save to %s' % outfile
@@ -121,12 +128,12 @@ def pdbResi2MSA(pdbfile, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfam
 	return outstr	
 
 def resi2msa(arglist):
-	if len(arglist) < 6:
+	if len(arglist) < 7:
 		print 'Usage: python utils_resimap.py resi2msa pdbfile pdbseqfafile pdbjsonfile msafafile msajsonfile pfamid'
-		print '$ python utils_resimap.py resi2msa 1ni3.pdb 1ni3.pdb.fa 1ni3.pdb.fa.json PF06071_MSA.fa PF06071.json PF06071'
+		print '$ python utils_resimap.py resi2msa 1a8v.pdb B 1a8v.pdb.B.fa 1a8v.pdb.B.fa.json PF07497_p90_MSA.fa PF07497_p90_seq.fa.json PF07497'
 		exit()
 	#pdbResi2MSA(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5])
+	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
 
 
 def test():
