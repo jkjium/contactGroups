@@ -93,7 +93,7 @@ def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonf
 	msa1 = [s for s in cp.fasta_iter(msafafile)][0]
 	msaseq = msa1[1]
 	fullhead = msa1[0]
-	strarr = fullhead[1:].split('/')
+	strarr = fullhead.split('/')
 	msahead = strarr[0]
 
 	# load pfamscan json object
@@ -116,10 +116,10 @@ def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonf
 
 	outfile = '%s-%s-%s.map' % (pdbfile, msahead, pfamid)
 	#outstr = '\n'.join(['%d %s %d %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v]) for (k,v) in resi2msa])
-	outstr = '\n'.join(['%d %s %d %s' % (k[2], cp.aa2a[k[1]], v, msaseq[v]) for (k,v) in resi2msa])
+	outstr = '\n'.join(['%d %s %d %s' % (k[2], k[1], v, msaseq[v]) for (k,v) in resi2msa])
 	with open(outfile, 'w') as fp:
 		fp.write(outstr)
-	#print 'save to %s' % outfile
+	print 'save to %s' % outfile
 	'''
 	for k,v in resi2msa:
 		print 'pdb %d - %s, msa %d - %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v])

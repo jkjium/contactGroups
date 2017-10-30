@@ -223,7 +223,7 @@ class protein(object):
                 seqPos+=1
 
                 #resArray.append('%s %s %s' % (a.chainID,aamap.getAAmap(a.resName),str(a.resSeq)))
-                resArray.append((a.chainID,aamap.getAAmap(a.resName),str(a.resSeq)))
+                resArray.append((a.chainID,aamap.getAAmap(a.resName),a.resSeq))
 
                 if len(resatoms)>0:
                     resAtomsAll.append(resatoms)
