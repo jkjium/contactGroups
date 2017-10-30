@@ -10,19 +10,22 @@ def quaddhat(q):
 # iterate .allscol file to 
 # sum up the pair substitution
 def main():
-	if len(sys.argv) < 2:
-		cp._err('Usage: python proc_sumpsub.py 4-scol.allpsub')
+	if len(sys.argv) < 3:
+		cp._err('Usage: python proc_sumpsub.py 4-scol.allpsub allfreqfile')
 
+
+	cp._info('loading psub ...')
 	allpsubfile = sys.argv[1]
 	psdict = collections.defaultdict(int)
 	total = 0
-	cp._info('loading psub ...')
 	with open(allpsubfile) as fp:
-		# ERNY 15096 t2
+		# '%s %s %d %.8f %.8f' % 
+		#  (k, cp.quadtype(k), psubdictall[k], float(psubdictall[k])/pfm.msanum, norm_psubdictall[k])
 		for line in fp:
 			sarr = line.strip().split(' ')
 			psdict[sarr[0]]+=float(sarr[1])
 			total+=float(sarr[1])
+
 
 	outpsfile = allpsubfile + '.ps'
 	cp._info('writing %s' % outpsfile)
