@@ -16,7 +16,7 @@ illab =['/', '+', '?', '*', '&', '$', '\\']
 gaps = ['.','-',' ']
 
 # abnormal AA
-abaa = ['.','-','X','Z','U','B','O']
+abaa = ['.','-','X','Z','U','B','O','J']
 
 # ambiguous AA
 ambaa = ['X','Z','U','B','O']
@@ -420,7 +420,8 @@ def quadtype(quadstr):
 	if count==2:
 		if (quadstr[0] == quadstr[3]) and (quadstr[1] == quadstr[2]):
 			count = 21
-	if '.' in quadstr:
+	if sum([(c in abaa) for c in quadstr])!=0:
+	#if '.' in quadstr:
 		count = 9
 	return 't%d' % count
 
