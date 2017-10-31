@@ -5,23 +5,25 @@ import collections
 
 # iterate .allaafreq file to 
 def main():
-	if len(sys.argv) < 2:
-		cp._err('Usage: python proc_sumaafreq.py 4-scol.allaafreq')
+	if len(sys.argv) < 3:
+		cp._err('Usage: python proc_sumaafreq.py 4-scol.allaafreq outfile')
 
 	allaafreqfile = sys.argv[1]
+	outfile = sys.argv[2]
 	afdict = collections.defaultdict(int)
 	total = 0
 	cp._info('loading aafreq ...')
-	with open(allaafreqbfile) as fp:
-		# ERNY 15096 t2
+	with open(allaafreqfile) as fp:
+		# A 9534 0.35175620,V 2712 0.10005903
 		for line in fp:
-			if len(line) < 1:
+			line = line.strip()
+			if len(line) == 0:
 				continue
-			sarr = line.strip().split(' ')
-			afdict[sarr[0]]+=int(sarr[1])
-			total+=float(sarr[1])
+			for f in line.split(','):
+				sarr = f.split(' ')
+				afdict[sarr[0]]+=int(sarr[1])
+				total+=float(sarr[1])
 
-	outfile = allaafreqfile + '.sum'
 	cp._info('writing %s' % outfile)
 	with open(outfile, 'w') as fp:
 		for k in afdict:

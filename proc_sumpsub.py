@@ -10,28 +10,28 @@ def quaddhat(q):
 # iterate .allscol file to 
 # sum up the pair substitution
 def main():
-	if len(sys.argv) < 3:
-		cp._err('Usage: python proc_sumpsub.py 4-scol.allpsub allfreqfile')
+	if len(sys.argv) < 2:
+		cp._err('Usage: python proc_sumpsub.py 4-scol.allpsub')
 
 
 	cp._info('loading psub ...')
 	allpsubfile = sys.argv[1]
-	psdict = collections.defaultdict(int)
-	total = 0
+	psdict = collections.defaultdict(lambda: [0,0,0])
 	with open(allpsubfile) as fp:
 		# '%s %s %d %.8f %.8f' % 
 		#  (k, cp.quadtype(k), psubdictall[k], float(psubdictall[k])/pfm.msanum, norm_psubdictall[k])
 		for line in fp:
 			sarr = line.strip().split(' ')
-			psdict[sarr[0]]+=float(sarr[1])
-			total+=float(sarr[1])
+			psdict[sarr[0]][0]+=int(sarr[2]) # psubdictall[k]
+			psdict[sarr[0]][1]+=float(sarr[3]) # float(psubdictall[k])/pfm.msanum
+			psdict[sarr[0]][2]+=float(sarr[4]) # norm_psubdictall[k]
 
 
 	outpsfile = allpsubfile + '.ps'
 	cp._info('writing %s' % outpsfile)
 	with open(outpsfile, 'w') as fp:
 		for k in psdict:
-			fp.write('%s %s %.6f %d\n' % (cp.quadtype(k), k, psdict[k]/total, quaddhat(k)))
+			fp.write('%s %s %d %.6f %.6f %d\n' % (cp.quadtype(k), k, psdict[k][0], psdict[k][1], psdict[k][2], quaddhat(k)))
 
 	cp._info('save pair substitution: %s' % outpsfile)
 

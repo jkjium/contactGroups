@@ -154,7 +154,7 @@ def aafreqscol(arglist):
 
 	outfile = msafile + '.aafreqscol'
 	with open(outfile, 'w') as fp:
-		fp.write(','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output]))
+		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
 
 
