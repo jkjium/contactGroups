@@ -100,7 +100,7 @@ class pfammsa(object):
 		return pairsubdict
 
 
-
+# calculate AA frequency by given column indices
 def aafreq(arglist):
 	if len(arglist) < 1 or arglist == False:
 		cp._err('Usage: python utils_pfammsa.py aafreq PF00000.txt col=all|1,2,3')
@@ -121,6 +121,40 @@ def aafreq(arglist):
 	outfile = msafile + '.aafreq'
 	with open(outfile, 'w') as fp:
 		fp.write(repr(output))
+	return cp._info('save to %s' % outfile)
+
+
+# calculate AA frequency by given selected column file
+def aafreqscol(arglist):
+	if len(arglist) < 2 or arglist == False:
+		cp._err('Usage: python utils_pfammsa.py aafreq PF00000.txt PF00000_p90.scol')
+
+	msafile = arglist[0]
+	scolfile = arglist[1]
+
+	# load scols
+	scolset = set()
+	with open(scolfile) as fp:
+		# 26-82 34-76
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			for colpair in line.split(' '):
+				colarr = colpair.split('-')
+				scolset.add(int(colarr[0]))
+				scolset.add(int(colarr[1]))
+	#print repr(scolset)
+
+	pfm = pfammsa(msafile)
+	freqdict = pfm.aafreq(scolset)
+	freqsum = sum(freqdict.values())
+	output =[(k, v, float(v)/freqsum) for k,v in freqdict.items() if v > 0]
+	output.sort(key=operator.itemgetter(1), reverse=True)
+
+	outfile = msafile + '.aafreqscol'
+	with open(outfile, 'w') as fp:
+		fp.write(','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output]))
 	return cp._info('save to %s' % outfile)
 
 
@@ -218,12 +252,6 @@ def pairsubstitution(arglist):
 		psubdict = pfm.pairsubstitution(c[0], c[1])
 		for k in psubdict:
 			psubdictall[k]+=psubdict[k]
-	'''
-	for k in psubdictall:
-		print '%s: %d %d %d %d' % (k, fq[k[0]],fq[k[1]],fq[k[2]],fq[k[3]])
-	print repr(fq)
-	return
-	'''
 
 	# normalize by AA freq
 	# k[0] k[1] k[2] k[3] must in freqdict
@@ -232,8 +260,7 @@ def pairsubstitution(arglist):
 	outfile = '%s.psub' % msafile
 	with open(outfile, 'w') as fp:
 		for k in psubdictall:
-			#fp.write('%s %.8f %d %s\n' % (k, float(psubdictall[k])/pfm.msanum, psubdictall[k], cp.quadtype(k)))
-			fp.write('%s %.8f %d %s\n' % (k, norm_psubdictall[k], psubdictall[k], cp.quadtype(k)))
+			fp.write('%s %s %d %.8f %.8f\n' % (k, cp.quadtype(k), psubdictall[k], float(psubdictall[k])/pfm.msanum, norm_psubdictall[k]))
 	cp._info('save %s' % outfile)
 
 	# return for mp_run reduce
@@ -351,6 +378,7 @@ def main():
 	dispatch = {
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
+		'aafreqscol': aafreqscol,
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
