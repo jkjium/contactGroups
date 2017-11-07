@@ -341,8 +341,8 @@ def scoreweight(arglist):
 	if len(sys.argv) < 2:
 		cp._err('Usage: python utils_pfammsa.py scoreweight PF00000.score similarity_value')
 
-	datafile = arglist[1]
-	svalue = float(arglist[2])
+	datafile = arglist[0]
+	svalue = float(arglist[1])
 	outfile = '%s.%2d.w' % (datafile, svalue*100)
 
 	score = np.loadtxt(datafile, delimiter=',')

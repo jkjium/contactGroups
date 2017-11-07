@@ -4,7 +4,12 @@ import time
 import math
 from itertools import groupby
 import operator as op
+
 import numpy as np
+from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import linkage
+from scipy.cluster.hierarchy import fcluster
+
 import itertools
 import inspect
 import collections
@@ -298,7 +303,7 @@ def getPDBUniprotMap(mapfile):
 def hamming_weight(x, max_d):
 	linkage_matrix = linkage(x, "single", metric='hamming')
 	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
-	normdict = cp.freq(clusters)
+	normdict = freq(clusters)
 	return [(1.0/normdict[k]) for k in clusters]
 
 

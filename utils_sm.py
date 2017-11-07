@@ -53,9 +53,10 @@ class smatrix(object):
 				aa = line.split()
 		#print aa
 		# square matrix 'A:E' = 'E:A'
-		self.score=dict( ('%s:%s' % (aa[i], aa[j-1]), int(scorelist[i][j])) for i in xrange(0,len(scorelist)) for j in xrange(1, len(aa)))
+		self.score=dict( ('%s%s' % (aa[i], aa[j-1]), int(scorelist[i][j])) for i in xrange(0,len(scorelist)) for j in xrange(1, len(aa)))
 		self.aa = aa
 		#print repr(self.score)
+
 
 	def getscore(self, a1, a2):
 		if a1 not in self.aa:
@@ -69,14 +70,13 @@ class smatrix(object):
 	def psubdict(self):
 		# first get the minimum and translate to remove all the negative values
 		minscore = min(self.score.values())
-		cp._info('min: %d' % minscore)
-		order_aa = sorted([aa for aa in self.aa if aa not in cp.abaa])
-		cp._info(order_aa)
-		trans_sm = dict((k, self.score[k]-minscore) for k in self.score)
-		cp._info(trans_sm)
-		#for i in xrange(0,len(order_aa)):
-		#	for j in xrange(i, len(order_aa)):
-
+		trans_sm = sorted([(k, self.score[k]-minscore) for k in self.score], key=lambda x: x[1], reverse=True)
+		#cp._info(trans_sm)
+		for k,v in trans_sm:
+			for k1,v1 in trans_sm:
+				psubstr = cp.quad_permu([k[0],k1[0],k[1],k1[1]])
+				if cp.quadtype(psubstr) == 't2':
+					print (psubstr, v, v1, v*v1)
 
 
 
