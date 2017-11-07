@@ -336,6 +336,20 @@ def psicovaln(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# calculate and save sequence weight with similarity cutoff
+def scoreweight(arglist):
+	if len(sys.argv) < 2:
+		cp._err('Usage: python utils_pfammsa.py scoreweight PF00000.score similarity_value')
+
+	datafile = arglist[1]
+	svalue = float(arglist[2])
+	outfile = '%s.%2d.w' % (datafile, svalue*100)
+
+	score = np.loadtxt(datafile, delimiter=',')
+	w = cp.hamming_weight(score, 1-svalue)
+	np.savetxt(outfile, w)
+	cp._info('save weight to %s' % outfile)
+
 
 # testing routine
 def test(arglist):
@@ -379,11 +393,12 @@ def main():
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
+		'columnselect': columnselect,
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
-		'columnselect': columnselect,
-		'psicovaln': psicovaln
+		'psicovaln': psicovaln,
+		'scoreweight': scoreweight
 	}
 
 	if sys.argv[1] not in dispatch:

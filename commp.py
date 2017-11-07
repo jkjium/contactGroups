@@ -284,6 +284,24 @@ def getPDBUniprotMap(mapfile):
 	return posmap
 
 
+# x: str list in np.array format
+#$ python proc_hammingweight.py t_hamming_weight.score 0.9
+#array([1, 2, 2, 3, 4, 1, 1], dtype=int32)
+#defaultdict(<type 'int'>, {1: 3, 2: 2, 3: 1, 4: 1})
+# 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
+# 1, 1, 1, 1, 1, 1, 1, 1, 3, 3 : 0.500
+# 1, 1, 1, 1, 1, 1, 1, 1, 3, 3 : 0.500
+# 1, 1, 1, 1, 1, 3, 3, 3, 4, 4 : 1.000
+# 1, 1, 1, 1, 1, 3, 3, 3,15,15 : 1.000
+# 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
+# 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
+def hamming_weight(x, max_d):
+	linkage_matrix = linkage(x, "single", metric='hamming')
+	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
+	normdict = cp.freq(clusters)
+	return [(1.0/normdict[k]) for k in clusters]
+
+
 # jaccard distance for two sets
 def jaccard(a, b):
 	c = a.intersection(b)
