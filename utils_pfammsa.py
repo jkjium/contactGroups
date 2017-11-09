@@ -158,6 +158,87 @@ def aafreqscol(arglist):
 	return cp._info('save to %s' % outfile)
 
 
+
+# select key columns by residue contact & top sdii
+# input: 1a0p.pdb.A.sgc.cg, 1a0p.pdb-PF00589.map, PF00589.mip.3.top
+# $ head PF00589_p90.mip.3.top
+#	271-274 0.25128949
+# $ head 1a0p.pdb.A.sgc.cg
+#	3 Q 7 R
+# $ tail 1a0p.pdb-PF00589.map
+#	280 T 1318 I
+# output: PF00589_p90.scol
+def columnselect(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py columnselect 1a0p.pdb.A.sgc.cg 1a0p.pdb-PF00589.map PF00589_p90.mip.3.top PF00589_p90_tip.scol')
+
+	cgfile = arglist[0]
+	with open(cgfile) as fp:
+		# [['3', 'Q', '7', 'R'], ['4', 'D', '7', 'R']...]
+		cglist = [line.strip().split(' ') for line in fp]
+	#print repr(cglist)
+
+	mapfile = arglist[1]
+	with open(mapfile) as fp:
+		maplist = [line.strip().split(' ') for line in fp]
+	#print repr(maplist)
+
+	topsdiifile = arglist[2]
+	with open(topsdiifile) as fp:
+		topsdiiset = set([line.strip().split(' ')[0] for line in fp])
+	#print repr(topsdiiset)
+
+	# convert maplist to resid -> msa dictionary
+	mapdict = dict((m[0], m[2]) for m in maplist)
+	#print repr(mapdict)
+	
+	scollist = []
+	# choose pair that in contact and top sdii	
+	for c in cglist:
+		# c: ['113', 'L', '170', 'I']
+		# contact resi not in mapdict
+		if (c[0] not in mapdict) or (c[2] not in mapdict):
+			continue
+		p1 = int(mapdict[c[0]])
+		p2 = int(mapdict[c[2]])
+		key = '%d-%d' % (p1, p2) if p1 <= p2 else '%d-%d' % (p2, p1)
+		if key in topsdiiset:
+			scollist.append(key)
+
+	if len(scollist) == 0:
+		cp._info('err:no significant columnt selected for %s' % topsdiifile[0:7])
+		return
+
+	outscolfile = arglist[3]
+	with open(outscolfile, 'w') as fp:
+		fp.write(' '.join([sp for sp in scollist]))
+
+	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
+
+
+# generate frequency lookup file for Single column
+def freqlookup(arglist):
+	if len(arglist) < 3:
+		cp.err('Usage: python utils_pfammsa.py freqlookup PF00000_p90.txt.aa.score PF00000_p90.rcol order')
+
+	scorefile = arglist[0]
+	colidxfile = arglist[1]
+	order = int(arglist[2])
+	outfile = '%s.flu.%d' % (scorefile, order)
+
+	data = np.loadtxt(scorefile, delimiter=',')
+	colidx = [int(i) for i in np.loadtxt(colidxfile, delimiter=',')]
+
+	with open(outfile, 'w') as fp:
+		for s in cp.ncrset(len(colidx), order):
+			for (c,lookup) in cp.freqlookup(data[:,s].T):
+				#print '%s %s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join(['%d' % f for f in c]), ','.join([str(a) for a in lookup]))	
+				#print '%s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup]))	
+				fp.write('%s %s %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup])))
+	cp._info('save to %s' % outfile)
+
+
+
 # get single MSA gapped / ungapped fa with sequence name or null
 def getsinglemsa(arglist):
 	if len(arglist) < 1:
@@ -267,63 +348,6 @@ def pairsubstitution(arglist):
 	#return psubdictall
 
 
-# select key columns by residue contact & top sdii
-# input: 1a0p.pdb.A.sgc.cg, 1a0p.pdb-PF00589.map, PF00589.mip.3.top
-# $ head PF00589_p90.mip.3.top
-#	271-274 0.25128949
-# $ head 1a0p.pdb.A.sgc.cg
-#	3 Q 7 R
-# $ tail 1a0p.pdb-PF00589.map
-#	280 T 1318 I
-# output: PF00589_p90.scol
-def columnselect(arglist):
-	if len(arglist) < 4:
-		cp._err('Usage: python utils_pfammsa.py columnselect 1a0p.pdb.A.sgc.cg 1a0p.pdb-PF00589.map PF00589_p90.mip.3.top PF00589_p90_tip.scol')
-
-	cgfile = arglist[0]
-	with open(cgfile) as fp:
-		# [['3', 'Q', '7', 'R'], ['4', 'D', '7', 'R']...]
-		cglist = [line.strip().split(' ') for line in fp]
-	#print repr(cglist)
-
-	mapfile = arglist[1]
-	with open(mapfile) as fp:
-		maplist = [line.strip().split(' ') for line in fp]
-	#print repr(maplist)
-
-	topsdiifile = arglist[2]
-	with open(topsdiifile) as fp:
-		topsdiiset = set([line.strip().split(' ')[0] for line in fp])
-	#print repr(topsdiiset)
-
-	# convert maplist to resid -> msa dictionary
-	mapdict = dict((m[0], m[2]) for m in maplist)
-	#print repr(mapdict)
-	
-	scollist = []
-	# choose pair that in contact and top sdii	
-	for c in cglist:
-		# c: ['113', 'L', '170', 'I']
-		# contact resi not in mapdict
-		if (c[0] not in mapdict) or (c[2] not in mapdict):
-			continue
-		p1 = int(mapdict[c[0]])
-		p2 = int(mapdict[c[2]])
-		key = '%d-%d' % (p1, p2) if p1 <= p2 else '%d-%d' % (p2, p1)
-		if key in topsdiiset:
-			scollist.append(key)
-
-	if len(scollist) == 0:
-		cp._info('err:no significant columnt selected for %s' % topsdiifile[0:7])
-		return
-
-	outscolfile = arglist[3]
-	with open(outscolfile, 'w') as fp:
-		fp.write(' '.join([sp for sp in scollist]))
-
-	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
-
-
 def psicovaln(arglist):
 	if len(arglist) < 1:
 		cp._err('Usage: python utils_pfammsa.py psicovaln PF00000_full.txt')
@@ -394,6 +418,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'freqlookup': freqlookup,
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,

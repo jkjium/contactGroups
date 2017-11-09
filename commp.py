@@ -177,6 +177,14 @@ aascore = {
 			}			
 }
 
+# print repr(dict((cp.aascore['aa'][k], k) for k in cp.aascore['aa'] if cp.aascore['aa'][k]!=0))
+scoreaa = {
+	'aa' : { 
+			0: '.', 1: 'A', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'I', 9: 'K', 10: 'L', 11: 'M', 12: 'N', 
+			13: 'P', 14: 'Q', 15: 'R', 16: 'S', 17: 'T', 18: 'V', 19: 'W', 20: 'Y'
+			}
+}
+
 scorerdict = {
 				0:'.',1:'A',2:'C',3:'D',4:'E',5:'F',6:'G',7:'H',8:'I',9:'K',
 				10:'L',11:'M',12:'N',13:'P',14:'Q',15:'R',16:'S',17:'T',18:'V',19:'W',20:'Y'
@@ -266,6 +274,33 @@ def freq(word):
 	return letters
 
 
+# X: data[:,colset].T 
+#   0   1   2   3   4
+#[[ 1.  1.  3.  2.  4.]
+# [ 1.  1.  3.  1.  1.]]
+# output:
+# (1.0, 1.0), [0, 1]
+# (2.0, 1.0), [3]
+# (3.0, 3.0), [2]
+# (4.0, 1.0), [4]
+def freqlookup(X):
+	lookup = []
+	# generate cartesian product from a list (* is for a list of lists)
+	for classes in itertools.product(*[set(x) for x in X]): 
+		#print 'start iteration:'
+		#print ('c in [set([1.0, 2.0, 3.0, 4.0]), set([1.0, 3.0])] : ', classes)
+		#print 'zip x and c: ', zip(X, classes)
+		#print repr([predictions == c for predictions, c in zip(X, classes)])
+		f = reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))
+		#print 'normal freq for %s : %.02f' % (repr(classes), sum(f))
+		#print 'weight freq for %s : %.02f' % (repr(classes), sum(w[[i for i in xrange(len(f)) if f[i]!=False]]))
+		idx = [i for i in xrange(len(f)) if f[i]!=False]
+		if len(idx)!=0:
+			lookup.append((classes, idx))
+	return lookup
+
+
+
 def getPDBUniprotMap(mapfile):
 	# duplicate from utils_msa.py
 	# called in utils_msa.py ncg2sdiicol()
@@ -322,6 +357,11 @@ def ncr(n, r):
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
     return numer//denom
+
+
+# return n choose m
+def ncrset(varnum, order):
+	return [s for s in set(itertools.combinations(list(xrange(varnum)), order))]
 
 
 # given two strings
@@ -513,7 +553,21 @@ def subseq_align(longseq, shortseq, prefix):
 
 # main routine. for testing
 def main():
+	# test freqw
+	#data = np.loadtxt('t_apply_weight.score', delimiter=',')
+	data = np.loadtxt('t_lookup.score', delimiter=',')
+	print repr(data)
+	w = np.loadtxt('t_apply_weight.score.70.w')
+	print repr(w)
+	colset = [1,2]
+	#colset = [0]
+	print repr(data[:,colset])
+	print '-----------------'
+	for (c,lookup) in freqlookup(data[:,colset].T):
+		print '%s%s %s %s' % (scoreaa['aa'][c[0]], scoreaa['aa'][c[1]], repr(c), ','.join([str(a) for a in lookup]))
+
 	# test rank01
+	'''
 	d = {'A': 0.00005, 'B': 0.00003, 'C': 0.00001, 'D': 0.00001, 'E': 0.00000}
 	d = {'A': 5, 'B': 3, 'C': 1, 'D': 1, 'E': 0}
 	for k in d:
@@ -522,7 +576,7 @@ def main():
 	rd = rank01(d)
 	for k in rd:
 		print '%s: %.8f' % (k, rd[k])
-
+	'''
 
 	# test quadtype()
 	'''
