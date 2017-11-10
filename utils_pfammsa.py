@@ -216,10 +216,10 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
-# generate frequency lookup file for Single column
+# generate frequency lookup file for all the column combinations
 def freqlookup(arglist):
 	if len(arglist) < 3:
-		cp.err('Usage: python utils_pfammsa.py freqlookup PF00000_p90.txt.aa.score PF00000_p90.rcol order')
+		cp._err('Usage: python utils_pfammsa.py freqlookup PF00000_p90.txt.aa.score PF00000_p90.rcol order')
 
 	scorefile = arglist[0]
 	colidxfile = arglist[1]
@@ -234,9 +234,43 @@ def freqlookup(arglist):
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
 				#print '%s %s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join(['%d' % f for f in c]), ','.join([str(a) for a in lookup]))	
 				#print '%s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup]))	
-				fp.write('%s %s %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup])))
+				fp.write('%s %s %d %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), len(lookup), ','.join([str(a) for a in lookup])))
 	cp._info('save to %s' % outfile)
 
+
+def freqlookupscol(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py freqlookupcol PF00000_p90.txt.aa.score PF00000_p90.rcol PF00000_p90.scol')
+
+	scorefile = arglist[0]
+	rcolfile = arglist[1]
+	scolfile = arglist[2]
+	outfile = '%s.scolflu' % scorefile
+
+	# load score
+	data = np.loadtxt(scorefile, delimiter=',')
+	rcol = np.loadtxt(rcolfile, delimiter=',')
+	colmap = dict((int(rcol[i]), i) for i in xrange(len(rcol)))
+
+	# load column tuple
+	# 274-474 359-366 386-400
+	scollist = []
+	with open(scolfile) as fp:
+		line = fp.readline().strip()
+		if len(line)!=0:
+			pairstr = line.split()
+			for p in pairstr:
+				sarr = p.split('-')
+				order = len(sarr)
+				scollist.append([int(c) for c in sarr])
+
+	with open(outfile, 'w') as fp:
+		for t in scollist:
+			s = [colmap[i] for i in t]
+			#print repr(t), repr(s)
+			for (c,lookup) in cp.freqlookup(data[:,s].T):
+				fp.write('%s %s %s %d %s\n' % (scorefile, '-'.join([str(i) for i in t]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), len(lookup), ','.join([str(a) for a in lookup])))
+	cp._info('save to %s' % outfile)
 
 
 # get single MSA gapped / ungapped fa with sequence name or null
@@ -419,6 +453,7 @@ def main():
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
 		'freqlookup': freqlookup,
+		'freqlookupscol': freqlookupscol,
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
