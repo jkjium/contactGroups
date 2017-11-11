@@ -238,13 +238,15 @@ def freqlookup(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# calculate freq lookup table for each selected column per pfam
 def freqlookupscol(arglist):
-	if len(arglist) < 3:
-		cp._err('Usage: python utils_pfammsa.py freqlookupcol PF00000_p90.txt.aa.score PF00000_p90.rcol PF00000_p90.scol')
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py freqlookupscol PF00000_p90.txt.aa.score PF00000_p90.rcol PF00000_p90.scol 1234.pdb-PF00000_p90.map')
 
 	scorefile = arglist[0]
 	rcolfile = arglist[1]
 	scolfile = arglist[2]
+	rmapfile = arglist[3]
 	outfile = '%s.scolflu' % scorefile
 
 	# load score
@@ -264,12 +266,28 @@ def freqlookupscol(arglist):
 				order = len(sarr)
 				scollist.append([int(c) for c in sarr])
 
+	# load map 
+	# (resi  msai)  (279 Y 1317 Y)
+	msai2resi = {}
+	with open(rmapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)!=0:
+				sarr = line.split(' ')
+				msai2resi[int(sarr[2])] = int(sarr[0])
+	print repr(msai2resi)
+
+	# write lookup
 	with open(outfile, 'w') as fp:
 		for t in scollist:
 			s = [colmap[i] for i in t]
 			#print repr(t), repr(s)
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
-				fp.write('%s %s %s %d %s\n' % (scorefile, '-'.join([str(i) for i in t]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), len(lookup), ','.join([str(a) for a in lookup])))
+				fp.write('%s %s %s %s %.4f %s\n' % (scorefile, '-'.join([str(i) for i in t]), '-'.join([str(msai2resi[i]) for i in t]),
+												''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), 
+												float(len(lookup))/len(data), 
+												','.join([str(a) for a in lookup])))
+
 	cp._info('save to %s' % outfile)
 
 
