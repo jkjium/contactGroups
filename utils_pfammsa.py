@@ -120,7 +120,7 @@ def aafreq(arglist):
 
 	outfile = msafile + '.aafreq'
 	with open(outfile, 'w') as fp:
-		fp.write(repr(output))
+		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
 
 
@@ -152,7 +152,7 @@ def aafreqscol(arglist):
 	output =[(k, v, float(v)/freqsum) for k,v in freqdict.items() if v > 0]
 	output.sort(key=operator.itemgetter(1), reverse=True)
 
-	outfile = msafile + '.aafreqscol'
+	outfile = msafile + '.aafreqscol' + 
 	with open(outfile, 'w') as fp:
 		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
@@ -224,7 +224,7 @@ def freqlookup(arglist):
 	scorefile = arglist[0]
 	colidxfile = arglist[1]
 	order = int(arglist[2])
-	outfile = '%s.flu.%d' % (scorefile, order)
+	outfile = '%s.%d.flu' % (scorefile, order)
 
 	data = np.loadtxt(scorefile, delimiter=',')
 	colidx = [int(i) for i in np.loadtxt(colidxfile, delimiter=',')]
@@ -234,11 +234,12 @@ def freqlookup(arglist):
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
 				#print '%s %s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join(['%d' % f for f in c]), ','.join([str(a) for a in lookup]))	
 				#print '%s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup]))	
-				fp.write('%s %s %d %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), len(lookup), ','.join([str(a) for a in lookup])))
+				fp.write('%s %s %.4f %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), float(len(lookup))/len(data), ','.join([str(a) for a in lookup])))
 	cp._info('save to %s' % outfile)
 
 
 # calculate freq lookup table for each selected column per pfam
+# scol is filtered by map in column selection function
 def freqlookupscol(arglist):
 	if len(arglist) < 4:
 		cp._err('Usage: python utils_pfammsa.py freqlookupscol PF00000_p90.txt.aa.score PF00000_p90.rcol PF00000_p90.scol 1234.pdb-PF00000_p90.map')
@@ -275,7 +276,7 @@ def freqlookupscol(arglist):
 			if len(line)!=0:
 				sarr = line.split(' ')
 				msai2resi[int(sarr[2])] = int(sarr[0])
-	print repr(msai2resi)
+	#print repr(msai2resi)
 
 	# write lookup
 	with open(outfile, 'w') as fp:
@@ -319,6 +320,34 @@ def getsinglemsa(arglist):
 		fp.write('>%s\n%s' % (msa[0],msa[1]))
 
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
+
+
+
+# accumulate wegihted background frequcney for each AA 
+def wfreqdenominator(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py wfreqdenominator PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF01012.w70.denominator')
+
+	flufile = arglist[0]
+	wfile = arglist[1]
+
+	# load w
+	w = np.loadtxt(wfile)
+	wfreqdict = defaultdict(float)	
+	# 206 C .5,111,133,158,210,241
+	with open(flufile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			A = sarr[1]
+			plist = [int(i) for i in sarr[3].split(',')]
+			wfreq = sum(w[:,plist])
+			print '%s, %s, %.4f' % (A, repr(plist), wfreq)
+
+
+
 
 
 # improved version of utils_msa.MSAReduction()
