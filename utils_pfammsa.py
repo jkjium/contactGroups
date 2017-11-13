@@ -152,7 +152,7 @@ def aafreqscol(arglist):
 	output =[(k, v, float(v)/freqsum) for k,v in freqdict.items() if v > 0]
 	output.sort(key=operator.itemgetter(1), reverse=True)
 
-	outfile = msafile + '.aafreqscol' + 
+	outfile = msafile + '.aafreqscol' 
 	with open(outfile, 'w') as fp:
 		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
@@ -323,33 +323,6 @@ def getsinglemsa(arglist):
 
 
 
-# accumulate wegihted background frequcney for each AA 
-def wfreqdenominator(arglist):
-	if len(arglist) < 3:
-		cp._err('Usage: python utils_pfammsa.py wfreqdenominator PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF01012.w70.denominator')
-
-	flufile = arglist[0]
-	wfile = arglist[1]
-
-	# load w
-	w = np.loadtxt(wfile)
-	wfreqdict = defaultdict(float)	
-	# 206 C .5,111,133,158,210,241
-	with open(flufile) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) == 0:
-				continue
-			sarr = line.split(' ')
-			A = sarr[1]
-			plist = [int(i) for i in sarr[3].split(',')]
-			wfreq = sum(w[:,plist])
-			print '%s, %s, %.4f' % (A, repr(plist), wfreq)
-
-
-
-
-
 # improved version of utils_msa.MSAReduction()
 # input : PF0000.txt, scoretags, gapcutoff(max gap percentage), weightcutoff
 # output: PF0000.txt.{stag.score, col, row}
@@ -456,6 +429,79 @@ def scoreweight(arglist):
 	cp._info('save weight to %s' % outfile)
 
 
+
+# accumulate weighted background frequcney for each AA 
+def wfreq(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py wfreq PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF13507_p90_tip.scol PF01012.w70.wfreq')
+
+	flufile = arglist[0]
+	wfile = arglist[1]
+	scolfile = arglist[2]
+	outfile = arglist[3]
+
+	# load w
+	w = np.loadtxt(wfile)
+	#print repr(w)
+
+	# load selected col
+	scolset = set()
+	with open(scolfile) as fp:
+		for p in fp.readline().strip().split(' '):
+			c = p.split('-')
+			scolset.add(c[0])
+			scolset.add(c[1])
+	#print repr(scolset)		
+
+	wfreqdict = collections.defaultdict(float)	
+	wscoldict =	collections.defaultdict(list) 
+	# calculate sinlgle wfreq
+	# 206 C .5,111,133,158,210,241
+	with open(flufile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			print line
+			sarr = line.split(' ')
+			wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
+			wfreqdict[sarr[1]]+= wfreq
+			#print '%s, %s, %s, %.4f' % (sarr[1], [int(i) for i in sarr[3].split(',')], repr(w[[int(i) for i in sarr[3].split(',')]]), wfreqdict[sarr[1]])
+			# save freq of scol for substitution frequency calculation
+			if sarr[0] in scolset:
+				wscoldict[sarr[0]].append((sarr[1], wfreq))
+	#print repr(wscoldict)
+
+	# calculate substitution wfreq
+	wsmdict = collections.defaultdict(float)
+	for c in wscoldict: # {'205': [('C', 0.7), ('D', 0.5)], '207': [('C', 1.0)]}
+		wfl = wscoldict[c]
+		for i in xrange(len(wfl)):
+			A = wfl[i][0]
+			if A in cp.abaa:
+				continue
+			for j in xrange(i+1, len(wfl)):
+				B = wfl[j][0]
+				if B in cp.abaa:
+					continue
+				k = A+B if A < B else B+A
+				wsmdict[k]+=wfl[i][1]*wfl[j][1]
+			wsmdict[A+A]+=wfl[i][1]*wfl[i][1]/2
+
+	# output
+	with open(outfile, 'w') as fp:
+		# save single wfreq
+		for c in wfreqdict:
+			fp.write('%s f %.8f\n' % (c, wfreqdict[c]))
+		# save substitution wfreq
+		for k in wsmdict:
+			fp.write('%s s %.8f\n' %(k, wsmdict[k]))
+	cp._info('save wfreq to %s' % outfile)
+
+
+
+
+
 # testing routine
 def test(arglist):
 	# test columnselect
@@ -505,7 +551,8 @@ def main():
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
-		'scoreweight': scoreweight
+		'scoreweight': scoreweight,
+		'wfreq': wfreq
 	}
 
 	if sys.argv[1] not in dispatch:
