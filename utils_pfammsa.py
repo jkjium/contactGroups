@@ -462,7 +462,6 @@ def wfreq(arglist):
 			line = line.strip()
 			if len(line) == 0:
 				continue
-			print line
 			sarr = line.split(' ')
 			wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
 			wfreqdict[sarr[1]]+= wfreq
@@ -492,10 +491,10 @@ def wfreq(arglist):
 	with open(outfile, 'w') as fp:
 		# save single wfreq
 		for c in wfreqdict:
-			fp.write('%s f %.8f\n' % (c, wfreqdict[c]))
+			fp.write('%s %.8f\n' % (c, wfreqdict[c]))
 		# save substitution wfreq
 		for k in wsmdict:
-			fp.write('%s s %.8f\n' %(k, wsmdict[k]))
+			fp.write('%s %.8f\n' %(k, wsmdict[k]))
 	cp._info('save wfreq to %s' % outfile)
 
 
