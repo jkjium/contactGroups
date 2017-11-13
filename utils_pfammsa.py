@@ -120,7 +120,7 @@ def aafreq(arglist):
 
 	outfile = msafile + '.aafreq'
 	with open(outfile, 'w') as fp:
-		fp.write(repr(output))
+		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
 
 
@@ -152,7 +152,7 @@ def aafreqscol(arglist):
 	output =[(k, v, float(v)/freqsum) for k,v in freqdict.items() if v > 0]
 	output.sort(key=operator.itemgetter(1), reverse=True)
 
-	outfile = msafile + '.aafreqscol'
+	outfile = msafile + '.aafreqscol' 
 	with open(outfile, 'w') as fp:
 		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
@@ -224,7 +224,7 @@ def freqlookup(arglist):
 	scorefile = arglist[0]
 	colidxfile = arglist[1]
 	order = int(arglist[2])
-	outfile = '%s.flu.%d' % (scorefile, order)
+	outfile = '%s.%d.flu' % (scorefile, order)
 
 	data = np.loadtxt(scorefile, delimiter=',')
 	colidx = [int(i) for i in np.loadtxt(colidxfile, delimiter=',')]
@@ -234,17 +234,20 @@ def freqlookup(arglist):
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
 				#print '%s %s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join(['%d' % f for f in c]), ','.join([str(a) for a in lookup]))	
 				#print '%s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup]))	
-				fp.write('%s %s %d %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), len(lookup), ','.join([str(a) for a in lookup])))
+				fp.write('%s %s %.4f %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), float(len(lookup))/len(data), ','.join([str(a) for a in lookup])))
 	cp._info('save to %s' % outfile)
 
 
+# calculate freq lookup table for each selected column per pfam
+# scol is filtered by map in column selection function
 def freqlookupscol(arglist):
-	if len(arglist) < 3:
-		cp._err('Usage: python utils_pfammsa.py freqlookupcol PF00000_p90.txt.aa.score PF00000_p90.rcol PF00000_p90.scol')
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py freqlookupscol PF00000_p90.txt.aa.score PF00000_p90.rcol PF00000_p90.scol 1234.pdb-PF00000_p90.map')
 
 	scorefile = arglist[0]
 	rcolfile = arglist[1]
 	scolfile = arglist[2]
+	rmapfile = arglist[3]
 	outfile = '%s.scolflu' % scorefile
 
 	# load score
@@ -264,12 +267,28 @@ def freqlookupscol(arglist):
 				order = len(sarr)
 				scollist.append([int(c) for c in sarr])
 
+	# load map 
+	# (resi  msai)  (279 Y 1317 Y)
+	msai2resi = {}
+	with open(rmapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)!=0:
+				sarr = line.split(' ')
+				msai2resi[int(sarr[2])] = int(sarr[0])
+	#print repr(msai2resi)
+
+	# write lookup
 	with open(outfile, 'w') as fp:
 		for t in scollist:
 			s = [colmap[i] for i in t]
 			#print repr(t), repr(s)
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
-				fp.write('%s %s %s %d %s\n' % (scorefile, '-'.join([str(i) for i in t]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), len(lookup), ','.join([str(a) for a in lookup])))
+				fp.write('%s %s %s %s %.4f %s\n' % (scorefile, '-'.join([str(i) for i in t]), '-'.join([str(msai2resi[i]) for i in t]),
+												''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), 
+												float(len(lookup))/len(data), 
+												','.join([str(a) for a in lookup])))
+
 	cp._info('save to %s' % outfile)
 
 
@@ -301,6 +320,7 @@ def getsinglemsa(arglist):
 		fp.write('>%s\n%s' % (msa[0],msa[1]))
 
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
+
 
 
 # improved version of utils_msa.MSAReduction()
@@ -409,6 +429,78 @@ def scoreweight(arglist):
 	cp._info('save weight to %s' % outfile)
 
 
+
+# accumulate weighted background frequcney for each AA 
+def wfreq(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py wfreq PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF13507_p90_tip.scol PF01012.w70.wfreq')
+
+	flufile = arglist[0]
+	wfile = arglist[1]
+	scolfile = arglist[2]
+	outfile = arglist[3]
+
+	# load w
+	w = np.loadtxt(wfile)
+	#print repr(w)
+
+	# load selected col
+	scolset = set()
+	with open(scolfile) as fp:
+		for p in fp.readline().strip().split(' '):
+			c = p.split('-')
+			scolset.add(c[0])
+			scolset.add(c[1])
+	#print repr(scolset)		
+
+	wfreqdict = collections.defaultdict(float)	
+	wscoldict =	collections.defaultdict(list) 
+	# calculate sinlgle wfreq
+	# 206 C .5,111,133,158,210,241
+	with open(flufile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
+			wfreqdict[sarr[1]]+= wfreq
+			#print '%s, %s, %s, %.4f' % (sarr[1], [int(i) for i in sarr[3].split(',')], repr(w[[int(i) for i in sarr[3].split(',')]]), wfreqdict[sarr[1]])
+			# save freq of scol for substitution frequency calculation
+			if sarr[0] in scolset:
+				wscoldict[sarr[0]].append((sarr[1], wfreq))
+	#print repr(wscoldict)
+
+	# calculate substitution wfreq
+	wsmdict = collections.defaultdict(float)
+	for c in wscoldict: # {'205': [('C', 0.7), ('D', 0.5)], '207': [('C', 1.0)]}
+		wfl = wscoldict[c]
+		for i in xrange(len(wfl)):
+			A = wfl[i][0]
+			if A in cp.abaa:
+				continue
+			for j in xrange(i+1, len(wfl)):
+				B = wfl[j][0]
+				if B in cp.abaa:
+					continue
+				k = A+B if A < B else B+A
+				wsmdict[k]+=wfl[i][1]*wfl[j][1]
+			wsmdict[A+A]+=wfl[i][1]*wfl[i][1]/2
+
+	# output
+	with open(outfile, 'w') as fp:
+		# save single wfreq
+		for c in wfreqdict:
+			fp.write('%s %.8f\n' % (c, wfreqdict[c]))
+		# save substitution wfreq
+		for k in wsmdict:
+			fp.write('%s %.8f\n' %(k, wsmdict[k]))
+	cp._info('save wfreq to %s' % outfile)
+
+
+
+
+
 # testing routine
 def test(arglist):
 	# test columnselect
@@ -458,7 +550,8 @@ def main():
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
-		'scoreweight': scoreweight
+		'scoreweight': scoreweight,
+		'wfreq': wfreq
 	}
 
 	if sys.argv[1] not in dispatch:
