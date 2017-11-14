@@ -498,7 +498,57 @@ def wfreq(arglist):
 	cp._info('save wfreq to %s' % outfile)
 
 
+# combine single frequency and substitution frequency into sm
+def wfreq2sm(arglist):
+		if len(arglist) < 2:
+			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq outfile')
 
+		wfreqfile = arglist[0]
+		outfile = arglist[1]
+
+		qij = collections.defaultdict(float)
+		eij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						k = sarr[0]
+						f = float(sarr[1])
+						# M 3511.29
+						if len(k) == 1:
+								eij[k]+=f
+						# QR 95488.206
+						else len(k)== 2:
+								qij[k]+=f
+
+		# single freq
+		total_e = sum(eij.values())
+		for k in eij:
+				eij[k]=eij[k]/total_e
+		# substitution freq
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		# calculate sm
+		sm = collections.defaultdict(int)
+		for k in qij:
+			A = k[0]
+			B = k[1]
+			if A==B:
+				sm[A+B] = int(round(2*math.log(sm[A+B]/(eij[A]*eij[B]),2)))
+			else:
+				sm[A+B] = int(round(2*math.log(sm[A+B]/(2*eij[A]*eij[B]),2)))
+			sm[B+A] = sm[A+B]
+		print len(sm)
+
+		# write sm
+		with open(outfile, 'w') as fp:
+			for A in cp.smaa1:
+				fout.write('%s\n' % ' '.join([str(sm[A+B]).rjust(2) for B in cp.smaa1]))
+		cp._info('save sm to %s' % outfile)
 
 
 # testing routine
@@ -551,7 +601,8 @@ def main():
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
 		'scoreweight': scoreweight,
-		'wfreq': wfreq
+		'wfreq': wfreq,
+		'wfreq2sm': wfreq2sm
 	}
 
 	if sys.argv[1] not in dispatch:
