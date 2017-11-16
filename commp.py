@@ -289,16 +289,11 @@ def dcall(callstr):
 	func = strarr[2]
 	param = strarr[3:]
 
-	#print 'module: %s' % modu
-	#print 'function: %s' % func
-	#print 'parameters: %s' % param
-
 	ins_func = getattr(__import__(modu), func)
 	return ins_func(param)
 
 # used in utils_mprun.py
 def drun(runstr):
-	#print 'runstr: %s' % runstr
 	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
 
 
@@ -404,18 +399,18 @@ def jaccard(a, b):
 	return 1 - (float(len(c)) / (len(a) + len(b) - len(c)))
 
 
-# calculate n choose r
+# calculate value of n choose r
 def ncr(n, r):
-    r = min(r, n-r)
-    if r == 0: return 1
-    numer = reduce(op.mul, xrange(n, n-r, -1))
-    denom = reduce(op.mul, xrange(1, r+1))
-    return numer//denom
+	return 1 if min(r, n-r) <= 0 else reduce(op.mul, xrange(n, n-r, -1))//reduce(op.mul, xrange(1, r+1))
 
 
-# return n choose m
+# return a index set of n choose m
 def ncrset(varnum, order):
 	return [s for s in set(itertools.combinations(list(xrange(varnum)), order))]
+
+
+def ncrvar(varset, order):
+	return [s for s in set(itertools.combinations(varset, order))]
 
 
 # given two strings
