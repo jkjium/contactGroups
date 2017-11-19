@@ -6,7 +6,7 @@ from utils_mprun import qrun
 
 # data: np matrix
 # varset: variable tuple
-def hat(data, varset): 
+def hat(data, varset, flag): 
 	nhatlist = []
 	nhatmat = []
 	for t in data[:,varset]:
@@ -20,16 +20,25 @@ def hat(data, varset):
 	npmhat = np.array(nhatmat)
 	#cp._info(repr(nhatmat))
 	eig = np.linalg.eig(np.dot(npmhat.T,npmhat))
-	return '%s,%.8f,%.8f\n' % (','.join([str(int(i)) for i in varset]), npnhat.std()/npnhat.mean(), max(eig[0]))
+	# variable triplet,sig,mean,std,cv,max 3x3matrix eig
+	return '%s,%d,%.8f,%.8f,%.8f,%.8f\n' % (
+				','.join([str(int(i)) for i in varset]), 
+				flag,
+				npnhat.mean(), 
+				npnhat.std(), 
+				npnhat.std()/npnhat.mean(), 
+				max(eig[0])
+			)
+
 
 # single argument to fit qrun scheme
 def mphat(args):
-	return hatcv(args[0], args[1])
+	return hat(args[0], args[1], args[2])
 
 # calculate Coefficient of variation for each tuple column
-def tuplehat(arglist):
-	if len(arglist) < 5:
-		cp._err('Usage: python utils_tuple.py mp tuplehat scorefile rcolfile order outfile')
+def tupleppt(arglist):
+	if len(arglist) < 6:
+		cp._err('Usage: python utils_tuple.py mp tupleppt scorefile rcolfile stuplefile order outfile')
 
 	opt = arglist[0]
 	if opt not in ['mp', 'sp']:
@@ -37,29 +46,40 @@ def tuplehat(arglist):
 
 	scorefile = arglist[1]	# score file by category
 	rcolfile = arglist[2]	# columns involved in the significance calculation
-	order = int(arglist[3])
-	outfile = arglist[4]
+	stuplefile = arglist[3]
+	order = int(arglist[4])
+	outfile = arglist[5]
 
 	score = np.loadtxt(scorefile, delimiter=',')
-	# one line: 1,3,5,10 ...
+	# score column index, one line: 1,3,5,10 ...
 	if rcolfile == 'na':
 		rcol = np.array([i for i in xrange(0, score.shape[1])])
 	else:
 		rcol = np.loadtxt(rcolfile, delimiter=',')
 		rcol -= 1
 
+	# significant sequential id of column index
+	stuple = np.loadtxt(stuplefile, delimiter=',')
+	stuple -= 1
+
+	# convert to score column index
+	stuple_set = [set(rcol[t]) for t in stuple.tolist()]
 
 	# generate 
 	tasks = cp.ncrvar(rcol, order) 
 
 	if opt == 'sp': # single process version
+		count = 0
 		with open(outfile, 'w') as fp:
 			for t in tasks:
-				fp.write(hat(score, t))
+				count+=1
+				if count%100==0:
+					print (count, repr(t))
+				fp.write(hat(score, t, int(set(t) in stuple_set)))
+		cp._info('total %d tuples processed' % count)
 	elif opt == 'mp':
-		mptasks = [(score, t) for t in tasks]
+		mptasks = [(score, t, int(set(t) in stuple_set)) for t in tasks]
 		qrun(mphat, mptasks, outfile, 3)
-
 	cp._info('save to %s' % outfile)
 
 
@@ -69,7 +89,7 @@ def main():
 		cp._err('Usage: python utils_tuple.py cmd [args ...]')
 
 	dispatch = {
-		'tuplehat':tuplehat
+		'tupleppt':tupleppt
 	}
 
 	if sys.argv[1] in dispatch:

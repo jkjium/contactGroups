@@ -48,7 +48,7 @@ def listener(outfile, mpn, taskn, q):
 	tstart = time.time()
 	with open(outfile, 'w') as fp:
 		#while tcount<taskn:
-		while tcount < taskn:
+		while mpcount < mpn:
 			m = q.get()
 			if m == 'done':
 				mpcount+=1
@@ -59,7 +59,6 @@ def listener(outfile, mpn, taskn, q):
 					cp._info('%d/%d in %d seconds, %f hours left.' % (tcount, taskn, timeUsed, 1.0*taskn*timeUsed/(tcount*3600)))
 				fp.write('%s' % (m))
 				fp.flush()	
-	cp._info('save output to %s' % outfile)
 
 
 # worker process for qrun
