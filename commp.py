@@ -276,6 +276,10 @@ def _info(msg):
 def column(mat, i):
 	return [row[i] for row in mat]
 
+# calculate the Euclidean distance between two vectors
+def dist(v1, v2):
+	return np.linalg.norm(np.array(v1)-np.array(v2))
+
 
 # mp constant definition
 mp_info = 0

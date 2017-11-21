@@ -4,6 +4,26 @@ import commp as cp
 
 from utils_mprun import qrun
 
+# calculate Coefficient of variation for each tuple column
+def transscore(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_tuple.py transscore PF00098_p90.txt.score aa 21 outscorefile')
+
+	scorefile = arglist[0]
+	srcname = arglist[1]
+	dstnameidx = int(arglist[2])
+	outfile = arglist[3]
+
+	score = np.loadtxt(scorefile, delimiter=',')
+	fp = open(outfile, 'w')
+	for i in xrange(0, score.shape[0]):
+		aaline = [cp.scoreaa[srcname][int(k)] for k in score[i,:]]
+		dstscoreline = [str(cp.aaprop[a][dstnameidx]) for a in aaline]
+		fp.write('%s\n' % ','.join(dstscoreline))
+	fp.close()
+	cp._info('save to %s' % outfile)
+
+
 # data: np matrix
 # varset: variable tuple
 def hat(data, varset, flag): 
@@ -18,7 +38,8 @@ def hat(data, varset, flag):
 	npnhat = np.array(nhatlist)
 	# nx3 (order) matrix
 	npmhat = np.array(nhatmat)
-	#cp._info(repr(nhatmat))
+	cp._info(repr(varset))
+	cp._info(repr(nhatmat))
 	eig = np.linalg.eig(np.dot(npmhat.T,npmhat))
 	# variable triplet,sig,mean,std,cv,max 3x3matrix eig
 	return '%s,%d,%.8f,%.8f,%.8f,%.8f\n' % (
@@ -89,7 +110,8 @@ def main():
 		cp._err('Usage: python utils_tuple.py cmd [args ...]')
 
 	dispatch = {
-		'tupleppt':tupleppt
+		'tupleppt':tupleppt,
+		'transscore': transscore
 	}
 
 	if sys.argv[1] in dispatch:
