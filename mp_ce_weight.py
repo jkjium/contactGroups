@@ -23,7 +23,7 @@ def init():
 	# msa init
 	score = np.loadtxt(scorefile, delimiter=',')
 	varlist = [int(j) for j in np.loadtxt(colfile, delimiter=',')]
-	w = np.loadtxt(weightfile, delimiter=',')
+	w = np.loadtxt(weightfile)
 
 	if len(varlist) < 2:
 		cp._err('err:not enough varlist: %d' % len(varlist))
@@ -81,7 +81,8 @@ def listener(total, outfile, q):
 			#fout.write('%d %s' % (timeUsed, m))
 			fout.write('%s' % (m))
 			fout.flush()
-		if count == 20:
+		#if count == 20:
+		if tcount == total:
 			break
 	fout.close()
 
@@ -96,8 +97,8 @@ def main():
 	pool = mp.Pool(22) # cpu_count = 8, 1 for main thread, 1 for listener, 6 for worker
 	watcher = pool.apply_async(listener, (sdii_core.totalTask, outfile, q))
 
-	if len(tasklist)!=20:
-		cp._err('mismatch task blocks %d vs number of processes 20' % len(tasklist))
+	#if len(tasklist)!=20:
+	#	cp._err('mismatch task blocks %d vs number of processes 20' % len(tasklist))
 
 	for t in tasklist:
 		pool.apply_async(worker, (sdii_core, t, q))
