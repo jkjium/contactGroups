@@ -217,6 +217,17 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# calculate mean entropy for score file
+def scoreentropy(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_pfammsa.py scoreentropy scorefile')
+
+	scorefile = arglist[0]
+	score = np.loadtxt(scorefile, delimiter=',')
+	hlist = [cp.entropy([score[:,i]]) for i in xrange(0, score.shape[1])]
+	print '%s %.8f' % (scorefile, sum(hlist)/score.shape[1])
+
+
 # generate frequency lookup file for all the column combinations
 def freqlookup(arglist):
 	if len(arglist) < 3:
@@ -568,9 +579,6 @@ def wfreq2sm(arglist):
 		cp._info('save emboss sm to %s' % embossfile)
 
 
-
-
-
 # testing routine
 def test(arglist):
 	# test columnselect
@@ -614,6 +622,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
