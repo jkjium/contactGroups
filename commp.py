@@ -265,7 +265,8 @@ def _err(msg, errcallback=_fatal):
 def _info(msg):
 	curframe = inspect.currentframe()
 	calframe = inspect.getouterframes(curframe, 1)	
-	info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
+	#info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
+	info = '%d:%s:%s()' % (os.getpid(),' '.join(sys.argv[1:]), calframe[1][3])
 	print '[%s] - %s' % (info, msg)
 
 

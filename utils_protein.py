@@ -102,10 +102,10 @@ def pdbscreen():
 			# information partially available
 			status = 1
 
-		print '%s %s stat %d %d %d %d' % (pdbfile, chainid, status, report[0], report[1], report[2])		
+		cp._info('%s %s stat %d %d %d %d' % (pdbfile, chainid, status, report[0], report[1], report[2]))
 	else:
 		# file does not exist
-		print '%s %s stat -1' % (pdbfile, chainid)
+		cp._info('%s %s stat -1' % (pdbfile, chainid))
 
 
 def writeseq():
