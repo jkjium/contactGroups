@@ -5,6 +5,8 @@ import sys
 from protein import protein
 from AAmap import AAmap
 import commp as cp
+import os.path
+import numpy as np
 
 def resn2bfactor():
 	if len(sys.argv) < 3:
@@ -76,6 +78,34 @@ def pdbcut():
 	for a in out:
 		fout.write(a.writeAtom())
 	fout.close()
+
+
+# check sgc, tip, ca atoms
+def pdbscreen():
+	if len(sys.argv) < 4:
+		cp._err('Usage: python utils_protein.py pdbscreen pdbfile all|{A}')
+
+	pdbfile = sys.argv[2]
+	chainid = sys.argv[3]
+
+	if os.path.isfile(pdbfile):
+		p = protein(pdbfile, chain=chainid)
+		report = np.array([len(p.atomsbyscgmcenter()), len(p.atomsbytip()), len(p.ca)])
+
+		status = 0
+		# no information available
+		if report.sum()== 0:
+			status = -2
+		elif (report[0] == report[1]) and (report[1] == report[2]):
+			status = 0
+		else:
+			# information partially available
+			status = 1
+
+		print '%s %s stat %d %d %d %d' % (pdbfile, chainid, status, report[0], report[1], report[2])		
+	else:
+		# file does not exist
+		print '%s %s stat -1' % (pdbfile, chainid)
 
 
 def writeseq():
@@ -229,7 +259,8 @@ def main():
 	dispatch = {
 		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
 		'writeca':writeca, 'writesgc':writesgc, 'writeseqfa':writeseqfa,
-		'contactbycutoff':contactbycutoff
+		'contactbycutoff':contactbycutoff,
+		'pdbscreen': pdbscreen
 	}
 
 	cmd = sys.argv[1]

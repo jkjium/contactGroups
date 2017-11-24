@@ -12,7 +12,7 @@ from msa import msa
 
 def init():
 	if len(sys.argv) < 6:
-		cp._err('Usage: python mp_ce_sdii_rcrr.py scorefile colfile weightfile order outfile')
+		cp._err('Usage: python mp_ce_weight.py scorefile colfile weightfile order outfile')
 
 	scorefile = sys.argv[1]
 	colfile = sys.argv[2]
