@@ -90,7 +90,8 @@ def pdbscreen():
 
 	if os.path.isfile(pdbfile):
 		p = protein(pdbfile, chain=chainid)
-		report = np.array([len(p.atomsbyscgmcenter()), len(p.atomsbytip()), len(p.ca)])
+		#report = np.array([1.0*len(p.atomsbyscgmcenter())/len(p.resDict), 1.0*len(p.atomsbytip())/len(p.resDict), 1.0*len(p.ca)/len(p.resDict)])
+		report = np.array([1.0*len(p.atomsbyscgmcenter())/len(p.seq), 1.0*len(p.atomsbytip())/len(p.seq), 1.0*len(p.ca)/len(p.seq)])
 
 		status = 0
 		# no information available
@@ -102,10 +103,10 @@ def pdbscreen():
 			# information partially available
 			status = 1
 
-		cp._info('%s %s stat %d %d %d %d' % (pdbfile, chainid, status, report[0], report[1], report[2]))
+		cp._info('%s %s stat %d %d %.3f %.3f %.3f' % (pdbfile, chainid, status, len(p.seq), report[0], report[1], report[2]))
 	else:
 		# file does not exist
-		cp._info('%s %s stat -1' % (pdbfile, chainid))
+		cp._info('%s %s stat -1 0 0 0 0' % (pdbfile, chainid))
 
 
 def writeseq():

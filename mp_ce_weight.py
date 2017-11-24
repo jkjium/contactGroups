@@ -9,7 +9,6 @@ import commp as cp
 from sdii import sdii
 from msa import msa
 
-
 def init():
 	if len(sys.argv) < 6:
 		cp._err('Usage: python mp_ce_weight.py scorefile colfile weightfile order outfile')
@@ -20,14 +19,12 @@ def init():
 	order = int(sys.argv[4])
 	outfile = sys.argv[5]
 
+	varlist = [int(j) for j in np.loadtxt(colfile, delimiter=',')]
+	if len(varlist) < 2:
+		cp._err('err: %s not enough varlist: %d' % len(varlist))
+
 	# msa init
 	score = np.loadtxt(scorefile, delimiter=',')
-	varlist = [int(j) for j in np.loadtxt(colfile, delimiter=',')]
-
-
-	if len(varlist) < 2:
-		cp._err('err:not enough varlist: %d' % len(varlist))
-
 	# sdii init
 	sdii_core = sdii(score)
 	sdii_core.setVarlist(varlist) # set sequence weight
@@ -51,7 +48,6 @@ def init():
 	for i in xrange(0, len(tasks), n):
 		tasklist.append(tasks[i:i+n])
 	cp._info('spliting tasks into %d blocks' % len(tasklist))
-
 	return (sdii_core, tasklist, outfile)
 
 
@@ -66,7 +62,7 @@ def worker(sdii_core, tasks, q):
 
 
 def listener(total, outfile, q):
-	cp._info('listener: write to file [%s]' % outfile)
+	cp._info('write to file [%s]' % outfile)
 	fout = open(outfile, 'w')
 	count = 0
 	tcount = 0
@@ -75,33 +71,26 @@ def listener(total, outfile, q):
 		m = q.get()
 		if m == 'done':
 			count+=1
-			cp._info('listener: %d processes done.' % count)
+			cp._info('%d processes done.' % count)
 		else:
 			tcount+=1
 			if tcount%100 == 0:
 				timeUsed = int(time.time() - tstart)
-				cp._info('listener: %d/%d in %d seconds, %f hours left.' % (tcount, total, timeUsed, 1.0*total*timeUsed/(tcount*3600)))
-			#fout.write('%d %s' % (timeUsed, m))
+				cp._info('%d/%d in %d seconds, %f hours left.' % (tcount, total, timeUsed, 1.0*total*timeUsed/(tcount*3600)))
 			fout.write('%s' % (m))
 			fout.flush()
-		#if count == 20:
 		if tcount == total:
 			break
 	fout.close()
 
 
 def main():
-
 	(sdii_core, tasklist, outfile) = init()
 
 	manager = mp.Manager()
 	q = manager.Queue()
-	cp._info('prepare spawn 20 processes ...')
 	pool = mp.Pool(22) # cpu_count = 8, 1 for main thread, 1 for listener, 6 for worker
 	watcher = pool.apply_async(listener, (sdii_core.totalTask, outfile, q))
-
-	#if len(tasklist)!=20:
-	#	cp._err('mismatch task blocks %d vs number of processes 20' % len(tasklist))
 
 	for t in tasklist:
 		pool.apply_async(worker, (sdii_core, t, q))
