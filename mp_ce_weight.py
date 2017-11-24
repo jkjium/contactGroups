@@ -23,7 +23,7 @@ def init():
 	# msa init
 	score = np.loadtxt(scorefile, delimiter=',')
 	varlist = [int(j) for j in np.loadtxt(colfile, delimiter=',')]
-	w = np.loadtxt(weightfile)
+
 
 	if len(varlist) < 2:
 		cp._err('err:not enough varlist: %d' % len(varlist))
@@ -31,7 +31,10 @@ def init():
 	# sdii init
 	sdii_core = sdii(score)
 	sdii_core.setVarlist(varlist) # set sequence weight
-	sdii_core.setWeight(w)
+	if weightfile != 'na':
+		w = np.loadtxt(weightfile)
+		sdii_core.setWeight(w)
+	cp._info('set weight: %r' % sdii_core.isWeighted)
 	sdii_core.setOrder(order)
 
 	# calculating total tasks
@@ -57,7 +60,7 @@ def worker(sdii_core, tasks, q):
 	alphabet = [str(i) for i in sdii_core.varlist]
 	for s in tasks:
 		ret_sdii = sdii_core.calc_sdii(s)
-		outMessage = '%s,%.8f\n' % (','.join([(alphabet[i]) for i in s]), ret_sdii)
+		outMessage = '%s %.8f\n' % (' '.join([(alphabet[i]) for i in s]), ret_sdii)
 		q.put(outMessage)
 	q.put('done')
 
