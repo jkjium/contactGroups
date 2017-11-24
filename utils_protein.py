@@ -81,12 +81,12 @@ def pdbcut():
 
 
 # check sgc, tip, ca atoms
-def pdbscreen():
-	if len(sys.argv) < 4:
+def pdbscreen(arglist):
+	if len(sys.argv) < 2:
 		cp._err('Usage: python utils_protein.py pdbscreen pdbfile all|{A}')
 
-	pdbfile = sys.argv[2]
-	chainid = sys.argv[3]
+	pdbfile = arglist[0]
+	chainid = arglist[1]
 
 	if os.path.isfile(pdbfile):
 		p = protein(pdbfile, chain=chainid)
@@ -260,20 +260,21 @@ def main():
 	dispatch = {
 		'resn2bfactor': resn2bfactor, 'pdbcut': pdbcut, 'writeseq':writeseq, 'writetip':writetip, 'dumpseqflat':dumpseqflat,
 		'writeca':writeca, 'writesgc':writesgc, 'writeseqfa':writeseqfa,
-		'contactbycutoff':contactbycutoff,
+		'contactbycutoff':contactbycutoff
+	}
+
+	dispatch_arg = {
 		'pdbscreen': pdbscreen
 	}
 
 	cmd = sys.argv[1]
 
-	if sys.argv[1] not in dispatch:
+	if cmd in dispatch_arg:
+		dispatch_arg[cmd](sys.argv[2:])
+	elif cmd in dispatch:
+		dispatch[cmd]()
+	else:
 		print 'invalid cmd: %s' % sys.argv[1]
-		return
-
-	for key in dispatch:
-		if key == cmd:
-			dispatch[key]()
-
 
 if __name__ == '__main__':
 	main()
