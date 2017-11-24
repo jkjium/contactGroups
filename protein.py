@@ -391,7 +391,7 @@ class protein(object):
             print "err:%s:: Tip atom not found for [%d] [%s]" % (self.pdb, lastAtom.resSeq, lastAtom.resName)
             #fd.write(a.writeAtom())
         if outputCount==0:
-            print "err:No atom written from [%s]!" % (filename)            
+            print "err:No atom written from %s" % (self.pdb)            
 
         return cgs
 
