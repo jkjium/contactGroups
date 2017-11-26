@@ -90,14 +90,14 @@ def pdbscreen(arglist):
 
 	if os.path.isfile(pdbfile):
 		p = protein(pdbfile, chain=chainid)
-		#report = np.array([1.0*len(p.atomsbyscgmcenter())/len(p.resDict), 1.0*len(p.atomsbytip())/len(p.resDict), 1.0*len(p.ca)/len(p.resDict)])
-		report = np.array([1.0*len(p.atomsbyscgmcenter())/len(p.seq), 1.0*len(p.atomsbytip())/len(p.seq), 1.0*len(p.ca)/len(p.seq)])
+		if len(p.seq) == 0:
+			cp._info('%s %s stat 1 0 0 0 0' % (pdbfile, chainid))
+			return
 
+		report = np.array([1.0*len(p.atomsbyscgmcenter())/len(p.seq), 1.0*len(p.atomsbytip())/len(p.seq), 1.0*len(p.ca)/len(p.seq)])
 		status = 0
-		# no information available
-		if report.sum()== 0:
-			status = -2
-		elif (report[0] == report[1]) and (report[1] == report[2]):
+		#elif (report[0] == report[1]) and (report[1] == report[2]):
+		if (report[0] == 1) and (report[1]==1) and (report[2] == 1):
 			status = 0
 		else:
 			# information partially available
