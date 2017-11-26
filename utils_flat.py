@@ -3,7 +3,8 @@ import commp as cp
 from protein import protein
 from atom import atom
 
-
+# generate flat stub file
+# ec score will be appended
 def flaten(arglist):
 	if len(arglist) < 5:
 		cp._err('Usage: python utils_flat.py mapfile pdbfile chainid PfamId outfile')
