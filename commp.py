@@ -559,6 +559,22 @@ def rank01(d):
 	return dict((k, d[k]/s) for k in d)
 
 
+# convert a set of float number into value of d: d = (v - mean') / std'
+# a = {'a':1,'b':2,'c':3,'d':4,'e':10,'f':15}
+# {'a': -0.9486, 'b': -0.6324, 'c': -0.3162, 'd': 0.0, 'e': 1.8973, 'f': 3.4785}
+def rankstd(d):
+	v = d.values()
+	nv = np.array(v)
+	outlier = nv.mean() + nv.std()
+	#print nv.mean(), nv.std()
+	bg = np.array([i for i in v if i < outlier])
+	#print repr(bg)
+	m = bg.mean()
+	s = bg.std()
+	#print m,s
+	return dict((k, (d[k] - m)/s) for k in d)
+
+
 # given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format
 # return RMSD
 # RMSD = sqrt( 1/n * \sum_i (|| v_i - w_i ||^2)   )

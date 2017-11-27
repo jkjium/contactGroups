@@ -3,6 +3,92 @@ import commp as cp
 from protein import protein
 from atom import atom
 
+class cetuple(object):
+	def __init__(self, flatstr):
+		sarr = flatstr.split(' ')
+		#p.pdb,chainid,r1,r2,res1,res2,dist_sgc,dist_tip,dist_ca,pfamid,p1,p2
+		self.pdb = sarr[0]
+		self.chain = sarr[1]
+		self.r1 = sarr[2]
+		self.r2 = sarr[3]
+		self.rn1 = sarr[4]
+		self.rn2 = sarr[5]
+		self.sgcd = float(sarr[6])
+		self.tipd = float(sarr[7])
+		self.cad = float(sarr[8])
+		self.pfamid = sarr[9]
+		self.p1 = sarr[10]
+		self.p2 = sarr[11]
+		self.ce = [float(e) for e in sarr[12:]] 
+
+	def dump(self):
+		cp._info('%s %s %s %s %s %s %.4f %.4f %.4f %s %s %s %s' %
+			(self.pdb,
+			self.chain,
+			self.r1,
+			self.r2,
+			self.rn1,
+			self.rn2,
+			self.sgcd,
+			self.tipd,
+			self.cad,
+			self.pfamid,
+			self.p1,
+			self.p2,
+			repr(self.ce))
+			)
+
+
+def cecolumn(arglist):
+	if len(arglist)<5:
+		cp._err('Usage: python utils_flat.py cecolumn mapfile cefile cecol method outfile')
+
+	mapfile = arglist[0]
+	cefile = arglist[1]
+	cecol = int(arglist[2])
+	method = arglist[3]
+	outfile = arglist[4]
+
+	# load ce values
+	cedict = {}
+	with open(cefile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			k = ('%s %s' % (sarr[0], sarr[1])) if sarr[0] < sarr[1] else ('%s %s' % (sarr[1], sarr[0]))
+			v = float(sarr[cecol])
+			cedict[k] = v
+
+	# use method to normalize ce values
+	if method == 'std':
+		normdict = cp.rankstd(cedict)
+	else:
+		normdict = cedict
+
+	# extract ce for mapped tuples
+	resimap = []
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#113 L 170 I
+			resimap.append(int(sarr[2]))
+
+	fp = open(outfile,'w')
+	for n in xrange(0, len(resimap)):
+		for m in xrange(n+1, len(resimap)):
+			k = '%s %s' % (resimap[n] ,resimap[m])
+			outstr = ('%.8f\n' % normdict[k]) if k in normdict else '-191\n'
+			print k,outstr,
+			fp.write(outstr)
+	fp.close()
+	cp._info('save ce to %s' % outfile)
+
+
 # generate flat stub file
 # ec score will be appended
 def flaten(arglist):
@@ -25,13 +111,13 @@ def flaten(arglist):
 			sarr = line.split(' ')
 			#113 L 170 I
 			resimap.append((int(sarr[0]), int(sarr[2]), sarr[1]))
-	cp._info('%s:%d lines loaded.' % (mapfile, len(resimap)))
+	#cp._info('%s:%d lines loaded.' % (mapfile, len(resimap)))
 
 	p = protein(pdbfile, chain=chainid)
 	sgc = dict((a.resSeq, a) for a in p.atomsbyscgmcenter())
 	tip = dict((a.resSeq, a) for a in p.atomsbytip())
 	ca = dict((a.resSeq, a) for a in p.ca)
-	cp._info('%s-%s:%d sgc %d tip %d ca loaded.' % (pdbfile, chainid, len(sgc), len(tip), len(ca)))
+	#cp._info('%s-%s:%d sgc %d tip %d ca loaded.' % (pdbfile, chainid, len(sgc), len(tip), len(ca)))
 
 	fp = open(outfile, 'w')
 	# pairwise 
@@ -80,7 +166,8 @@ def main():
 		cp._err('Usage: python utils_flat.py cmd [args ...]')
 
 	dispatch = {
-		'flaten':flaten
+		'flaten':flaten,
+		'cecolumn':cecolumn
 	}
 
 	if sys.argv[1] in dispatch:
