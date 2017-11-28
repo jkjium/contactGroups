@@ -13,25 +13,21 @@ class cetuple(object):
 		self.r2 = sarr[3]
 		self.rn1 = sarr[4]
 		self.rn2 = sarr[5]
-		self.sgcd = float(sarr[6])
-		self.tipd = float(sarr[7])
-		self.cad = float(sarr[8])
+		self.cg = {'sgc': float(sarr[6]), 'tip': float(sarr[7]), 'ca': float(sarr[8])}
 		self.pfamid = sarr[9]
 		self.p1 = sarr[10]
 		self.p2 = sarr[11]
 		self.ce = [float(e) for e in sarr[12:]] 
 
 	def dump(self):
-		cp._info('%s %s %s %s %s %s %.4f %.4f %.4f %s %s %s %s' %
+		cp._info('%s %s %s %s %s %s %s %s %s %s %s' %
 			(self.pdb,
 			self.chain,
 			self.r1,
 			self.r2,
 			self.rn1,
 			self.rn2,
-			self.sgcd,
-			self.tipd,
-			self.cad,
+			repr(self.cg),
 			self.pfamid,
 			self.p1,
 			self.p2,
@@ -83,7 +79,7 @@ def cecolumn(arglist):
 		for m in xrange(n+1, len(resimap)):
 			k = '%s %s' % (resimap[n] ,resimap[m])
 			outstr = ('%.8f\n' % normdict[k]) if k in normdict else '-191\n'
-			print k,outstr,
+			#print k,outstr,
 			fp.write(outstr)
 	fp.close()
 	cp._info('save ce to %s' % outfile)
@@ -160,6 +156,36 @@ def flaten(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# extract scol from single condition (cg & ce)
+def scolsingle(arglist):
+	if len(arglist)< 6:
+		cp._err('Usage: python utils_flat.py scolsingle flatfile cgname cgcutoff ceidx cecutoff outfile')
+
+	flatfile = arglist[0]
+	cgname = arglist[1] # sgc, tip, ca
+	cgcutoff = float(arglist[2])
+	ceidx = int(arglist[3])
+	cecutoff = float(arglist[4])
+	outfile = arglist[5]
+
+	scol = []
+	with open(flatfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			ct = cetuple(line)
+			if ct.cg[cgname] <= cgcutoff and ct.ce[ceidx] >= cecutoff:
+				#ct.dump()
+				scol.append('%s-%s' % (ct.p1, ct.p2))
+
+	with open(outfile, 'w') as fp:
+		fp.write(' '.join(scol))
+	cp._info('save %d tuples to %s' % (len(scol), outfile))
+
+
+
+
 
 def main():
 	if len(sys.argv)<2:
@@ -167,7 +193,8 @@ def main():
 
 	dispatch = {
 		'flaten':flaten,
-		'cecolumn':cecolumn
+		'cecolumn':cecolumn,
+		'scolsingle':scolsingle
 	}
 
 	if sys.argv[1] in dispatch:
