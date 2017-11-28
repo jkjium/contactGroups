@@ -465,7 +465,8 @@ def wfreq(arglist):
 			scolset.add(c[1])
 	#print repr(scolset)		
 
-	wfreqdict = collections.defaultdict(float)	
+	wfreqdict = collections.defaultdict(float)	 # for denominator from all column
+	wsfreqdict = collections.defaultdict(float)	 # for denominator from scol
 	wscoldict =	collections.defaultdict(list) 
 	# calculate sinlgle wfreq
 	# 206 C .5,111,133,158,210,241
@@ -481,6 +482,7 @@ def wfreq(arglist):
 			# save freq of scol for substitution frequency calculation
 			if sarr[0] in scolset:
 				wscoldict[sarr[0]].append((sarr[1], wfreq))
+				wsfreqdict[sarr[1]]+= wfreq
 	#print repr(wscoldict)
 
 	# calculate substitution wfreq
@@ -503,20 +505,24 @@ def wfreq(arglist):
 	with open(outfile, 'w') as fp:
 		# save single wfreq
 		for c in wfreqdict:
-			fp.write('%s %.8f\n' % (c, wfreqdict[c]))
+			fp.write('wf %s %.8f\n' % (c, wfreqdict[c]))
+		# save single wfreq from scol
+		for c in wsfreqdict:
+			fp.write('sf %s %.8f\n' % (c, wsfreqdict[c]))
 		# save substitution wfreq
 		for k in wsmdict:
-			fp.write('%s %.8f\n' %(k, wsmdict[k]))
+			fp.write('sd %s %.8f\n' %(k, wsmdict[k]))
 	cp._info('save wfreq to %s' % outfile)
 
 
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
-		if len(arglist) < 2:
-			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq outfile')
+		if len(arglist) < 3:
+			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
 
 		wfreqfile = arglist[0]
-		outprefix = arglist[1]
+		opt = arglist[1]
+		outprefix = arglist[2]
 
 		qij = collections.defaultdict(float)
 		eij = collections.defaultdict(float)
@@ -526,13 +532,16 @@ def wfreq2sm(arglist):
 						if len(line)==0:
 								continue
 						sarr = line.split(' ')
-						k = sarr[0]
-						f = float(sarr[1])
-						# M 3511.29
-						if len(k) == 1:
+						t = sarr[0]
+						k = sarr[1]
+						f = float(sarr[2])
+						# sf M 3511.29
+						if t == opt:
+						#if len(k) == 1:
 								eij[k]+=f
-						# QR 95488.206
-						elif len(k)== 2:
+						# sd QR 95488.206
+						elif t == 'sd':
+						#elif len(k)== 2:
 								qij[k]+=f
 
 		# single freq

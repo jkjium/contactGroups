@@ -3,6 +3,7 @@ import commp as cp
 import numpy as np
 
 class smatrix(object):
+	# read emboss format matrix
 	def __init__(self, smfile):
 		scorelist = []
 		with open(smfile) as fp:
@@ -21,6 +22,7 @@ class smatrix(object):
 		#print aa
 		# square matrix 'A:E' = 'E:A'
 		self.score=dict( ('%s%s' % (aa[i], aa[j-1]), int(scorelist[i][j])) for i in xrange(0,len(scorelist)) for j in xrange(1, len(aa)))
+		self.npscore = np.array(scorelist)
 		self.aa = aa
 		#print repr(self.score)
 
