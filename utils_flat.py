@@ -134,20 +134,17 @@ def flaten(arglist):
 
 			# sgc distance
 			if res1!=cp.aa2a[sgc[r1].resName] or res2!=cp.aa2a[sgc[r2].resName]:
-				cp._info('err:mismatch residue in %s: %s - sgc[%d]:%s, %s - sgc[%d]:%s' % (mapfile, res1, r1, sgc[r1].resName, res2, r2, sgc[r2].resName))
-				return
+				cp._err('err:mismatch residue in %s: %s - sgc[%d]:%s, %s - sgc[%d]:%s' % (mapfile, res1, r1, sgc[r1].resName, res2, r2, sgc[r2].resName))
 			dist_sgc = cp.dist([sgc[r1].x, sgc[r1].y, sgc[r1].z], [sgc[r2].x, sgc[r2].y, sgc[r2].z])
 
 			# tip distance
 			if res1!=cp.aa2a[tip[r1].resName] or res2!=cp.aa2a[tip[r2].resName]:
-				cp._info('err:mismatch residue in %s: %s - tip[%d]:%s, %s - tip[%d]:%s' % (mapfile, res1, r1, tip[r1].resName, res2, r2, tip[r2].resName))
-				return
+				cp._err('err:mismatch residue in %s: %s - tip[%d]:%s, %s - tip[%d]:%s' % (mapfile, res1, r1, tip[r1].resName, res2, r2, tip[r2].resName))
 			dist_tip = cp.dist([tip[r1].x, tip[r1].y, tip[r1].z], [tip[r2].x, tip[r2].y, tip[r2].z])
 
 			# ca distance
 			if res1!=cp.aa2a[ca[r1].resName] or res2!=cp.aa2a[ca[r2].resName]:
-				cp._info('err:mismatch residue in %s: %s - ca[%d]:%s, %s - ca[%d]:%s' % (mapfile, res1, r1, ca[r1].resName, res2, r2, ca[r2].resName))
-				return
+				cp._err('err:mismatch residue in %s: %s - ca[%d]:%s, %s - ca[%d]:%s' % (mapfile, res1, r1, ca[r1].resName, res2, r2, ca[r2].resName))
 			dist_ca = cp.dist([ca[r1].x, ca[r1].y, ca[r1].z], [ca[r2].x, ca[r2].y, ca[r2].z])
 			#        pdb r1 r2 res1 res2 dist.sgc dist.tip dist.ca pfamid p1 p2
 			outstr = '%s %s %d %d %s %s %.8f %.8f %.8f %s %d %d\n' % (p.pdb,chainid,r1,r2,res1,res2,dist_sgc,dist_tip,dist_ca,pfamid,p1,p2)

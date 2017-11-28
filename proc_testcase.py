@@ -167,7 +167,8 @@ def align_exec(seqpair, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0
 		seqArr = line.split(' ')
 
 	#$ ./align.sh needle "ALIGN" "LINE" B62 8 2
-	return sp.check_output(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend])
+	return sp.Popen(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend], stdout=sp.PIPE).communicate()[0]
+	#return sp.check_output(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend])
  
 
 def printpair():
