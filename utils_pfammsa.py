@@ -453,13 +453,17 @@ def wfreq(arglist):
 	outfile = arglist[3]
 
 	# load w
-	if wfile != 'na'
+	if wfile != 'na':
 		w = np.loadtxt(wfile)
 
 	# load selected col
 	scolset = set()
 	with open(scolfile) as fp:
-		for p in fp.readline().strip().split(' '):
+		line = fp.readline().strip()
+		if len(line.strip())==0:
+			cp._info('%s no scol pairs avaiable' % scolfile)
+			return
+		for p in line.split(' '):
 			c = p.split('-')
 			scolset.add(c[0])
 			scolset.add(c[1])
