@@ -453,8 +453,8 @@ def wfreq(arglist):
 	outfile = arglist[3]
 
 	# load w
-	w = np.loadtxt(wfile)
-	#print repr(w)
+	if wfile != 'na'
+		w = np.loadtxt(wfile)
 
 	# load selected col
 	scolset = set()
@@ -476,7 +476,10 @@ def wfreq(arglist):
 			if len(line) == 0:
 				continue
 			sarr = line.split(' ')
-			wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
+			if wfile == 'na':
+				wfreq = len(sarr[3].split(','))
+			else:
+				wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
 			wfreqdict[sarr[1]]+= wfreq
 			#print '%s, %s, %s, %.4f' % (sarr[1], [int(i) for i in sarr[3].split(',')], repr(w[[int(i) for i in sarr[3].split(',')]]), wfreqdict[sarr[1]])
 			# save freq of scol for substitution frequency calculation
