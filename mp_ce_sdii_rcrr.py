@@ -126,7 +126,7 @@ def listener(total, outfile, q):
 			#fout.write('%d %s' % (timeUsed, m))
 			fout.write('%s' % (m))
 			fout.flush()
-		if count == 20:
+		if tcount == total:
 			break
 	fout.close()
 
@@ -143,9 +143,6 @@ def main():
 	pool = mp.Pool(23) # cpu_count = 8, 1 for main thread, 1 for listener, 6 for worker
 	watcher = pool.apply_async(listener, (sdii_core.totalTask, outfile, q))
 
-	if len(tasklist)!=20:
-		print 'mismatch task blocks %d vs number of processes 20' % len(tasklist)
-		return
 
 	for t in tasklist:
 		pool.apply_async(worker, (sdii_core, t, q))

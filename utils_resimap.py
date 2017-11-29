@@ -114,7 +114,7 @@ def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonf
 	# resArray, gives a list of keys eg. (A,Q,70), (A,I,71), (A,V,72)
 	resi2msa = [(p.resArray[i], pdbpos2msapos[i]) for i in xrange(0, len(p.resArray)) if i in pdbpos2msapos]
 
-	outfile = '%s-%s.map' % (pdbfile, pfamid)
+	outfile = '%s-%s-%s.map' % (pdbfile, chainid, pfamid)
 	#outstr = '\n'.join(['%d %s %d %s' % (k.resSeq, cp.aa2a[k.resName], v, msaseq[v]) for (k,v) in resi2msa])
 	outstr = '\n'.join(['%d %s %d %s' % (k[2], k[1], v, msaseq[v]) for (k,v) in resi2msa])
 	with open(outfile, 'w') as fp:

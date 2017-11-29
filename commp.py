@@ -265,8 +265,9 @@ def _err(msg, errcallback=_fatal):
 def _info(msg):
 	curframe = inspect.currentframe()
 	calframe = inspect.getouterframes(curframe, 1)	
-	info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
-	print '[%s] - %s' % (info, msg)
+	#info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
+	info = '%d:%s:%s()' % (os.getpid(),':'.join(sys.argv[1:]), calframe[1][3])
+	print '[%s] %s' % (info, msg)
 
 
 # return ith column of matrix (list(list))
@@ -275,6 +276,10 @@ def _info(msg):
 # 	[...]
 def column(mat, i):
 	return [row[i] for row in mat]
+
+# calculate the Euclidean distance between two vectors
+def dist(v1, v2):
+	return np.linalg.norm(np.array(v1)-np.array(v2))
 
 
 # mp constant definition
@@ -289,16 +294,11 @@ def dcall(callstr):
 	func = strarr[2]
 	param = strarr[3:]
 
-	#print 'module: %s' % modu
-	#print 'function: %s' % func
-	#print 'parameters: %s' % param
-
 	ins_func = getattr(__import__(modu), func)
 	return ins_func(param)
 
 # used in utils_mprun.py
 def drun(runstr):
-	#print 'runstr: %s' % runstr
 	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
 
 
@@ -404,18 +404,18 @@ def jaccard(a, b):
 	return 1 - (float(len(c)) / (len(a) + len(b) - len(c)))
 
 
-# calculate n choose r
+# calculate value of n choose r
 def ncr(n, r):
-    r = min(r, n-r)
-    if r == 0: return 1
-    numer = reduce(op.mul, xrange(n, n-r, -1))
-    denom = reduce(op.mul, xrange(1, r+1))
-    return numer//denom
+	return 1 if min(r, n-r) <= 0 else reduce(op.mul, xrange(n, n-r, -1))//reduce(op.mul, xrange(1, r+1))
 
 
-# return n choose m
+# return a index set of n choose m
 def ncrset(varnum, order):
 	return [s for s in set(itertools.combinations(list(xrange(varnum)), order))]
+
+
+def ncrvar(varset, order):
+	return [s for s in set(itertools.combinations(varset, order))]
 
 
 # given two strings
@@ -557,6 +557,22 @@ def quadtype(quadstr):
 def rank01(d):
 	s = float(sum(d.values()))
 	return dict((k, d[k]/s) for k in d)
+
+
+# convert a set of float number into value of d: d = (v - mean') / std'
+# a = {'a':1,'b':2,'c':3,'d':4,'e':10,'f':15}
+# {'a': -0.9486, 'b': -0.6324, 'c': -0.3162, 'd': 0.0, 'e': 1.8973, 'f': 3.4785}
+def rankstd(d):
+	v = d.values()
+	nv = np.array(v)
+	outlier = nv.mean() + nv.std()
+	#print nv.mean(), nv.std()
+	bg = np.array([i for i in v if i < outlier])
+	#print repr(bg)
+	m = bg.mean()
+	s = bg.std()
+	#print m,s
+	return dict((k, (d[k] - m)/s) for k in d)
 
 
 # given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format

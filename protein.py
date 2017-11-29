@@ -79,8 +79,8 @@ class protein(object):
         self.seq, self.resArray, self.resAtoms = self.getSeq()
 
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
-        aamap = AAmap()
-        self.seq = ''.join([aamap.getAAmap(a.resName) for a in self.ca])
+        #aamap = AAmap()
+        #self.seq = ''.join([aamap.getAAmap(a.resName) for a in self.ca])
 
         # map for sequence index: Chain+Resi(ResName)
         # 132 : 'B529(V)'
@@ -131,14 +131,22 @@ class protein(object):
             # save CA as a template
             # get accumulative coordinates
             count = 0
-            for a in al:
-                if a.name.strip() in bb and a.resName!='GLY':
-                    #print 'skip bb atom'
-                    continue
-                count+=1
-                x+=a.x
-                y+=a.y
-                z+=a.z
+            if al[0].resName == 'GLY':
+                for a in al:
+                    if a.name.strip() == 'CA':
+                        count+=1
+                        x=a.x
+                        y=a.y
+                        z=a.z
+            else:
+                for a in al:
+                    #if a.name.strip() in bb and a.resName!='GLY':
+                    if a.name.strip() in bb:
+                        continue
+                    count+=1
+                    x+=a.x
+                    y+=a.y
+                    z+=a.z
 
             # replace geom center to template coordinate 
             # and save for output
@@ -299,7 +307,9 @@ class protein(object):
 
 
     # get tip atom list
-    def atomsbytip(self, profile):
+    #def atomsbytip(self, profile):
+    def atomsbytip(self):
+        profile = 'AAtips.py'
         cgs=[]
         # loading tip atoms records
         fp=open(profile, 'r')
@@ -330,7 +340,7 @@ class protein(object):
             #if a.chainID!='A':
             #    continue
             if a.resName not in AAtipDict:
-                print '%s:: non AA atom %s %d [%s]]' % (self.pdb, a.resName, a.resSeq, a.name.strip())
+                print 'err:%s:: non AA atom %s %d [%s]]' % (self.pdb, a.resName, a.resSeq, a.name.strip())
                 continue
 
             if a.resSeq == currentResi: # if in the same residue
@@ -370,7 +380,7 @@ class protein(object):
                     Y=0.0
                     Z=0.0                     
                 if a.name.strip()!='N':
-                    print "%s:: No leading [N] for RESI [%d] [%s]" % (self.pdb, a.resSeq, a.resName)
+                    print "err:%s:: No leading [N] for RESI [%d] [%s]" % (self.pdb, a.resSeq, a.resName)
                 currentResi = a.resSeq
                 matchCount=0
                 isDone=0
@@ -378,10 +388,10 @@ class protein(object):
         
         # for the last residue (there is no residue number change for it)
         if matchCount!=len(AAtipDict[lastAtom.resName]):
-            print "%s:: Tip atom not found for [%d] [%s]" % (self.pdb, lastAtom.resSeq, lastAtom.resName)
+            print "err:%s:: Tip atom not found for [%d] [%s]" % (self.pdb, lastAtom.resSeq, lastAtom.resName)
             #fd.write(a.writeAtom())
         if outputCount==0:
-            print "No atom written from [%s]!" % (filename)            
+            print "err:No atom written from %s" % (self.pdb)            
 
         return cgs
 

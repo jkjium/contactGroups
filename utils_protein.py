@@ -5,6 +5,8 @@ import sys
 from protein import protein
 from AAmap import AAmap
 import commp as cp
+import os.path
+import numpy as np
 
 def resn2bfactor():
 	if len(sys.argv) < 3:
@@ -76,6 +78,35 @@ def pdbcut():
 	for a in out:
 		fout.write(a.writeAtom())
 	fout.close()
+
+
+# check sgc, tip, ca atoms
+def pdbscreen(arglist):
+	if len(sys.argv) < 2:
+		cp._err('Usage: python utils_protein.py pdbscreen pdbfile all|{A}')
+
+	pdbfile = arglist[0]
+	chainid = arglist[1]
+
+	if os.path.isfile(pdbfile):
+		p = protein(pdbfile, chain=chainid)
+		if len(p.seq) == 0:
+			cp._info('%s %s stat 1 0 0 0 0' % (pdbfile, chainid))
+			return
+
+		report = np.array([1.0*len(p.atomsbyscgmcenter())/len(p.seq), 1.0*len(p.atomsbytip())/len(p.seq), 1.0*len(p.ca)/len(p.seq)])
+		status = 0
+		#elif (report[0] == report[1]) and (report[1] == report[2]):
+		if (report[0] == 1) and (report[1]==1) and (report[2] == 1):
+			status = 0
+		else:
+			# information partially available
+			status = 1
+
+		cp._info('%s %s stat %d %d %.3f %.3f %.3f' % (pdbfile, chainid, status, len(p.seq), report[0], report[1], report[2]))
+	else:
+		# file does not exist
+		cp._info('%s %s stat -1 0 0 0 0' % (pdbfile, chainid))
 
 
 def writeseq():
@@ -232,16 +263,18 @@ def main():
 		'contactbycutoff':contactbycutoff
 	}
 
+	dispatch_arg = {
+		'pdbscreen': pdbscreen
+	}
+
 	cmd = sys.argv[1]
 
-	if sys.argv[1] not in dispatch:
+	if cmd in dispatch_arg:
+		dispatch_arg[cmd](sys.argv[2:])
+	elif cmd in dispatch:
+		dispatch[cmd]()
+	else:
 		print 'invalid cmd: %s' % sys.argv[1]
-		return
-
-	for key in dispatch:
-		if key == cmd:
-			dispatch[key]()
-
 
 if __name__ == '__main__':
 	main()

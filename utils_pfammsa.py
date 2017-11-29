@@ -217,6 +217,17 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# calculate mean entropy for score file
+def scoreentropy(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_pfammsa.py scoreentropy scorefile')
+
+	scorefile = arglist[0]
+	score = np.loadtxt(scorefile, delimiter=',')
+	hlist = [cp.entropy([score[:,i]]) for i in xrange(0, score.shape[1])]
+	print '%s %.8f' % (scorefile, sum(hlist)/score.shape[1])
+
+
 # generate frequency lookup file for all the column combinations
 def freqlookup(arglist):
 	if len(arglist) < 3:
@@ -442,19 +453,24 @@ def wfreq(arglist):
 	outfile = arglist[3]
 
 	# load w
-	w = np.loadtxt(wfile)
-	#print repr(w)
+	if wfile != 'na':
+		w = np.loadtxt(wfile)
 
 	# load selected col
 	scolset = set()
 	with open(scolfile) as fp:
-		for p in fp.readline().strip().split(' '):
+		line = fp.readline().strip()
+		if len(line.strip())==0:
+			cp._info('%s no scol pairs avaiable' % scolfile)
+			return
+		for p in line.split(' '):
 			c = p.split('-')
 			scolset.add(c[0])
 			scolset.add(c[1])
 	#print repr(scolset)		
 
-	wfreqdict = collections.defaultdict(float)	
+	wfreqdict = collections.defaultdict(float)	 # for denominator from all column
+	wsfreqdict = collections.defaultdict(float)	 # for denominator from scol
 	wscoldict =	collections.defaultdict(list) 
 	# calculate sinlgle wfreq
 	# 206 C .5,111,133,158,210,241
@@ -464,12 +480,16 @@ def wfreq(arglist):
 			if len(line) == 0:
 				continue
 			sarr = line.split(' ')
-			wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
+			if wfile == 'na':
+				wfreq = len(sarr[3].split(','))
+			else:
+				wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
 			wfreqdict[sarr[1]]+= wfreq
 			#print '%s, %s, %s, %.4f' % (sarr[1], [int(i) for i in sarr[3].split(',')], repr(w[[int(i) for i in sarr[3].split(',')]]), wfreqdict[sarr[1]])
 			# save freq of scol for substitution frequency calculation
 			if sarr[0] in scolset:
 				wscoldict[sarr[0]].append((sarr[1], wfreq))
+				wsfreqdict[sarr[1]]+= wfreq
 	#print repr(wscoldict)
 
 	# calculate substitution wfreq
@@ -492,20 +512,24 @@ def wfreq(arglist):
 	with open(outfile, 'w') as fp:
 		# save single wfreq
 		for c in wfreqdict:
-			fp.write('%s %.8f\n' % (c, wfreqdict[c]))
+			fp.write('wf %s %.8f\n' % (c, wfreqdict[c]))
+		# save single wfreq from scol
+		for c in wsfreqdict:
+			fp.write('sf %s %.8f\n' % (c, wsfreqdict[c]))
 		# save substitution wfreq
 		for k in wsmdict:
-			fp.write('%s %.8f\n' %(k, wsmdict[k]))
+			fp.write('sd %s %.8f\n' %(k, wsmdict[k]))
 	cp._info('save wfreq to %s' % outfile)
 
 
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
-		if len(arglist) < 2:
-			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq outfile')
+		if len(arglist) < 3:
+			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
 
 		wfreqfile = arglist[0]
-		outprefix = arglist[1]
+		opt = arglist[1]
+		outprefix = arglist[2]
 
 		qij = collections.defaultdict(float)
 		eij = collections.defaultdict(float)
@@ -515,13 +539,16 @@ def wfreq2sm(arglist):
 						if len(line)==0:
 								continue
 						sarr = line.split(' ')
-						k = sarr[0]
-						f = float(sarr[1])
-						# M 3511.29
-						if len(k) == 1:
+						t = sarr[0]
+						k = sarr[1]
+						f = float(sarr[2])
+						# sf M 3511.29
+						if t == opt:
+						#if len(k) == 1:
 								eij[k]+=f
-						# QR 95488.206
-						elif len(k)== 2:
+						# sd QR 95488.206
+						elif t == 'sd':
+						#elif len(k)== 2:
 								qij[k]+=f
 
 		# single freq
@@ -568,9 +595,6 @@ def wfreq2sm(arglist):
 		cp._info('save emboss sm to %s' % embossfile)
 
 
-
-
-
 # testing routine
 def test(arglist):
 	# test columnselect
@@ -614,6 +638,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
