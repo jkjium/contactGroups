@@ -457,7 +457,9 @@ def scol2resi(arglist):
 	if len(scolset) == 0:
 		print '%s -1' % (mapfile)
 	else:
-		print '%s %s' % (mapfile[0:4], ' '.join([resimap[c] for c in scolset]))
+		resi = [int(resimap[c]) for c in scolset]
+		resi.sort()
+		print '%s %s' % (mapfile, ' '.join([str(r) for r in resi]))
 
 
 
