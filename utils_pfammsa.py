@@ -426,6 +426,42 @@ def psicovaln(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# print scol -> resi set
+def scol2resi(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py scol2resi mapfile scolfile')
+
+	mapfile = arglist[0]
+	scolfile =arglist[1]
+
+	resimap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			# 7 W 52 I
+			sarr = line.split(' ')
+			resimap[sarr[2]] = sarr[0]
+
+	scolset = set()
+	with open(scolfile) as fp:
+		line = fp.readline()
+		line = line.strip()
+		if len(line) != 0:
+			for p in line.split(' '):
+				sarr = p.split('-')
+				scolset.add(sarr[0])
+				scolset.add(sarr[1])
+
+	if len(scolset) == 0:
+		print '%s -1' % (mapfile)
+	else:
+		print '%s %s' % (mapfile[0:4], ' '.join([resimap[c] for c in scolset]))
+
+
+
+
 # calculate and save sequence weight with similarity cutoff
 def scoreweight(arglist):
 	if len(sys.argv) < 2:
@@ -524,7 +560,7 @@ def wfreq(arglist):
 
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
-		if len(arglist) < 3:
+		if len(arglist) < 4:
 			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
 
 		wfreqfile = arglist[0]
@@ -560,7 +596,7 @@ def wfreq2sm(arglist):
 		for k in qij:
 				qij[k]=qij[k]/total_q
 
-		print 'len(qij): %d' % len(qij)
+		#print 'len(qij): %d' % len(qij)
 		# calculate sm
 		sm = collections.defaultdict(int)
 		for k in qij:
@@ -571,7 +607,7 @@ def wfreq2sm(arglist):
 			else:
 				sm[A+B] = int(round(2*math.log(qij[A+B]/(2*eij[A]*eij[B]),2)))
 			sm[B+A] = sm[A+B]
-		print min(sm.values()), max(sm.values())
+		#print min(sm.values()), max(sm.values())
 
 		# save raw sm
 		with open(outprefix, 'w') as fp:
@@ -645,6 +681,7 @@ def main():
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
+		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,
 		'wfreq': wfreq,
 		'wfreq2sm': wfreq2sm

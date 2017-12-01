@@ -85,6 +85,7 @@ def map_hmm2hmm(seq1, json1, seq2, json2):
 # pdbjsonfile: 	get from pfamscan pdbseqfafile
 # msafafile:	MSA sequence WITH GAPs extracted from pfam MSA
 # msajsonfile:	get from pfamscan MSA sequence WITHOUT GAPs
+# output: resi resn msai msan
 def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonfile, pfamid):
 	p = protein(pdbfile, chain=chainid)
 
