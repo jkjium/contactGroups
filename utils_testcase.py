@@ -319,7 +319,10 @@ def testpool(arglist):
 			gaps+=ap.ngp
 
 	fout.close()
-	print '%d %d %d %s %s %s %s %s' % (identity, similarity, gaps, poolfile, cmd, matrix, gapopen, gapextend)
+
+	ret =  '%d %d %d %s %s %s %s %s' % (identity, similarity, gaps, poolfile, cmd, matrix, gapopen, gapextend)
+	print ret
+	return ret
 
 
 # main routine
@@ -328,12 +331,10 @@ def main():
 		'printpair':printpair,
 		'testpool':testpool
 	}
-	if cmd in dispatch:
-		dispatch[sys.argv[1]](sys,argv[2:])
+	if sys.argv[1] in dispatch:
+		dispatch[sys.argv[1]](sys.argv[2:])
 	else:
 		cp.err('invalid cmd: %s' % sys.argv[1])
 
 if __name__ == '__main__':
 	main()
-
-	
