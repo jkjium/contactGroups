@@ -217,6 +217,24 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# for homolog testcase
+# save the first entry to a fasta file
+def seqfa(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py msafile seqfa outfile')
+
+	msafile = arglist[0]
+	outfile = arglist[1]
+
+	with open(outfile, 'w') as fp:
+		for head, msa in cp.fasta_iter(msafile):
+			seq = msa.translate(None, ''.join(cp.gaps))
+			fp.write('>%s\n%s' % (head, seq))
+			cp._info('save to %s' % outfile)
+			break # only get the first one
+
+
+
 # calculate mean entropy for score file
 def scoreentropy(arglist):
 	if len(arglist) < 1:
@@ -676,6 +694,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'seqfa': seqfa,
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
