@@ -144,14 +144,12 @@ class alignflat(object):
 def blastparse(blaststr):
 	sarr = blaststr.split(',')
 	if len(sarr) < 2:
-		cp._info('err:invalid blast str: %s' % blaststr)
-		return False
+		cp._err('err:invalid blast str: %s' % blaststr)
 	pvalue = float(sarr[1])
 	title = sarr[0].split(' ')
 	pfam = title[2][0:7]
 	if pfam[0:2]!= 'PF':
-		cp._info('err:invalid pfam id from: %s' % blaststr)
-		return False
+		cp._err('err:invalid pfam id from: %s' % blaststr)
 	return pfam
 
 
@@ -168,7 +166,11 @@ def blasttpfp(blastoutfile):
 				tp+=1
 			else:
 				fp+=1
-	return (pfamid, (tp, fp))
+	if (tp + fp) == 0: # for empty file
+		ret = (pfamid, (-1,-1))
+	else:
+		ret = (pfamid, (tp, fp))
+	return ret
 
 
 # output a column of tp,fp with stub order
