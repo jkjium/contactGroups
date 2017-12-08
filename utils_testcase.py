@@ -4,6 +4,7 @@ import numpy as np
 import math
 import time
 import sys
+import commp as cp
 
 '''
 $1:  file name
@@ -133,6 +134,83 @@ class alignflat(object):
 		for f in self.flatArray:
 			f.dump()
 
+
+# parse blast output ($ blastp -query t.fa -db $PFAM -outfmt "10 stitle evalue" -evalue 0.0001 -matrix BLOSUM80 -o t.fa.out)
+# A0A176VM62_MARPO/110-314 A0A176VM62.1 PF02263.18;GBP;,4e-10
+# return (title, pfamid) of the current entry
+# >>> ut.blastparse('A0A176VM62_MARPO/110-314 A0A176VM62.1 PF02263.18;GBP;,4e-10')
+# 'PF02263'
+# used in blasttpfp()
+def blastparse(blaststr):
+	sarr = blaststr.split(',')
+	if len(sarr) < 2:
+		cp._info('err:invalid blast str: %s' % blaststr)
+		return False
+	pvalue = float(sarr[1])
+	title = sarr[0].split(' ')
+	pfam = title[2][0:7]
+	if pfam[0:2]!= 'PF':
+		cp._info('err:invalid pfam id from: %s' % blaststr)
+		return False
+	return pfam
+
+
+# return number of tp and fp for one blast PFam output
+def blasttpfp(blastoutfile):
+	pfamid = blastoutfile[0:7]
+	tp = fp = 0
+	with open(blastoutfile) as fd:
+		for line in fd:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			if blastparse(line) == pfamid:
+				tp+=1
+			else:
+				fp+=1
+	return (pfamid, (tp, fp))
+
+
+# output a column of tp,fp with stub order
+def blastcolbystub(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_testcase.py blastcolbystub stubfile blastoutfilelist outfile')
+
+	stubfile = arglist[0]
+	ofilelistfile = arglist[1]
+	outfile = arglist[2]
+
+	# load stub into a list
+	pfamstub = []
+	with open(stubfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			if line[0:2]!='PF':
+				cp._err('err:invalid pfam id %s' % line)
+			pfamstub.append(line)
+	pfamstub.sort() # sort pfamid alphabetically
+
+	# load blast output into a dictionary
+	ofilelist = []
+	with open(ofilelistfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			if line[0:2]!='PF':
+				cp._err('err:invalid blast outfile name %s' % line)
+			ofilelist.append(line) # PF07582.fa.B62.out
+
+	# for each blast out file calculate tp, fp then store in a dictionary
+	# key: pfamid, value: (tp, fp)
+	blastout = dict(blasttpfp(file) for file in ofilelist)
+
+	# write outfile with stub order
+	with open(outfile, 'w') as fp:
+		fp.write('\n'.join(['%s %d %d' % (pfamid, blastout[pfamid][0], blastout[pfamid][1]) for pfamid in pfamstub]))
+	cp._info('save to %s' % outfile)
 
 
 # parse FASTA sequence from markx3 align outputs
@@ -329,7 +407,8 @@ def testpool(arglist):
 def main():
 	dispatch = {
 		'printpair':printpair,
-		'testpool':testpool
+		'testpool':testpool,
+		'blastcolbystub': blastcolbystub
 	}
 	if sys.argv[1] in dispatch:
 		dispatch[sys.argv[1]](sys.argv[2:])
