@@ -34,7 +34,8 @@ class cetuple(object):
 			repr(self.ce))
 			)
 
-
+# python utils_flat.py cecolumn 101m.pdb-A-PF00042.map PF00042_p90.mip 4 std PF00042-std-mip.ce
+# cecol starts from 0
 def cecolumn(arglist):
 	if len(arglist)<5:
 		cp._err('Usage: python utils_flat.py cecolumn mapfile cefile cecol method outfile')

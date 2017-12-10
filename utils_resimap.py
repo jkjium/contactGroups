@@ -137,6 +137,44 @@ def resi2msa(arglist):
 	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
 
 
+# append msai to dca output
+# for cecolumn, cflat
+# $ python utils_resimap.py dca2msa PF00098_full.txt PF00098_full.txt.dca PF00098_full.rdca
+def dca2msa(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_resimap.py dca2msa msafile dcafile outfile')
+
+	msafile = arglist[0]
+	dcafile = arglist[1]
+	outfile = arglist[2]
+
+	# get the first entry
+	head, msa = cp.fasta_iter(msafile).next()
+	seq = msa.translate(None, ''.join(cp.gaps))
+	#print '%s\n%s\n%s' % (head, msa, seq)
+	resi=head.split('/')[1]
+	resi_start = int(resi.split('-')[0])
+
+	# seq2msa = dict((k+resi_start,v) for k,v in cp.posmap_subseq(seq, msa))
+	seq2msa = dict((k,v) for k,v in cp.posmap_subseq(seq, msa))
+	# dca index = k+resi_start 
+	#for k in seq2msa:
+	#	print '%d %d %s %d' % (k, seq2msa[k], msa[seq2msa[k]], k+resi_start)
+
+	fout = open(outfile ,'w')
+	# convert dca index
+	with open(dcafile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			# 240 V 241 E 0.424638 0.170393
+			sarr = line.split(' ')
+			fout.write('%d %d %s\n' % (seq2msa[int(sarr[0])-resi_start], seq2msa[int(sarr[2])-resi_start], line))
+	fout.close()
+	cp._info('save to %s' % outfile)
+
+
 def test():
 	# 1ni3.pdb: 			raw pdb
 	# PF06071_pdb.fa: 		pdb seq	
@@ -154,7 +192,8 @@ def main():
 
 	dispatch = {
 		'test':test,
-		'resi2msa':resi2msa
+		'resi2msa':resi2msa,
+		'dca2msa': dca2msa
 	}
 
 	if sys.argv[1] not in dispatch:
