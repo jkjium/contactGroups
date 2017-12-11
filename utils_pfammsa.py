@@ -580,8 +580,8 @@ def wfreq(arglist):
 
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
-		if len(arglist) < 4:
-			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
+		if len(arglist) < 3:
+			cp._err('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
 
 		wfreqfile = arglist[0]
 		opt = arglist[1]
@@ -630,7 +630,7 @@ def wfreq2sm(arglist):
 		#print min(sm.values()), max(sm.values())
 
 		# save raw sm
-		with open(outprefix, 'w') as fp:
+		with open(outprefix+'sm', 'w') as fp:
 			for A in cp.aat01:
 				fp.write('%s\n' % ' '.join([str(sm[A+B]).rjust(2) for B in cp.aat01]))
 		cp._info('save raw sm to %s' % outprefix)
