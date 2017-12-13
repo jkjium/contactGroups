@@ -630,7 +630,7 @@ def wfreq2sm(arglist):
 		#print min(sm.values()), max(sm.values())
 
 		# save raw sm
-		with open(outprefix+'sm', 'w') as fp:
+		with open(outprefix+'.raw.sm', 'w') as fp:
 			for A in cp.aat01:
 				fp.write('%s\n' % ' '.join([str(sm[A+B]).rjust(2) for B in cp.aat01]))
 		cp._info('save raw sm to %s' % outprefix)
