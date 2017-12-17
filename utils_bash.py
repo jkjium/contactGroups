@@ -16,7 +16,7 @@ def cflat2sm(arglist):
 	if len(sarr) == 4: # single: tip5-d14 5 1 14
 		c = 'awk \'{printf "python utils_flat.py scolsingle %%s-std-mipdca.cflat tip %s %s %s %%s-%s.scol\\n", $1,$1}\' %s' % (sarr[1], sarr[2], sarr[3], prefix, stubfile)
 	elif len(sarr) == 6: # double: tip4-m05d11 4 0 0.5 1 11
-		c = 'awk \'{printf "python utils_flat.py scolsingle %%s-std-mipdca.cflat tip %s %s %s %s %s %%s-%s.scol\\n", $1,$1}\' %s' % (sarr[1], sarr[2], sarr[3], sarr[4], sarr[5], prefix, stubfile)
+		c = 'awk \'{printf "python utils_flat.py scolinter %%s-std-mipdca.cflat tip %s %s %s %s %s %%s-%s.scol\\n", $1,$1}\' %s' % (sarr[1], sarr[2], sarr[3], sarr[4], sarr[5], prefix, stubfile)
 	else:
 		cp._err('invalid namestr: %s' % namestr)
 	scolcmd.append(c)
@@ -24,7 +24,7 @@ def cflat2sm(arglist):
 	# write scol sh file
 	outfile = 'batch_scol.%s.psh' % prefix
 	with open(outfile, 'w') as fp:
-		fp.write('\n'.join(scolcmd))
+		fp.write('%s\n' % '\n'.join(scolcmd))
 	cp._info('save to %s' % outfile)
 
 	# wfreq
@@ -33,11 +33,11 @@ def cflat2sm(arglist):
 	wfreqcmd = []
 	wlist = [50, 62, 70]
 	for w in wlist:
-		c = 'awk \'{printf "python utils_pfammsa.py wfreq %%s_p90.txt.score.1.flu %%s_p90.txt.50.weight %%s-%s.scol %%s_p90.%s.%d.wfreq\\n", $1,$1,$1, $1}\' %s' % (prefix, prefix, w, stubfile)
+		c = 'awk \'{printf "python utils_pfammsa.py wfreq %%s_p90.txt.score.1.flu %%s_p90.txt.%d.weight %%s-%s.scol %%s_p90.%s.%d.wfreq\\n", $1,$1,$1, $1}\' %s' % (w, prefix, prefix, w, stubfile)
 		wfreqcmd.append(c)
 	outfile = 'batch_wfreq.%s.psh' % prefix
 	with open(outfile, 'w') as fp:
-		fp.write('\n'.join(wfreqcmd))
+		fp.write('%s\n' % '\n'.join(wfreqcmd))
 	cp._info('save to %s' % outfile)
 
 	# .allwfreq
@@ -48,9 +48,9 @@ def cflat2sm(arglist):
 		c = 'cat *%s.%d.wfreq > %s.%d.allwfreq;python utils_pfammsa.py wfreq2sm %s.%d.allwfreq wf scsc.%s.%d' % (prefix, w, prefix, w, prefix, w, prefix, w)
 		smcmd.append(c)
 	with open(outfile, 'w') as fp:
-		fp.write('\n'.join(smcmd))
+		fp.write('%s\n' % '\n'.join(smcmd))
 	cp._info('save %s' % outfile)
-	print '\nsh batch_scol*.psh > batch_scol.sh; sh batch_wfreq*.psh > batch_wfreq.sh; cat batch_sm*.psh > batch_sm.sh'
+	print '\ncat batch_scol*.psh|sh > batch_scol.sh; cat batch_wfreq*.psh|sh > batch_wfreq.sh; cat batch_sm*.psh > batch_sm.sh'
 
 
 def main():
