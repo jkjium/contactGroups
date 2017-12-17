@@ -134,6 +134,71 @@ class alignflat(object):
 		for f in self.flatArray:
 			f.dump()
 
+# return number of tp and fp for one blast cath output
+def cathtpfp(blastoutfile):
+	# cath.3-90-25-10.fa.b62.out
+	cathid = blastoutfile.split('.')[1]
+	tp = fp = 0
+	with open(blastoutfile) as fd:
+		for line in fd:
+			# 1aq0A00 3-20-20-80,0.0
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			s1 = line.split(',')[0]
+			outcathid = s1.split(' ')[1]
+			if outcathid == cathid:
+				tp+=1
+			else:
+				fp+=1
+	if (tp + fp) == 0: # for empty file
+		ret = (cathid, (-1,-1))
+	else:
+		ret = (cathid, (tp, fp))
+	return ret
+
+
+# output a column of tp,fp with stub order
+def blastcathbystub(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_testcase.py blastcathbystub stubfile blastoutfilelist outfile')
+
+	stubfile = arglist[0]
+	ofilelistfile = arglist[1]
+	outfile = arglist[2]
+
+	# load stub into a list
+	stub = []
+	with open(stubfile) as fp:
+		# cath.1-10-10-10.fa
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			sarr = line.split('.')
+			stub.append(sarr[1])
+	stub.sort() # sort cath family id
+	print 
+
+	# load blast output into a dictionary
+	ofilelist = []
+	with open(ofilelistfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			ofilelist.append(line) # PF07582.fa.B62.out
+
+	# for each blast out file calculate tp, fp then store in a dictionary
+	# key: pfamid, value: (tp, fp)
+	blastout = dict(cathtpfp(file) for file in ofilelist)
+
+	# write outfile with stub order
+	with open(outfile, 'w') as fp:
+		fp.write('\n'.join(['%s %d %d' % (cathid, blastout[cathid][0], blastout[cathid][1]) for cathid in stub]))
+	cp._info('save to %s' % outfile)
+
+
 
 # parse blast output ($ blastp -query t.fa -db $PFAM -outfmt "10 stitle evalue" -evalue 0.0001 -matrix BLOSUM80 -o t.fa.out)
 # A0A176VM62_MARPO/110-314 A0A176VM62.1 PF02263.18;GBP;,4e-10
@@ -410,7 +475,8 @@ def main():
 	dispatch = {
 		'printpair':printpair,
 		'testpool':testpool,
-		'blastcolbystub': blastcolbystub
+		'blastcolbystub': blastcolbystub,
+		'blastcathbystub': blastcathbystub
 	}
 	if sys.argv[1] in dispatch:
 		dispatch[sys.argv[1]](sys.argv[2:])

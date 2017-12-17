@@ -630,6 +630,7 @@ def wfreq2sm(arglist):
 		#print min(sm.values()), max(sm.values())
 
 		# save raw sm
+		'''
 		with open(outprefix+'.raw.sm', 'w') as fp:
 			for A in cp.aat01:
 				fp.write('%s\n' % ' '.join([str(sm[A+B]).rjust(2) for B in cp.aat01]))
@@ -641,7 +642,8 @@ def wfreq2sm(arglist):
 		with open(stdfile, 'w') as fp:
 			fp.write(cp.smstr(npstd, cp.aat01))
 		cp._info('save std sm to %s' % stdfile)
-
+		'''
+		
 		# output emboss sm
 		embossfile = outprefix + '.emboss.sm'
 		npemboss = np.array([[sm[A+B] for B in cp.smaa2] for A in cp.smaa2])

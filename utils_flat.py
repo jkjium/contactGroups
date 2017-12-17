@@ -185,7 +185,7 @@ def scolsingle(arglist):
 # extract scol from two ce intersection
 def scolinter(arglist):
 	if len(arglist) < 8:
-		cp._err(Usage: python utils_flat.py scolinter flatfile cgname cgcutoff ceidx1 cecutoff1 ceidx2 cecutoff2 outfile)
+		cp._err('Usage: python utils_flat.py scolinter flatfile cgname cgcutoff ceidx1 cecutoff1 ceidx2 cecutoff2 outfile')
 
 	flatfile = arglist[0]
 	cgname = arglist[1] # sgc, tip, ca
@@ -214,7 +214,7 @@ def scolinter(arglist):
 # extract scol from two ce union
 def scolunion(arglist):
 	if len(arglist) < 8:
-		cp._err(Usage: python utils_flat.py scolunion flatfile cgname cgcutoff ceidx1 cecutoff1 ceidx2 cecutoff2 outfile)
+		cp._err('Usage: python utils_flat.py scolunion flatfile cgname cgcutoff ceidx1 cecutoff1 ceidx2 cecutoff2 outfile')
 
 	flatfile = arglist[0]
 	cgname = arglist[1] # sgc, tip, ca
