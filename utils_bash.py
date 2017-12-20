@@ -17,6 +17,9 @@ def cflat2sm(arglist):
 		c = 'awk \'{printf "python utils_flat.py scolsingle %%s-std-mipdca.cflat tip %s %s %s %%s-%s.scol\\n", $1,$1}\' %s' % (sarr[1], sarr[2], sarr[3], prefix, stubfile)
 	elif len(sarr) == 6: # double: tip4-m05d11 4 0 0.5 1 11
 		c = 'awk \'{printf "python utils_flat.py scolinter %%s-std-mipdca.cflat tip %s %s %s %s %s %%s-%s.scol\\n", $1,$1}\' %s' % (sarr[1], sarr[2], sarr[3], sarr[4], sarr[5], prefix, stubfile)
+	elif len(sarr) == 7:
+		c = 'awk \'{printf "python utils_flat.py scolunion %%s-std-mipdca.cflat tip %s %s %s %s %s %%s-%s.scol\\n", $1,$1}\' %s' % (sarr[1], sarr[2], sarr[3], sarr[4], sarr[5], prefix, stubfile)
+
 	else:
 		cp._err('invalid namestr: %s' % namestr)
 	scolcmd.append(c)
