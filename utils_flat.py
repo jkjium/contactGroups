@@ -34,7 +34,8 @@ class cetuple(object):
 			repr(self.ce))
 			)
 
-
+# python utils_flat.py cecolumn 101m.pdb-A-PF00042.map PF00042_p90.mip 4 std PF00042-std-mip.ce
+# cecol starts from 0
 def cecolumn(arglist):
 	if len(arglist)<5:
 		cp._err('Usage: python utils_flat.py cecolumn mapfile cefile cecol method outfile')
@@ -181,7 +182,63 @@ def scolsingle(arglist):
 	cp._info('save %d tuples to %s' % (len(scol), outfile))
 
 
+# extract scol from two ce intersection
+def scolinter(arglist):
+	if len(arglist) < 8:
+		cp._err('Usage: python utils_flat.py scolinter flatfile cgname cgcutoff ceidx1 cecutoff1 ceidx2 cecutoff2 outfile')
 
+	flatfile = arglist[0]
+	cgname = arglist[1] # sgc, tip, ca
+	cgcutoff = float(arglist[2])
+	ceidx1 = int(arglist[3])
+	cecutoff1 = float(arglist[4])
+	ceidx2 = int(arglist[5])
+	cecutoff2 = float(arglist[6])
+	outfile = arglist[7]
+
+	scol = []
+	with open(flatfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			ct = cetuple(line)
+			if ct.cg[cgname] <= cgcutoff and ct.ce[ceidx1] >= cecutoff1 and ct.ce[ceidx2] >=cecutoff2:
+				#ct.dump()
+				scol.append('%s-%s' % (ct.p1, ct.p2))
+
+	with open(outfile, 'w') as fp:
+		fp.write(' '.join(scol))
+	cp._info('save %d tuples to %s' % (len(scol), outfile))	
+
+# extract scol from two ce union
+def scolunion(arglist):
+	if len(arglist) < 8:
+		cp._err('Usage: python utils_flat.py scolunion flatfile cgname cgcutoff ceidx1 cecutoff1 ceidx2 cecutoff2 outfile')
+
+	flatfile = arglist[0]
+	cgname = arglist[1] # sgc, tip, ca
+	cgcutoff = float(arglist[2])
+	ceidx1 = int(arglist[3])
+	cecutoff1 = float(arglist[4])
+	ceidx2 = int(arglist[5])
+	cecutoff2 = float(arglist[6])
+	outfile = arglist[7]
+
+	scol = []
+	with open(flatfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			ct = cetuple(line)
+			if ct.cg[cgname] <= cgcutoff and (ct.ce[ceidx1] >= cecutoff1 or ct.ce[ceidx2] >=cecutoff2):
+				#ct.dump()
+				scol.append('%s-%s' % (ct.p1, ct.p2))
+
+	with open(outfile, 'w') as fp:
+		fp.write(' '.join(scol))
+	cp._info('save %d tuples to %s' % (len(scol), outfile))	
 
 
 def main():
@@ -191,7 +248,9 @@ def main():
 	dispatch = {
 		'flaten':flaten,
 		'cecolumn':cecolumn,
-		'scolsingle':scolsingle
+		'scolsingle':scolsingle,
+		'scolinter': scolinter,
+		'scolunion': scolunion
 	}
 
 	if sys.argv[1] in dispatch:

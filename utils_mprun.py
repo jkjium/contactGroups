@@ -37,7 +37,7 @@ class mprun(object):
 		self.pool.join()		
 		for ret in async_result.get():
 			if ret!=None:
-				cp._info(ret)
+				cp._info('mpret:%s' % ret)
 		cp._info('mprun(): done.')
 
 

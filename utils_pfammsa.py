@@ -217,6 +217,24 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# for homolog testcase
+# save the first entry to a fasta file
+def seqfa(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py msafile seqfa outfile')
+
+	msafile = arglist[0]
+	outfile = arglist[1]
+
+	with open(outfile, 'w') as fp:
+		for head, msa in cp.fasta_iter(msafile):
+			seq = msa.translate(None, ''.join(cp.gaps))
+			fp.write('>%s\n%s' % (head, seq))
+			cp._info('save to %s' % outfile)
+			break # only get the first one
+
+
+
 # calculate mean entropy for score file
 def scoreentropy(arglist):
 	if len(arglist) < 1:
@@ -426,6 +444,44 @@ def psicovaln(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# print scol -> resi set
+def scol2resi(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py scol2resi mapfile scolfile')
+
+	mapfile = arglist[0]
+	scolfile =arglist[1]
+
+	resimap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			# 7 W 52 I
+			sarr = line.split(' ')
+			resimap[sarr[2]] = sarr[0]
+
+	scolset = set()
+	with open(scolfile) as fp:
+		line = fp.readline()
+		line = line.strip()
+		if len(line) != 0:
+			for p in line.split(' '):
+				sarr = p.split('-')
+				scolset.add(sarr[0])
+				scolset.add(sarr[1])
+
+	if len(scolset) == 0:
+		print '%s -1' % (mapfile)
+	else:
+		resi = [int(resimap[c]) for c in scolset]
+		resi.sort()
+		print '%s %s' % (mapfile, ' '.join([str(r) for r in resi]))
+
+
+
+
 # calculate and save sequence weight with similarity cutoff
 def scoreweight(arglist):
 	if len(sys.argv) < 2:
@@ -525,7 +581,7 @@ def wfreq(arglist):
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
 		if len(arglist) < 3:
-			cp._info('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
+			cp._err('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
 
 		wfreqfile = arglist[0]
 		opt = arglist[1]
@@ -560,7 +616,7 @@ def wfreq2sm(arglist):
 		for k in qij:
 				qij[k]=qij[k]/total_q
 
-		print 'len(qij): %d' % len(qij)
+		#print 'len(qij): %d' % len(qij)
 		# calculate sm
 		sm = collections.defaultdict(int)
 		for k in qij:
@@ -571,10 +627,11 @@ def wfreq2sm(arglist):
 			else:
 				sm[A+B] = int(round(2*math.log(qij[A+B]/(2*eij[A]*eij[B]),2)))
 			sm[B+A] = sm[A+B]
-		print min(sm.values()), max(sm.values())
+		#print min(sm.values()), max(sm.values())
 
 		# save raw sm
-		with open(outprefix, 'w') as fp:
+		'''
+		with open(outprefix+'.raw.sm', 'w') as fp:
 			for A in cp.aat01:
 				fp.write('%s\n' % ' '.join([str(sm[A+B]).rjust(2) for B in cp.aat01]))
 		cp._info('save raw sm to %s' % outprefix)
@@ -585,7 +642,8 @@ def wfreq2sm(arglist):
 		with open(stdfile, 'w') as fp:
 			fp.write(cp.smstr(npstd, cp.aat01))
 		cp._info('save std sm to %s' % stdfile)
-
+		'''
+		
 		# output emboss sm
 		embossfile = outprefix + '.emboss.sm'
 		npemboss = np.array([[sm[A+B] for B in cp.smaa2] for A in cp.smaa2])
@@ -638,6 +696,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'seqfa': seqfa,
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
@@ -645,6 +704,7 @@ def main():
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
+		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,
 		'wfreq': wfreq,
 		'wfreq2sm': wfreq2sm

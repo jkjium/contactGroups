@@ -3,7 +3,7 @@ import commp as cp
 import numpy as np
 
 class smatrix(object):
-	# read emboss format matrix
+	# read emboss format matrix or 20x20 core matrix
 	def __init__(self, smfile):
 		self.name = smfile
 		self.aa = []
@@ -51,6 +51,20 @@ def combinesm(arglist):
 	cp._info('write %s, min: %d, max: %d' % (outfile, np.min(outcore), np.max(outcore)))
 
 
+def outblast(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: utils_sm.py outblast smemboss')
+
+	scsc = smatrix(arglist[0])
+	prefix = '#include <util/tables/raw_scoremat.h>\nstatic const TNCBIScore s_Blosum80PSM[25 * 25] = {'
+	suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum80 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum80PSM,\n    -6\n};\n'
+	cp.b80blast[:20, :20] = scsc.core
+	blastsm = ',\n'.join(['\t%s' % (','.join(['%3i' % n for n in cp.b80blast[i,:]])) for i in xrange(len(cp.aablast))])
+	with open('sm_blosum80.c.sub','w') as fp:
+		fp.write('\n'.join([prefix, blastsm, suffix]))
+	cp._info('save %s to sm_blosum80.c.sub' % (arglist[0]))
+
+
 # output emboss sm format with b62 edge
 def outemboss(core):
 	cp.b62edge[:20, :20] = core
@@ -78,8 +92,9 @@ def main():
 		return
 
 	dispatch = {
-		'combinesm':combinesm,
-		'test':test
+		'combinesm':	combinesm,
+		'outblast': 	outblast,
+		'test':			test
 	}
 
 	if sys.argv[1] not in dispatch:

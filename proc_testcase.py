@@ -213,6 +213,33 @@ def alignpool(seqpool, param):
 	print '%d %d %d %s %s %s %s %s' % (identity, similarity, gaps, seqpool, param[0], param[1], param[2], param[3])
 
 
+# output all flat files 
+def alignpoolshow(seqpool, param):
+	#cathpair88.pool.needle_B62_8_8.5.align.flat
+	flatfile = '%s.%s_%s_%s-%s_.flat' % (seqpool, param[0], param[1], param[2], param[3])
+	#print 'save to: %s' % flatfile
+	identity = 0
+	similarity = 0
+	gaps = 0
+
+
+	#fout = open(flatfile, 'w')
+	with open(seqpool) as fp:
+		for line in fp:
+			name = line.strip()
+			ret = align_exec(name, param[0], param[1], param[2], param[3]) # needle, B62, 10, 0.5
+			flat = alignparse(name, ret)
+			#fout.write('%s\n' % flat)
+
+			ap = palign(flat)
+			identity+=ap.nid
+			similarity+=ap.nsm
+			gaps+=ap.ngp
+
+	#fout.close()
+	print '%d %d %d %s %s %s %s %s' % (identity, similarity, gaps, seqpool, param[0], param[1], param[2], param[3])
+
+
 def testpool():
 	if len(sys.argv)< 6:
 		print 'Usage: python proc_testcase.py foo pairlist.txt needle B62 10.0 0.5'
@@ -225,6 +252,22 @@ def testpool():
 	gapextend = sys.argv[6]
 
 	alignpool(pairlist, (cmd, matrix, gapopen, gapextend))
+
+
+# same as testpool without writing flat file
+def showpool():
+	if len(sys.argv)< 6:
+		print 'Usage: python proc_testcase.py foo pairlist.txt needle B62 10.0 0.5'
+		exit(1)
+
+	pairlist = sys.argv[2]
+	cmd = sys.argv[3]
+	matrix = sys.argv[4]
+	gapopen = sys.argv[5]
+	gapextend = sys.argv[6]
+
+	alignpoolshow(pairlist, (cmd, matrix, gapopen, gapextend))
+
 
 
 def main():

@@ -132,7 +132,23 @@ class utils_pfamscan(object):
 		return ps.alnseq.upper().translate(None, ''.join(cp.gaps))
 
 
-def test():
+# detect whether a json file contain a PFamID
+# yes: output 1, no: output 0
+def haspfam(arglist):
+	if len(arglist) < 2:
+		cp._info('Usage: python utils_pfamscan.py haspfam jsonfile pfamid')
+
+	jsonfile = arglist[0]
+	pfamid = arglist[1]
+	ups = utils_pfamscan(jsonfile)
+	if ups.getMatchpfs(pfamid):
+		print '%s 1' % jsonfile
+	else:
+		print '%s 0' % jsonfile
+
+
+
+def test(arglist):
 
 	ups = utils_pfamscan('t.json')
 	pfamid = 'PF02576'
@@ -143,8 +159,6 @@ def test():
 	ps.dump()
 	print 'pdb seq ----------------------------'
 	print ups.getPDBseq(pfamid)
-
-
 
 
 	# test writeHMMfa
@@ -158,30 +172,21 @@ def test():
 	#pfs.writeHMMfa(outfile)
 	#print 'file %s saved.' % outfile
 
-
-
 # main routine
 def main():
 	if len(sys.argv)<2:
-		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
-		return
+		cp._err('Usage: python utils_pfammsa.py cmd pdbfile [args ...]')
 
 	dispatch = {
 		'test':test,
-		'writepdbfa': proc_writepdbfa
+		'haspfam': haspfam
 	}
 
-	cmd = sys.argv[1]
-
 	if sys.argv[1] not in dispatch:
-		print 'invalid cmd: %s' % sys.argv[1]
+		cp._err('invalid cmd: %s' % sys.argv[1])
 		return
 	else:
-		dispatch[sys.argv[1]]()
-
-
-
-
+		dispatch[sys.argv[1]](sys.argv[2:])
 
 if __name__ == '__main__':
 	main()
