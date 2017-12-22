@@ -14,8 +14,7 @@ def main():
 			fp.write('>%s\n%s' % (head, seq))
 		cp._info('save to %s' % outfafile)
 		count+=1
-	cp._info('%d fa files saved.' % count)
-
+	cp._info('%d fa files saved from %s.' % (count, fafile))
 
 if __name__ == '__main__':
 	main()

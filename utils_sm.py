@@ -59,7 +59,7 @@ def outblast(arglist):
 	prefix = '#include <util/tables/raw_scoremat.h>\nstatic const TNCBIScore s_Blosum80PSM[25 * 25] = {'
 	suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum80 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum80PSM,\n    -6\n};\n'
 	cp.b80blast[:20, :20] = scsc.core
-	blastsm = '\n'.join(['\t%s' % (','.join(['%3i' % n for n in cp.b80blast[i,:]])) for i in xrange(len(cp.aablast))])
+	blastsm = ',\n'.join(['\t%s' % (','.join(['%3i' % n for n in cp.b80blast[i,:]])) for i in xrange(len(cp.aablast))])
 	with open('sm_blosum80.c.sub','w') as fp:
 		fp.write('\n'.join([prefix, blastsm, suffix]))
 	cp._info('save %s to sm_blosum80.c.sub' % (arglist[0]))
