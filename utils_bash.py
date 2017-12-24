@@ -3,10 +3,11 @@ import commp as cp
 
 # generate bash script for sm generation
 def cflat2sm(arglist):
-	if len(arglist) < 2:
-		cp._err('Usage: python utils_bash.py cflat2sm stub namestr')
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_bash.py cflat2sm stub namestr 50,55,62,70')
 	stubfile = arglist[0]	
 	namestr = arglist[1]
+	wlist = [int(w) for w in arglist[2].split(',')]
 
 	sarr = namestr.split(',')
 	prefix = sarr[0]
@@ -34,7 +35,7 @@ def cflat2sm(arglist):
 	# awk '{printf "python utils_pfammsa.py wfreq %s_p90.txt.score.1.flu %s_p90.txt.50.weight %s-tip5-d14.scol %s_p90.tip5-d14.50.wfreq\n", $4,$4,$4, $4}' 3-p90-nseq1k-p90gap-pdbok-mapok.tsv
 	# 50, 62, 70 weight
 	wfreqcmd = []
-	wlist = [50, 62, 70]
+	#wlist = [50, 62, 70]
 	for w in wlist:
 		c = 'awk \'{printf "python utils_pfammsa.py wfreq %%s_p90.txt.score.1.flu %%s_p90.txt.%d.weight %%s-%s.scol %%s_p90.%s.%d.wfreq\\n", $1,$1,$1, $1}\' %s' % (w, prefix, prefix, w, stubfile)
 		wfreqcmd.append(c)
