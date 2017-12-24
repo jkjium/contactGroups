@@ -280,6 +280,30 @@ def blastcolbystub(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# print tpfp for one blast out file (given expected match)
+def blasttpfptuple(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase.py blasttpfptuple outfile match')
+
+	blastoutfile = arglist[0]
+	match = arglist[1]
+	tp = fp = 0
+	with open(blastoutfile) as fd:
+		for line in fd:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			if match in line:
+				tp+=1
+			else:
+				fp+=1
+	if (tp + fp) == 0: # for empty file
+		ret = '-191,-191'
+	else:
+		ret = '%d %d' % (tp, fp)
+	print ret	
+
+
 # parse FASTA sequence from markx3 align outputs
 def parseFasta(lines, i):
 	AAset = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '-',
@@ -476,12 +500,13 @@ def main():
 		'printpair':printpair,
 		'testpool':testpool,
 		'blastcolbystub': blastcolbystub,
-		'blastcathbystub': blastcathbystub
+		'blastcathbystub': blastcathbystub,
+		'blasttpfptuple': blasttpfptuple
 	}
 	if sys.argv[1] in dispatch:
 		dispatch[sys.argv[1]](sys.argv[2:])
 	else:
-		cp.err('invalid cmd: %s' % sys.argv[1])
+		cp._err('invalid cmd: %s' % sys.argv[1])
 
 if __name__ == '__main__':
 	main()
