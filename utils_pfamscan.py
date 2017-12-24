@@ -131,12 +131,23 @@ class utils_pfamscan(object):
 		ps = self.getMatchpfs(pfamid)
 		return ps.alnseq.upper().translate(None, ''.join(cp.gaps))
 
+# print how man (which) pfam the current sequence hits
+def psreport(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_pfamscan.py psreport jsonfile')
+
+	jsonfile = arglist[0]
+	ups = utils_pfamscan(jsonfile)
+	pfamidset = set([ps.pfamid[0:7] for ps in ups.pslist])
+	print '%s %d %s' % (jsonfile, len(ups.pslist), ','.join(pfamidset))
+
+
 
 # detect whether a json file contain a PFamID
 # yes: output 1, no: output 0
 def haspfam(arglist):
 	if len(arglist) < 2:
-		cp._info('Usage: python utils_pfamscan.py haspfam jsonfile pfamid')
+		cp._err('Usage: python utils_pfamscan.py haspfam jsonfile pfamid')
 
 	jsonfile = arglist[0]
 	pfamid = arglist[1]
