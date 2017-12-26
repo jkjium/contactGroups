@@ -153,9 +153,9 @@ def haspfam(arglist):
 	pfamid = arglist[1]
 	ups = utils_pfamscan(jsonfile)
 	if ups.getMatchpfs(pfamid):
-		print '%s 1' % jsonfile
+		print '%s %s 1' % (jsonfile, pfamid)
 	else:
-		print '%s 0' % jsonfile
+		print '%s %s 0' % (jsonfile, pfamid)
 
 
 
