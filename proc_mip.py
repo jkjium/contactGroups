@@ -22,7 +22,7 @@ def calc_MIp(arglist):
 	if len(arglist) < 4:
 		print 'Usage: python proc_MIp.py colfile sdiifile outfile'
 		print 'example: python proc_mip.py PF03176_p90.txt.col PF03176_p90.txt.all_2_sdii PF03176_p90.mip'
-		print 'output: '
+		print 'output: p1 p2 mi apc mip'
 		return
 
 	colfile = sys.argv[1]

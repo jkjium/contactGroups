@@ -498,6 +498,24 @@ def scoreweight(arglist):
 
 
 
+def splitfa(arglist):
+	if len(arglist)<3:
+		cp._err('Usage: python utils_pfammsa.py splitfa fastfile outprefix padding')
+
+	fastafile = arglist[0]
+	outprefix = arglist[1]
+	padding = int(arglist[2])
+
+	count=0
+	for head, seq in cp.fasta_iter(fastafile):
+		outfafile = '%s.%s.fa' % (outprefix, str(count).zfill(padding))
+		with open(outfafile, 'w') as fp:
+			fp.write('>%s\n%s' % (head, seq))
+		count+=1
+	cp._info('%s : save %d fast files' % (fastafile, count))
+
+
+
 # accumulate weighted background frequcney for each AA 
 def wfreq(arglist):
 	if len(arglist) < 4:
@@ -706,6 +724,7 @@ def main():
 		'psicovaln': psicovaln,
 		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,
+		'splitfa': splitfa,
 		'wfreq': wfreq,
 		'wfreq2sm': wfreq2sm
 	}

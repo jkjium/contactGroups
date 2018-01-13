@@ -13,14 +13,14 @@ def main():
 
 	# load stub file
 	# uc0003 PF00000
-	with open(stubfile) as fp:
-		pfamstub=dict((line[0:6], line[7:14]) for line in fp if len(line.strip())!=0)
+	with open(stubfile) as fd:
+		pfamstub=dict((line[0:6], line[7:14]) for line in fd if len(line.strip())!=0)
 	cp._info('%d stub loaded.' % len(pfamstub))
 
  	tp = collections.defaultdict(int)
  	fp = collections.defaultdict(int)
-	with open(jsonfilelistfile) as fp:
-		for line in fp:
+	with open(jsonfilelistfile) as fd:
+		for line in fd:
 			line = line.strip()
 			if len(line) == 0:
 				continue
@@ -36,14 +36,14 @@ def main():
 				print '%s.%s %s 0' % (sarr[0], sarr[2], pfamid)
 				fp['%s.%s' % (sarr[0], sarr[2])]+=1
 
-	with open(outfile, 'w') as fp:
+	with open(outfile, 'w') as fd:
 		for k in pfamstub:
 			b62tp = tp['%s.b62' % k]
 			b62fp = fp['%s.b62' % k]
 			scsctp = tp['%s.scsc' % k]
 			scscfp = fp['%s.scsc' % k]
 			# uc0003 PF00001 b62.tp b62.fp scsc.tp scsc.fp
-			fp.write('%s %s %d %d %d %d\n' % (k, pfamstub[k], b62tp, b62fp, scsctp, scscfp))
+			fd.write('%s %s %d %d %d %d\n' % (k, pfamstub[k], b62tp, b62fp, scsctp, scscfp))
 
 
 if __name__ == '__main__':
