@@ -276,6 +276,7 @@ msaaa = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M',
 		'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '.', '-']
 
 
+time0 = time.time()
 
 def _fatal():
 	exit(1)
@@ -289,13 +290,19 @@ def _err(msg, errcallback=_fatal):
 	print '[err:%s:%s()] %s' % (' '.join(sys.argv),calframe[1][3], msg)
 	errcallback()
 
-# for mprun output
-def _info(msg):
+def _info(msg, flag='INFO'):
+	global time0
+	time1 = time.time()
+	#tick = (time1-time0)/3600
+	tick = int((time1-time0))
 	curframe = inspect.currentframe()
 	calframe = inspect.getouterframes(curframe, 1)	
-	#info = '%d::%s::%s()' % (os.getpid(),time.strftime('%c'), calframe[1][3])
-	info = '%d:%s:%s()' % (os.getpid(),':'.join(sys.argv[1:]), calframe[1][3])
-	print '[%s] %s' % (info, msg)
+	# time pid tick flag/level msg
+	info = '%s|%d|%d|%s|%s' % (time.strftime('%Y-%m-%d %H:%M:%S'), os.getpid(), tick, flag, msg)
+	#info = '%d:%s:%s()' % (os.getpid(),':'.join(sys.argv[1:]), calframe[1][3])
+	time0 = time1
+	print info
+
 
 
 # return ith column of matrix (list(list))
