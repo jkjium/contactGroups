@@ -497,7 +497,8 @@ def scoreweight(arglist):
 	cp._info('save weight to %s' % outfile)
 
 
-
+# split fasta file into separate .fa file
+# filename: prefix.00001.fa
 def splitfa(arglist):
 	if len(arglist)<3:
 		cp._err('Usage: python utils_pfammsa.py splitfa fastfile outprefix padding')
@@ -512,7 +513,28 @@ def splitfa(arglist):
 		with open(outfafile, 'w') as fp:
 			fp.write('>%s\n%s' % (head, seq))
 		count+=1
-	cp._info('%s : save %d fast files' % (fastafile, count))
+	cp._info('%s : save %d .fa files' % (fastafile, count))
+
+
+# for coverage vs EPQ homology testing
+# split fasta file into separate .fa file
+# filename: prefix.00001.a-1-1.fa
+def splithidfa(arglist):
+	if len(arglist)<3:
+		cp._err('Usage: python utils_pfammsa.py splithidfa fastfile outprefix padding')
+
+	fastafile = arglist[0]
+	outprefix = arglist[1]
+	padding = int(arglist[2])
+
+	count=0
+	for head, seq in cp.fasta_iter(fastafile):
+		hid = head.split(' ')[1]
+		outfafile = '%s.%s.%s.fa' % (outprefix, str(count).zfill(padding), hid)
+		with open(outfafile, 'w') as fp:
+			fp.write('>%s\n%s' % (head, seq))
+		count+=1
+	cp._info('%s : save %d .fa files' % (fastafile, count))
 
 
 
@@ -725,6 +747,7 @@ def main():
 		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,
 		'splitfa': splitfa,
+		'splithidfa': splithidfa,
 		'wfreq': wfreq,
 		'wfreq2sm': wfreq2sm
 	}
