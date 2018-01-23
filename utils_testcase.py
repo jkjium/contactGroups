@@ -5,6 +5,7 @@ import math
 import time
 import sys
 import commp as cp
+from operator import itemgetter
 
 '''
 $1:  file name
@@ -494,6 +495,124 @@ def testpool(arglist):
 	return ret
 
 
+# return number of tp and fp for one blast outfile
+# called in tpfpbygap()
+def tpfpfromout(blastoutfile):
+	# astralS40.00001.a-1-1.fa.b61.6-2.out
+	hid = blastoutfile.split('.')[2]
+	tp = fp = 0
+	with open(blastoutfile) as fd:
+		for line in fd:
+			# 1aq0A00 3-20-20-80,0.0
+			# d2gkma_ a-1-1,3e-89
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			s1 = line.split(',')[0]
+			outhid = s1.split(' ')[1]
+			if outhid == hid:
+				tp+=1
+			else:
+				fp+=1
+	return (hid, (tp, fp))
+
+
+# for coverage vs EPQ test
+#				0	   1	 2	 3
+# naming code: 	dbname.index.hid.fa
+#		 		astralS20.00000.a-1-1.fa
+# 				cathS40.00009.3-90-10-10.fa
+def tpfpbygap(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase.py tpfpbygap stubfile sm')
+
+	gap = [(9,2), (8,2), (7,2), (6,2), (11,1), (10,1), (9,1)]
+
+	stubfile = arglist[0]
+	sm = arglist[1]
+
+	# load homology ID from filename in .stub
+	hidset = set()
+	namelist = []
+	with open(stubfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			sarr = line.split('.')
+			hidset.add(sarr[2])
+			namelist.append(line)
+	hidlist = list(hidset)
+	hidlist.sort()
+
+	# calculate tpfp for different gap configurations
+	for g in gap:
+		# tpfp dict for all out files with g and sm
+		# astralS40.00001.a-1-1.fa.b61.6-2.out
+		# name.sm.gap0-gap1.out
+		tpfpdict = dict(tpfpfromout('%s.%s.%d-%d.out' % (name, sm, g[0], g[1])) for name in namelist)
+		outfile = '%s.%s.%d-%d.tpfp' % (stubfile, sm, g[0], g[1])
+		with open(outfile, 'w') as fp:
+			fp.write('\n'.join(['%s %d %d' % (hid, tpfpdict[hid][0], tpfpdict[hid][1]) for hid in hidlist]))
+			fp.write('\n')
+		cp._info('save %s' % outfile)
+
+
+# combine all .out file into coverage vs EPQ format
+def blast2cve(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase.py blast2cve stubfile sm')
+
+	stubfile = arglist[0]
+	sm = arglist[1]
+
+	# load all the fa names
+	stublist = []
+	with open(stubfile) as fp:
+		# naming code: 	dbname.index.hid.fa
+		#		 		astralS20.00000.a-1-1.fa
+		for faname in fp:
+			faname = faname.strip()
+			if len(faname)==0:
+				continue
+			stublist.append(faname)
+
+	for g in cp.gapb80:
+		outlist = []
+		for faname in stublist:
+			hid = faname.split('.')[2]
+			# load content from .out file
+			outname = '%s.%s.%d-%d.out' % (faname, sm, g[0], g[1])
+			with open(outname) as fd:
+				# d2bkma_ a-1-1,6e-99
+				for line in fd:
+					line = line.strip()
+					if len(line) == 0:
+						continue	
+					sarr = line.split(',')
+					title = sarr[0]
+					outhid = title.split(' ')[1]
+					tpfp = 1 if hid == outhid else 0
+					evalue = float(sarr[1])
+					# save tuple
+					outlist.append((faname,title,evalue,tpfp))
+		# sort by evalue
+		outlist_sort = sorted(outlist, key=itemgetter(2))
+		# save CVE file
+		tp=fp=0
+		outfile = '%s.%s.%d-%d.cve' % (stubfile, sm, g[0], g[1])
+		with open(outfile, 'w') as fout:
+			for r in outlist_sort:
+				if r[3] == 1:
+					tp+=1
+				else:
+					fp+=1
+				outstr = '%s %s %.8f %d %d %d\n' % (r[0], r[1], r[2], r[3], tp, fp)
+				fout.write(outstr)
+		cp._info('save %s' % outfile)
+
+
+##################################################################
 # main routine
 def main():
 	dispatch = {
@@ -501,7 +620,9 @@ def main():
 		'testpool':testpool,
 		'blastcolbystub': blastcolbystub,
 		'blastcathbystub': blastcathbystub,
-		'blasttpfptuple': blasttpfptuple
+		'blasttpfptuple': blasttpfptuple,
+		'blast2cve': blast2cve,
+		'tpfpbygap': tpfpbygap
 	}
 	if sys.argv[1] in dispatch:
 		dispatch[sys.argv[1]](sys.argv[2:])
