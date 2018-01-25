@@ -612,6 +612,47 @@ def blast2cve(arglist):
 		cp._info('save %s' % outfile)
 
 
+# output cve points in csv format
+def cvepoint(arglist):
+	if len(arglist) < 4:
+		cp._info('Usage: python utils_testcase.py cvepoint cvefile epqmax{10} epqnumber outfile')
+
+	cvefile = arglist[0]
+	mepq = float(arglist[1])
+	nepq = int(arglist[2])
+	interval = mepq/nepq
+
+	count=0
+	cvelist = []
+	with open(cvefile) as fp:
+		# astralS40.13678.g-52-1.fa d4lgea_ g-52-1 0.00000010 1 71192 24
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			count+=1
+			sarr = line.split(' ')
+			coverage = float(sarr[6])
+			epq = float(sarr[7]) / count
+			cvelist.append((epq,coverage))
+
+	# collect coverage on epq tick
+	pointer = 0
+	cveticks = []
+	for t in xrange(0, mepq, interval):
+		for i in xrange(pointer, len(cvelist)):
+			if cvelist[i][0] <= t:
+				continue
+			else:
+				cveticks.append((t,cvelist[i][1], cvelist[i][0]))
+
+	# write file
+	with open(outfile, 'w') as fp:
+		fp.write('%s' % ''.join(['%.8f,%.8f,%.8f\n' % (cve[0], cve[1], cve[2]) for cve in cveticks]))
+	cp._info('save %s' % outfile)
+
+
+
 ##################################################################
 # main routine
 def main():
@@ -622,7 +663,8 @@ def main():
 		'blastcathbystub': blastcathbystub,
 		'blasttpfptuple': blasttpfptuple,
 		'blast2cve': blast2cve,
-		'tpfpbygap': tpfpbygap
+		'tpfpbygap': tpfpbygap,
+		'cvepoint': cvepoint
 	}
 	if sys.argv[1] in dispatch:
 		dispatch[sys.argv[1]](sys.argv[2:])
