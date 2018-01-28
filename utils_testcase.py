@@ -614,13 +614,15 @@ def blast2cve(arglist):
 
 # output cve points in csv format
 def cvepoint(arglist):
-	if len(arglist) < 4:
-		cp._info('Usage: python utils_testcase.py cvepoint cvefile epqmax{10} epqnumber outfile')
+	if len(arglist) < 5:
+		cp._info('Usage: python utils_testcase.py cvepoint cvefile nquery epqmax{10} epqnumber outfile')
 
 	cvefile = arglist[0]
-	mepq = float(arglist[1])
-	nepq = int(arglist[2])
+	nquery = int(arglist[1])
+	mepq = float(arglist[2])
+	nepq = int(arglist[3])
 	interval = mepq/nepq
+	outfile = arglist[4]
 
 	count=0
 	cvelist = []
@@ -632,24 +634,31 @@ def cvepoint(arglist):
 				continue
 			count+=1
 			sarr = line.split(' ')
-			coverage = float(sarr[6])
-			epq = float(sarr[7]) / count
+			coverage = float(sarr[5])
+			epq = float(sarr[6]) / nquery
 			cvelist.append((epq,coverage))
+		#cp._info('%d outputs loaded from %s' % (len(cvelist), cvefile))
 
 	# collect coverage on epq tick
 	pointer = 0
 	cveticks = []
-	for t in xrange(0, mepq, interval):
+	auc = 0
+	for t in np.arange(0, mepq, interval):
 		for i in xrange(pointer, len(cvelist)):
 			if cvelist[i][0] <= t:
 				continue
 			else:
-				cveticks.append((t,cvelist[i][1], cvelist[i][0]))
+				pointer = i
+				# tick, coverage, epq
+				cveticks.append((t,cvelist[i-1][1], cvelist[i-1][0]))
+				auc+=cvelist[i-1][1]
+				break
 
 	# write file
 	with open(outfile, 'w') as fp:
 		fp.write('%s' % ''.join(['%.8f,%.8f,%.8f\n' % (cve[0], cve[1], cve[2]) for cve in cveticks]))
-	cp._info('save %s' % outfile)
+	#cp._info('%d %s %d' % (len(cveticks), outfile, auc))
+	print ('%d %s %d' % (len(cveticks), outfile, auc))
 
 
 
