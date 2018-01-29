@@ -51,18 +51,54 @@ def combinesm(arglist):
 	cp._info('write %s, min: %d, max: %d' % (outfile, np.min(outcore), np.max(outcore)))
 
 
+def interpolate(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_sm.py interpolate SCSC b62')
+	smfile1 = arglist[0]
+	smfile2 = arglist[1]
+
+	sm1 = smatrix(smfile1)
+	sm2 = smatrix(smfile2)
+
+	neq=[]
+	nne=[]
+	for i in xrange(20):
+		for j in xrange(i, 20):
+			if sm1.core[i][j] == sm2.core[i][j]:
+				neq.append((i,j))
+			else:
+				nne.append((i,j))
+
+	print '%d identical, %d different' % (len(neq), len(nne))
+	#print [(sm1.aa[i], sm1.aa[j]) for (i,j) in neq]
+
+
 def outblast(arglist):
 	if len(arglist) < 1:
 		cp._err('Usage: utils_sm.py outblast smemboss')
 
 	scsc = smatrix(arglist[0])
-	prefix = '#include <util/tables/raw_scoremat.h>\nstatic const TNCBIScore s_Blosum80PSM[25 * 25] = {'
+	prefix = '#include <util/tables/raw_scoremat.h>\n/* %s */\nstatic const TNCBIScore s_Blosum80PSM[25 * 25] = {' % arglist[0]
 	suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum80 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum80PSM,\n    -6\n};\n'
 	cp.b80blast[:20, :20] = scsc.core
 	blastsm = ',\n'.join(['\t%s' % (','.join(['%3i' % n for n in cp.b80blast[i,:]])) for i in xrange(len(cp.aablast))])
 	with open('sm_blosum80.c.sub','w') as fp:
 		fp.write('\n'.join([prefix, blastsm, suffix]))
 	cp._info('save %s to sm_blosum80.c.sub' % (arglist[0]))
+
+
+def outblast62(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: utils_sm.py outblast62 smemboss')
+
+	scsc = smatrix(arglist[0])
+	prefix = '#include <util/tables/raw_scoremat.h>\n/* %s */\nstatic const TNCBIScore s_Blosum62PSM[25 * 25] = {' % arglist[0]
+	suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum62 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum62PSM,\n    -4\n};\n'
+	cp.b62blast[:20, :20] = scsc.core
+	blastsm = ',\n'.join(['\t%s' % (','.join(['%3i' % n for n in cp.b62blast[i,:]])) for i in xrange(len(cp.aablast))])
+	with open('sm_blosum62.c.sub','w') as fp:
+		fp.write('\n'.join([prefix, blastsm, suffix]))
+	cp._info('save %s to sm_blosum62.c.sub' % (arglist[0]))	
 
 
 # output emboss sm format with b62 edge
@@ -93,7 +129,9 @@ def main():
 
 	dispatch = {
 		'combinesm':	combinesm,
+		'interpolate': 	interpolate,
 		'outblast': 	outblast,
+		'outblast62':	outblast62,
 		'test':			test
 	}
 
