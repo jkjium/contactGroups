@@ -604,7 +604,7 @@ def blast2cve(arglist):
 					# save tuple
 					outlist.append((faname,title,evalue,tpfp))
 		# sort by evalue
-		outlist_sort = sorted(outlist, key=itemgetter(2))
+		outlist_sort = sorted(outlist, key=itemgetter(3))
 		# save CVE file
 		tp=fp=0
 		outfile = '%s.%s.%d-%d.cve' % (stubfile, sm, g[0], g[1])
