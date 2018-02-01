@@ -20,12 +20,14 @@ class smatrix(object):
 					self.aa = line.split()
 
 		npscore = np.array(scorelist)
-		if ''.join(self.aa)!= ''.join(cp.smaa1) and ''.join(self.aa)!= ''.join(cp.smaa2):
+		if ''.join(self.aa)!= ''.join(cp.smaa1) and ''.join(self.aa[:20])!= ''.join(cp.smaa2):
 			cp._err('invalid sm format:\n %s' % self.aa)
 		self.core = npscore[:20,:20]
 		self.edge = np.copy(npscore)
 		self.score =dict(('%s%s' % (self.aa[i],self.aa[j]), self.core[i][j]) for i in xrange(20) for j in xrange(20))
 
+	def lowest(self):
+		return self.core.min()
 	#
 	def dump(self):
 		print '%s, max: %d, min: %d' % (self.name, np.max(self.core), np.min(self.core))
@@ -93,7 +95,8 @@ def outblast62(arglist):
 
 	scsc = smatrix(arglist[0])
 	prefix = '#include <util/tables/raw_scoremat.h>\n/* %s */\nstatic const TNCBIScore s_Blosum62PSM[25 * 25] = {' % arglist[0]
-	suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum62 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum62PSM,\n    -4\n};\n'
+	#suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum62 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum62PSM,\n    -4\n};\n'
+	suffix = '};\nconst SNCBIPackedScoreMatrix NCBISM_Blosum62 = {\n    "ARNDCQEGHILKMFPSTWYVBJZX*",\n    s_Blosum62PSM,\n    %d\n};\n' % (scsc.lowest())
 	cp.b62blast[:20, :20] = scsc.core
 	blastsm = ',\n'.join(['\t%s' % (','.join(['%3i' % n for n in cp.b62blast[i,:]])) for i in xrange(len(cp.aablast))])
 	with open('sm_blosum62.c.sub','w') as fp:
