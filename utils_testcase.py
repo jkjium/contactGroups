@@ -577,7 +577,14 @@ def blast2cve(arglist):
 				continue
 			stublist.append(faname)
 
-	for g in cp.gapb80:
+	if sm not in cp.gapdict:
+		cp._info('customized matrix %s, use b62 gaps' % sm)
+		gaplist = cp.gapb62
+	else:
+		gaplist = cp.gapdict[sm]
+
+	#for g in cp.gapb80:
+	for g in gaplist:
 		outlist = []
 		for faname in stublist:
 			hid = faname.split('.')[2]
