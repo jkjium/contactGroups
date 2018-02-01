@@ -19,7 +19,7 @@ def main():
 	else:
 		cp._err('Usage: python proc_batch_gen.py dbname stubfile sm_name flag{preset|alter}')
 
-	print 'choose gaplist:'
+	print 'Choose gaplist (len: %d):' % len(gaplist)
 	for g in gaplist:
 		print g
 	# $ blastp -query t.fa -db $ASTRALS40 -outfmt "10 stitle evalue" -evalue 0.0001 -matrix BLOSUM62 -gapopen 9 -gapextend 2 -out t.out
