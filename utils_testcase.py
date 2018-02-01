@@ -601,10 +601,10 @@ def blast2cve(arglist):
 					outhid = title.split(' ')[1]
 					tpfp = 1 if hid == outhid else 0
 					evalue = float(sarr[1])
-					# save tuple
+					# save tuple	0		1		2	3
 					outlist.append((faname,title,evalue,tpfp))
 		# sort by evalue
-		outlist_sort = sorted(outlist, key=itemgetter(3))
+		outlist_sort = sorted(outlist, key=itemgetter(2))
 		# save CVE file
 		tp=fp=0
 		outfile = '%s.%s.%d-%d.cve' % (stubfile, sm, g[0], g[1])
