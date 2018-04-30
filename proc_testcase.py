@@ -274,7 +274,8 @@ def main():
 	dispatch = {
 		#	'testpool':testpool, 
 		'printpair':printpair,
-		'testpool':testpool
+		'testpool':testpool,
+		'showpool':showpool
 
 	}
 

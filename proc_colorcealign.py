@@ -1,6 +1,6 @@
 import sys
 
-import common.commp as cp
+import commp as cp
 from protein import protein
 from alignflat import palign
 
@@ -82,6 +82,12 @@ def main():
 			pml.append('cartoon automatic')
 			pml.append('as cartoon')
 			#pml.append('show sphere, name ca')
+			if len(p1.ca)==len(p1.resDict) and len(p2.ca)==len(p2.resDict):
+				r1 = p1.ca
+				r2 = p2.ca
+			else:
+				r1 = p1.atomsbygmcenter()
+				r2 = p2.atomsbygmcenter()
 
 			posset = pa.alnposlist()
 			for k in xrange(0, len(posset)):
@@ -92,8 +98,8 @@ def main():
 				#print repr(posset[k])
 				for s in posset[k]:
 					#print 'rmap2[%d]: %d' %  (s, rmap2[s]),
-					p1resi.append(str(p1.ca[rmap1[s]].resSeq))
-					p2resi.append(str(p2.ca[rmap2[s]].resSeq))
+					p1resi.append(str(r1[rmap1[s]].resSeq))
+					p2resi.append(str(r2[rmap2[s]].resSeq))
 
 				pml.append('color kc%d, %s.aln and resi %s' % (color, pdbs[0], '+'.join(p1resi)))
 				pml.append('color kc%d, %s.aln and resi %s' % (color, pdbs[1], '+'.join(p2resi)))

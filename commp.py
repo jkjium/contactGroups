@@ -354,6 +354,8 @@ def _info(msg, flag='INFO'):
 
 
 
+
+
 # return ith column of matrix (list(list))
 # 	[...]
 # [ [...] ]
@@ -370,6 +372,10 @@ def dist(v1, v2):
 mp_info = 0
 mp_log = 1
 mp_checkin = 2
+
+def dispatch(module):
+	return getattr(sys.modules[module], sys.argv[1])(sys.argv[2:]) if (len(sys.argv) >= 2 and sys.argv[1] in dir(sys.modules[module])) else _err('Usage: python utils_iprscan.py cmd [args ...]')
+
 
 # used in utils_mprun.py
 def dcall(callstr):
@@ -500,6 +506,46 @@ def ncrset(varnum, order):
 
 def ncrvar(varset, order):
 	return [s for s in set(itertools.combinations(varset, order))]
+
+
+# given two strings
+# normal sequence & aligned sequence
+# return map 1. key=1  pos[s1] = s2; 2. key=2 pos[s2] = s1
+# s1: aligned string index, s2: pdb sequence index
+def posmap(s1, s2, key=1):
+	gap = ['.', '-', '_']
+	ps1 = s1.translate(None, ''.join(gap))
+	ps2 = s2.translate(None, ''.join(gap))
+	#print 'ps1: %s\nps2: %s' % (ps1, ps2)
+
+	retmap={}
+	if ps1!=ps2:
+		print 'error: not homo-str'
+		print 'ps1: %s\nps2: %s' % (ps1, ps2)
+		return retmap
+
+	i=0
+	j=0
+	while(i<len(s1) and j<len(s2)):
+		if s1[i] in gap:
+			i+=1
+			continue
+		if s2[j] in gap:
+			j+=1
+			continue
+		if s1[i]==s2[j]:
+			if key == 1:
+				retmap[i] = j
+			else:
+				retmap[j] = i
+			i+=1
+			j+=1
+
+	if len(retmap)!=len(ps1):
+		print 'error: incomplete map: len:%d, ps len: %d' % (len(retmap), len(ps1))
+		return False
+
+	return retmap	
 
 
 # given two strings
@@ -657,6 +703,7 @@ def rankstd(d):
 	s = bg.std()
 	#print m,s
 	return dict((k, (d[k] - m)/s) for k in d)
+
 
 
 # given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format

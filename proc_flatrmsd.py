@@ -1,5 +1,5 @@
 import sys
-import common.commp as cp
+import commp as cp
 from alignflat import palign
 from protein import protein
 
@@ -13,24 +13,40 @@ def alnRMSD(pa):
 
 	p2 = protein(pdbs[1]+'.aln.pdb')
 	rmap2 = cp.posmap(pa.seqB.upper(), p2.seq.upper())
+	
 	'''
 	print repr(rmap1)
 	print ''
 	print repr(rmap2)
 	print ''
 	'''
+
 	v = []
 	w = []
 	apos = pa.alnpos()
+	#print repr(apos)
+
 	if len(apos) == 0 or len(rmap1)==0 or len(rmap2)==0:
 		return (0, 0)
+
+	if len(p1.ca)==len(p1.resDict) and len(p2.ca)==len(p2.resDict):
+		r1 = p1.ca
+		r2 = p2.ca
+	else:
+		r1 = p1.atomsbygmcenter()
+		r2 = p2.atomsbygmcenter()
 
 	#for i in pa.alnpos():
 	for i in apos:
 		p = rmap1[i]
 		q = rmap2[i]
+		'''
 		v.append((p1.ca[p].x, p1.ca[p].y, p1.ca[p].z))
 		w.append((p2.ca[q].x, p2.ca[q].y, p2.ca[q].z))
+		'''
+		v.append((r1[p].x, r1[p].y, r1[p].z))
+		w.append((r2[q].x, r2[q].y, r2[q].z))
+
 		'''
 		print 'p1.ca[%d] :' % p,
 		p1.ca[p].dump()
@@ -61,9 +77,9 @@ def main():
 		pa =  palign(lines[i].strip())
 		#pa.dump()
 		rmsd,n = alnRMSD(pa) 
-		print rmsd,n
+		#print rmsd,n
 		fout.write('%s %d %.4f\n' % (pa.name, n, rmsd))
-
+	cp._info('save to %s\n' % outfile)
 	fout.close()
 
 if __name__ == '__main__':
