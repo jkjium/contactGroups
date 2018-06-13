@@ -30,8 +30,40 @@ class smatrix(object):
 		return self.core.min()
 	#
 	def dump(self):
+		self.edge[:20,:20] = self.core
 		print '%s, max: %d, min: %d' % (self.name, np.max(self.core), np.min(self.core))
 		print cp.smstr(self.edge, self.aa)
+
+	def score2core(self):
+		'''
+		update self.score according to new score dictionary
+		'''
+		scoreupdate = []
+		for i in xrange(20):
+			scoreupdate.append([self.score['%s%s' %(self.aa[i],self.aa[j])] for j in xrange(20)])
+		self.core = np.array(scoreupdate)
+
+
+	def scale_pn(self, p, n):
+		'''
+		scaling score by positive and negative scores
+		p: scaling for positive score
+		n, scaling for negative score
+		'''
+		for s in self.score:
+			i = self.score[s]
+			self.score[s] = i*p if i>0 else i*n
+		self.score2core()
+
+	def translate(self, t):
+		'''
+		translate score with amount of t
+		'''
+		for s in self.score:
+			self.score[s]+=t
+		self.score2core()
+
+
 
 
 # combine two matrices with weight
@@ -51,6 +83,9 @@ def combinesm(arglist):
 	with open(outfile, 'w') as fp:
 		fp.write(outemboss(outcore))
 	cp._info('write %s, min: %d, max: %d' % (outfile, np.min(outcore), np.max(outcore)))
+
+
+
 
 
 def interpolate(arglist):
@@ -73,6 +108,68 @@ def interpolate(arglist):
 
 	print '%d identical, %d different' % (len(neq), len(nne))
 	#print [(sm1.aa[i], sm1.aa[j]) for (i,j) in neq]
+
+
+def printflatten(arglist):
+	'''
+	print 210 elements into a list
+	'''
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_sm.py printflatten b62')
+	smfile = arglist[0]
+	sm = smatrix(smfile)
+	print '%s\n' % ' '.join(['%i' % (sm.core[i][j]) for i in xrange(20) for j in xrange(i,20)])
+
+
+def scalepn(arglist):
+	if len(arglist) < 4:
+		# scale B62 positive score by 2 and leave negative unchanged
+		# result save to outsm
+		cp._err('Usage: python utils_sm.py scalepn b62 2 1 outsm')
+
+	smfile = arglist[0]
+	p = float(arglist[1])
+	n = float(arglist[2])
+	outsm = arglist[3]
+
+	sm = smatrix(smfile)
+	sm.scale_pn(p,n)
+
+	with open(outsm, 'w') as fout:
+		fout.write(outemboss(sm.core))
+	cp._info('save sm to %s, min: %d, max: %d' % (outsm, np.min(sm.core), np.max(sm.core)))
+
+
+def transform(arglist):
+	'''
+	transform sm by 1. translate; 2. scale p,n
+	'''
+	if len(arglist) < 6:
+		cp._err('Usage: python utils_sm.py transform b62 10 2 1 0 outsm')
+
+	smfile = arglist[0]
+	t = float(arglist[1])
+	p = float(arglist[2])
+	n = float(arglist[3])
+	order = int(arglist[4])
+	outsm = arglist[5]
+
+
+	cp._info('\ntranslate: %.2f\nscale: + %.2f, - %.2f\norder: %d (0: translate then scale; 1: scale then translate)' % (t,p,n,order))
+	sm = smatrix(smfile)
+	if order == 0:
+		sm.translate(t)
+		sm.scale_pn(p,n)
+	else:
+		sm.scale_pn(p,n)
+		sm.translate(t)
+
+	sm.dump()
+
+	with open(outsm, 'w') as fout:
+		fout.write(outemboss(sm.core))
+	cp._info('save sm to %s, min: %d, max: %d' % (outsm, np.min(sm.core), np.max(sm.core)))
+
 
 
 def outblast(arglist):
@@ -135,6 +232,9 @@ def main():
 		'interpolate': 	interpolate,
 		'outblast': 	outblast,
 		'outblast62':	outblast62,
+		'printflatten':	printflatten,
+		'scalepn':		scalepn,
+		'transform':	transform,
 		'test':			test
 	}
 

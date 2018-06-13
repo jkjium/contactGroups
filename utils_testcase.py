@@ -1,5 +1,6 @@
 import sys
 import subprocess as sp 
+import commp as cp
 
 from alignflat import palign
 
@@ -267,8 +268,6 @@ def showpool():
 	gapextend = sys.argv[6]
 
 	alignpoolshow(pairlist, (cmd, matrix, gapopen, gapextend))
-
-
 
 def main():
 	dispatch = {

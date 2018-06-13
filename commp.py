@@ -374,7 +374,7 @@ mp_log = 1
 mp_checkin = 2
 
 def dispatch(module):
-	return getattr(sys.modules[module], sys.argv[1])(sys.argv[2:]) if (len(sys.argv) >= 2 and sys.argv[1] in dir(sys.modules[module])) else _err('Usage: python utils_iprscan.py cmd [args ...]')
+	return getattr(sys.modules[module], sys.argv[1])(sys.argv[2:]) if (len(sys.argv) >= 2 and sys.argv[1] in dir(sys.modules[module])) else _err('cmd not found')
 
 
 # used in utils_mprun.py
