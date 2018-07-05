@@ -55,6 +55,24 @@ class smatrix(object):
 			self.score[s] = i*p if i>0 else i*n
 		self.score2core()
 
+	def stat(self):
+		'''
+		return # of positive and negative scores
+		'''
+		p=0
+		n=0
+		ps=0
+		ns=0
+		for i in xrange(0,20):
+			for j in xrange(i,20):
+				if self.core[i][j] > 0:
+					p+=1
+					ps+=self.core[i][j]
+				elif self.core[i][j] < 0:
+					n+=1	
+					ns+=self.core[i][j]
+		return (p,n,ps,ns)
+
 	def translate(self, t):
 		'''
 		translate score with amount of t
@@ -83,8 +101,6 @@ def combinesm(arglist):
 	with open(outfile, 'w') as fp:
 		fp.write(outemboss(outcore))
 	cp._info('write %s, min: %d, max: %d' % (outfile, np.min(outcore), np.max(outcore)))
-
-
 
 
 
@@ -118,7 +134,7 @@ def printflatten(arglist):
 		cp._err('Usage: python utils_sm.py printflatten b62')
 	smfile = arglist[0]
 	sm = smatrix(smfile)
-	print '%s\n' % ' '.join(['%i' % (sm.core[i][j]) for i in xrange(20) for j in xrange(i,20)])
+	print '%s' % ' '.join(['%i' % (sm.core[i][j]) for i in xrange(20) for j in xrange(i,20)])
 
 
 def scalepn(arglist):
@@ -139,6 +155,16 @@ def scalepn(arglist):
 		fout.write(outemboss(sm.core))
 	cp._info('save sm to %s, min: %d, max: %d' % (outsm, np.min(sm.core), np.max(sm.core)))
 
+def stat(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_sm.py stat b62\noutput: b62.stat')
+
+	sm = smatrix(arglist[0])
+	(p,n,ps,ns) = sm.stat()
+	outfile = arglist[0]+'.stat'
+	with open(outfile, 'w') as fout:
+		fout.write('%d %d %d %d\n' % (p,n,ps,ns))
+	cp._info('save to %s' % outfile )
 
 def transform(arglist):
 	'''
@@ -234,6 +260,7 @@ def main():
 		'outblast62':	outblast62,
 		'printflatten':	printflatten,
 		'scalepn':		scalepn,
+		'stat':			stat,
 		'transform':	transform,
 		'test':			test
 	}
