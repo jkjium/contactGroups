@@ -308,8 +308,8 @@ class protein(object):
 
     # get tip atom list
     #def atomsbytip(self, profile):
-    def atomsbytip(self):
-        profile = 'AAtips.py'
+    def atomsbytip(self, profile):
+        #profile = 'AAtips.py'
         cgs=[]
         # loading tip atoms records
         fp=open(profile, 'r')
