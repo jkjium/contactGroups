@@ -2,15 +2,35 @@ import sys
 from protein import protein
 from AAmap import AAmap
 import os.path
+from collections import defaultdict
 import numpy as np
 import commp as cp
+
+
+def seqaafreq(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_protein2.py seqaafreq 1t3r.pdb all (output: 1t3r.pdb.all.saf)')
+	pdbfile = arglist[0]
+	chainid = arglist[1]
+
+	p = protein(pdbfile, chain=chainid)
+	seqaa = p.seq.upper()
+	aafreq = defaultdict(lambda:0)
+	for aa in seqaa: 
+		aafreq[aa]+=1
+
+	outstr = ' '.join([('%d' % aafreq[aa]) for aa in cp.aat01])
+	outfile = '%s.%s.saf' % (pdbfile, chainid)
+	with open(outfile ,'w') as fout:
+		fout.write('%s\n' % outstr)
+	cp._info('save to %s' % outfile)
 
 # write cutoff contact by specific method
 # output: 1. method residue pdb file
 # 		  2. contact file	
 #def contactbycutoff(arglist):
 def writecontact(arglist):
-	if len(sys.argv) < 4:
+	if len(arglist) < 4:
 		cp._err('Usage: python utils_protein2.py contactbycutoff 1t3r.pdb chain sgc cutoff')
 	pdbfile = arglist[0] #sys.argv[2]
 	chainid = arglist[1] #sys.argv[3]
