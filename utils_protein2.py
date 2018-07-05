@@ -6,6 +6,37 @@ from collections import defaultdict
 import numpy as np
 import commp as cp
 
+def cgfreq(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_protein2.py cgfreq cglistfile outfile.cgf')
+
+	cglistfile = arglist[0]
+	outfile = arglist[1]
+
+	cgfreq = defaultdict(lambda:0)
+	total = 0
+	with open(cglistfile) as fp:
+		for line in fp:
+			# 2 R 26 D
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			key = '%s%s' % (sarr[1], sarr[3]) if sarr[1] <=sarr[3] else '%s%s' % (sarr[3], sarr[1])
+			cgfreq[key]+=1
+			total+=1
+	print total, repr(cgfreq)
+
+	cgf = [] # output with the same order
+	for i in xrange(0, len(cp.aat01)):
+		for j in xrange(i, len(cp.aat01)):
+			key = '%s%s' % (cp.aat01[i], cp.aat01[j])
+			cgf.append(float(cgfreq[key])/float(total))
+
+	with open(outfile, 'w') as fout:
+		fout.write(' '.join(['%.4f' % (f) for f in cgf]))
+	cp._info('save to %s' % outfile)
+
 
 def ncgfreq(arglist):
 	if len(arglist)<3:
