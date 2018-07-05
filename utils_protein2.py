@@ -25,16 +25,24 @@ def cgfreq(arglist):
 			key = '%s%s' % (sarr[1], sarr[3]) if sarr[1] <=sarr[3] else '%s%s' % (sarr[3], sarr[1])
 			cgfreq[key]+=1
 			total+=1
+	'''
 	print total, repr(cgfreq)
-
+	tt=0
+	for k in cgfreq:
+		tt+= cgfreq[k]
+	ttt=0
+	'''
 	cgf = [] # output with the same order
-	for i in xrange(0, len(cp.aat01)):
-		for j in xrange(i, len(cp.aat01)):
-			key = '%s%s' % (cp.aat01[i], cp.aat01[j])
+	for i in xrange(0, len(cp.aas01)):
+		for j in xrange(i, len(cp.aas01)):
+			key = '%s%s' % (cp.aas01[i], cp.aas01[j])
 			cgf.append(float(cgfreq[key])/float(total))
+			#ttt+=cgfreq[key]
+			#print key,cgfreq[key],float(cgfreq[key])/float(total)
+	#print total, tt, ttt
 
 	with open(outfile, 'w') as fout:
-		fout.write(' '.join(['%.4f' % (f) for f in cgf]))
+		fout.write('%s\n' % (' '.join(['%.4f' % (f) for f in cgf])))
 	cp._info('save to %s' % outfile)
 
 
@@ -64,9 +72,9 @@ def ncgfreq(arglist):
 	#print repr(bgfreq)
 
 	ncgfreq = []
-	for i in xrange(0, len(cp.aat01)):
-		for j in xrange(i, len(cp.aat01)):
-			key = '%s%s' % (cp.aat01[i], cp.aat01[j])
+	for i in xrange(0, len(cp.aas01)):
+		for j in xrange(i, len(cp.aas01)):
+			key = '%s%s' % (cp.aas01[i], cp.aas01[j])
 			ncgfreq.append(cgfreq[key]/(bgfreq[i]*bgfreq[j]))
 			#print key,cgfreq[key],ncgfreq
 	nsum = sum(ncgfreq)
@@ -88,7 +96,7 @@ def seqaafreq(arglist):
 	for aa in seqaa: 
 		aafreq[aa]+=1
 
-	outstr = ' '.join([('%d' % aafreq[aa]) for aa in cp.aat01])
+	outstr = ' '.join([('%d' % aafreq[aa]) for aa in cp.aas01])
 	outfile = '%s.%s.saf' % (pdbfile, chainid)
 	with open(outfile ,'w') as fout:
 		fout.write('%s\n' % outstr)
