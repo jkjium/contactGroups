@@ -10,7 +10,6 @@ import commp as cp
 # 		  2. contact file	
 #def contactbycutoff(arglist):
 def writecontact(arglist):
-	cp._info(repr(arglist))
 	if len(sys.argv) < 4:
 		cp._err('Usage: python utils_protein2.py contactbycutoff 1t3r.pdb chain sgc cutoff')
 	pdbfile = arglist[0] #sys.argv[2]
