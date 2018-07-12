@@ -25,21 +25,12 @@ def cgfreq(arglist):
 			key = '%s%s' % (sarr[1], sarr[3]) if sarr[1] <=sarr[3] else '%s%s' % (sarr[3], sarr[1])
 			cgfreq[key]+=1
 			total+=1
-	'''
-	print total, repr(cgfreq)
-	tt=0
-	for k in cgfreq:
-		tt+= cgfreq[k]
-	ttt=0
-	'''
+
 	cgf = [] # output with the same order
 	for i in xrange(0, len(cp.aas01)):
 		for j in xrange(i, len(cp.aas01)):
 			key = '%s%s' % (cp.aas01[i], cp.aas01[j])
 			cgf.append(float(cgfreq[key])/float(total))
-			#ttt+=cgfreq[key]
-			#print key,cgfreq[key],float(cgfreq[key])/float(total)
-	#print total, tt, ttt
 
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % (' '.join(['%.4f' % (f) for f in cgf])))
@@ -48,12 +39,13 @@ def cgfreq(arglist):
 
 def ncgfreq(arglist):
 	if len(arglist)<3:
-		cp._err('Usage: python utils_protein2.py ncgfreq cglistfile bgfreqfile outfile')
+		cp._err('Usage: python utils_protein2.py ncgfreq cglistfile bgfreqfile outprefix')
 
 	cglistfile = arglist[0]
-	bgfreqfile = arglist[1]
+	bgfreqfile = arglist[1] # list of all bg freq
 	outfile = arglist[2]
 
+	# count all the cg observations
 	cgfreq = defaultdict(lambda:0)
 	with open(cglistfile) as fp:
 		for line in fp:
@@ -66,23 +58,35 @@ def ncgfreq(arglist):
 			cgfreq[key]+=1
 	#print repr(cgfreq)
 
-	bgfreq = np.loadtxt(bgfreqfile, delimiter=' ')
-	#print repr(bgfreq)
-	bgfreq = bgfreq/bgfreq.sum()
-	#print repr(bgfreq)
+	# sum up AA count 
+	aafreq = np.loadtxt(bgfreqfile, delimiter=' ')
+	bgfreq = np.sum(aafreq, axis=0)
 
-	ncgfreq = []
+	bgsum = float(sum(bgfreq))
+	# save .allbgfreq
+	with open(outfile+'.bgfreq', 'w') as fout:
+		fout.write(' '.join(['%.4f' % (i/bgsum) for i in bgfreq]))
+	cp._info('save background AA frequency to %s (sum %d)' % (outfile+'.bgfreq', bgsum ))
+
+	bgfreq = bgfreq/bgsum
+	ncgfreq = [] # normalized cg freq
+	ocgfreq = [] # orginal cg freq
 	for i in xrange(0, len(cp.aas01)):
 		for j in xrange(i, len(cp.aas01)):
 			key = '%s%s' % (cp.aas01[i], cp.aas01[j])
 			ncgfreq.append(cgfreq[key]/(bgfreq[i]*bgfreq[j]))
-			#print key,cgfreq[key],ncgfreq
-	nsum = sum(ncgfreq)
-	#print nsum
+			ocgfreq.append(cgfreq[key])
 
-	with open(outfile, 'w') as fout:
+	osum = float(sum(ocgfreq))
+	with open(outfile+'.ocgfreq', 'w') as fout:
+		fout.write(' '.join(['%.4f' % (f/osum) for f in ocgfreq]))
+	cp._info('save original cg frequency to %s' % (outfile+'.ocgfreq'))
+
+	nsum = float(sum(ncgfreq))
+	with open(outfile+'.ncgfreq', 'w') as fout:
 		fout.write(' '.join(['%.4f' % (f/nsum) for f in ncgfreq]))
-	cp._info('save to %s' % outfile)
+	cp._info('save to normalized cg frequency %s' % (outfile+'.ncgfreq'))
+
 
 def seqaafreq(arglist):
 	if len(arglist) < 2:
