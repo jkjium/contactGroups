@@ -61,6 +61,8 @@ class pfammsa(object):
 	# converting AA alphabet to aaprop values
 	# reduce column by gap percentage
 	# assign row weight by hamming distance cluster
+	# gapcutoff: gap proportion upper limit
+	# weightcutoff is not using. set it -1, external weighting file will be used later
 	def msareduce(self, scoretags, gapcutoff, weightcutoff):
 		# scores = { 'aa':[], 'ssp':[] }
 		scores = dict((tag, []) for tag in scoretags)
@@ -70,7 +72,7 @@ class pfammsa(object):
 
 		# calculate gap percentage. 0 is reserved for gap
 		# generating cp.aascore: //print repr([cp.freq(self.msacol(i))['.']/float(self.msanum) for i in xrange(0, self.msalen)])
-		idx_rc = [i for i in xrange(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff]
+		idx_rc = [i for i in xrange(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff] # allow at most "gapcutoff" % of gap existing in the column
 
 		# output column reduced scores
 		scores_rc = {}
@@ -358,7 +360,7 @@ def getsinglemsa(arglist):
 # output: PF0000.txt.{stag.score, col, row}
 def msareduce(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: $ python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.7 0.62') 
+		cp._err('Usage: $ python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.7 -1') 
 
 	msafile = arglist[0]
 	scoretags = arglist[1].split(',')
@@ -373,13 +375,13 @@ def msareduce(arglist):
 	outcolfile = msafile + '.rcol'
 	with open(outcolfile, 'w') as fp:
 		fp.write(','.join([str(i) for i in idx_rc]))
-		cp._info('save %s' % outcolfile)
+		cp._info('save %d columns in %s' % (len(idx_rc), outcolfile))
 
 	# output scores
 	for t in scoretags:
 		outscorefile = '%s.%s.score' % (msafile, t)
 		np.savetxt(outscorefile, scores[t], fmt='%d', delimiter=',')
-		cp._info('save %s' % outscorefile)
+		cp._info('save %d rows in %s' % (len(scores), outscorefile))
 
 
 # calculate the pair substitution for one PFam MSA
