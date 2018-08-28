@@ -143,6 +143,27 @@ def writecontact(arglist):
 			fp.write('%d %s %d %s\n' % (a.resSeq, cp.aa2a[a.resName], b.resSeq, cp.aa2a[b.resName]))
 	cp._info('save cg file: %s' % outcgfile)
 
+
+def writeseqfa(arglist):
+	if len(arglist) == 2:
+		chainid = arglist[1]
+		outfile = '%s.%s.fa' % (arglist[0], chainid)
+		head = '%s.%s' % (arglist[0], chainid)
+	elif len(arglist) == 1:
+		chainid = 'all'
+		outfile = '%s.fa' % arglist[0]
+		head = arglist[0]
+	else:
+		cp._err('Usage: python utils_protein.py writeseqfa 1t3r.pdb {A}')
+
+	pdbfile = arglist[0]
+
+	p = protein(pdbfile, chain=chainid)
+	fout = open(outfile, 'w')
+	fout.write('>%s\n%s\n' % (head, p.seq.lower()))
+	fout.close()
+	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
+
 def foo(arglist):
 	cp._info(repr(arglist))
 
