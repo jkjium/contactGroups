@@ -375,13 +375,13 @@ def msareduce(arglist):
 	outcolfile = msafile + '.rcol'
 	with open(outcolfile, 'w') as fp:
 		fp.write(','.join([str(i) for i in idx_rc]))
-		cp._info('save %d columns in %s' % (len(idx_rc), outcolfile))
+		cp._info('save %d/%d columns in %s' % (len(idx_rc), pfm.msalen, outcolfile))
 
 	# output scores
 	for t in scoretags:
 		outscorefile = '%s.%s.score' % (msafile, t)
 		np.savetxt(outscorefile, scores[t], fmt='%d', delimiter=',')
-		cp._info('save %d rows in %s' % (len(scores), outscorefile))
+		cp._info('save %d rows in %s' % (len(scores[t]), outscorefile))
 
 
 # calculate the pair substitution for one PFam MSA
