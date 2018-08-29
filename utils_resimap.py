@@ -174,6 +174,51 @@ def dca2msa(arglist):
 	fout.close()
 	cp._info('save to %s' % outfile)
 
+
+# append resi in front of the result from mp_ce_sdii (weight)
+def sdii2resi(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_resimap sdii2res sdiifile mapfile outfile')
+
+	sdiifile = arglist[0]
+	mapfile = arglist[1]
+	outfile = arglist[2]
+
+	# load map
+	resmap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#149 P 88 Q
+			resmap[sarr[2]] = sarr[0]
+
+	outstr = []
+	with open(sdiifile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#326 653 0.315745486152245
+			if (sarr[0] in resmap) and (sarr[1] in resmap):
+				outstr.append('%s %s %s' %(resmap[sarr[0]], resmap[sarr[1]], line))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outstr))
+	cp._info('save %d records to %s' % (len(outstr), outfile))
+
+
+
+
+
+
+
+
+
+
 '''
 def test():
 	# 1ni3.pdb: 			raw pdb
