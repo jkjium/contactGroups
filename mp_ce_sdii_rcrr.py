@@ -11,21 +11,23 @@ from msa import msa
 
 
 def init():
-	if len(sys.argv) < 3:
-		print 'Usage: python mp_ce_sdii_rcrr.py MSATitle targetVar order'
-		print 'Example 1: python mp_ce_sdii_rcrr.py PF07714_full.fa 3128 3'
-		print 'Example 1: python mp_ce_sdii_rcrr.py PF07714_full.fa all 3'
+	if len(sys.argv) < 5:
+		print 'Usage: python mp_ce_sdii_rcrr.py MSATitle weight.file targetVar order'
+		print 'Example 1: python mp_ce_sdii_rcrr.py PF07714_full.fa PF07714_full.fa.weight{na} 3128 3'
+		print 'Example 1: python mp_ce_sdii_rcrr.py PF07714_full.fa na all 3'
 		return
 
 	scoreFile = sys.argv[1]+'.score'
-	rowIndexFile = sys.argv[1]+'.row'
-	colIndexFile = sys.argv[1]+'.col'
-
-	targetVar = sys.argv[2].lower()
-	order = int(sys.argv[3])
+	#rowIndexFile = sys.argv[1]+'.row'
+	#colIndexFile = sys.argv[1]+'.col'
+	colIndexFile = sys.argv[1]+'.rcol'
+	weightfile = sys.argv[2]
+	targetVar = sys.argv[3].lower()
+	order = int(sys.argv[4])
 
 	print 'score file: [%s]' % scoreFile
-	print 'row index file: [%s]' % rowIndexFile
+	print 'weight file: [%s]' % weightfile
+	#print 'row index file: [%s]' % rowIndexFile
 	print 'column index file: [%s]' % colIndexFile
 	print 'target var: [%s]' % targetVar
 	print 'order: [%d]' % order
@@ -35,18 +37,14 @@ def init():
 
 	# msa init
 	score = np.loadtxt(scoreFile, delimiter=',')
+	w = np.loadtxt(weightfile)
 
-	rowIndex = [int(i) for i in np.loadtxt(rowIndexFile, delimiter=',')]
+	#rowIndex = [int(i) for i in np.loadtxt(rowIndexFile, delimiter=',')]
 	colIndex = [int(j) for j in np.loadtxt(colIndexFile, delimiter=',')]
-
-	#print 'row index: %s' % repr(rowIndex)[0:10]
-	#print 'col index: %s' % repr(colIndex)
-	print 'reduced data dimension: %s, (%d, %d)' % (repr(score.shape), len(rowIndex), len(colIndex))
-	if len(rowIndex) < 200 or len(colIndex) < 4:
+	print 'reduced data dimension: %s (, %d)' % (repr(score.shape), len(colIndex))
+	if len(colIndex) < order:
 		print 'exit for insufficient dataset'
 		exit()
-
-
 	varlist = colIndex
 
 	if (targetVar != 'all') and (int(targetVar) not in varlist):
@@ -60,6 +58,11 @@ def init():
 	print 'Setting target variable ...'
 	sdii_core.setTarget(targetVar)
 	print 'Setting task order ...'
+	if weightfile != 'na':
+		sdii_core.setWeight(w)
+		print 'Setting weight ...'
+	else:
+		print 'No weight applied.'
 	sdii_core.setOrder(order)
 	print repr(varlist)
 
