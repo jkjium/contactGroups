@@ -104,7 +104,7 @@ def worker(sdii_core, tasks, q):
 		#print 'worker: %d: %s          ' % (os.getpid(), '-'.join([(alphabet[i]) for i in s]))
 		ret_sdii = sdii_core.calc_sdii(s)
 		#outMessage = '[pid:%d] %s %.15f\n' % (os.getpid(), '-'.join([(alphabet[i]) for i in s]), ret_sdii)
-		outMessage = '%s %.15f\n' % ('-'.join([(alphabet[i]) for i in s]), ret_sdii)
+		outMessage = '%s %.15f\n' % (' '.join([(alphabet[i]) for i in s]), ret_sdii)
 		q.put(outMessage)
 	q.put('done')
 

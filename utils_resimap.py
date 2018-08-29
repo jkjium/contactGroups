@@ -174,7 +174,7 @@ def dca2msa(arglist):
 	fout.close()
 	cp._info('save to %s' % outfile)
 
-
+'''
 def test():
 	# 1ni3.pdb: 			raw pdb
 	# PF06071_pdb.fa: 		pdb seq	
@@ -184,7 +184,9 @@ def test():
 	pdbResi2MSA('1ni3.pdb', 'PF06071_pdb.fa', 'PF06071_1ni3.json', 'PF06071_MSA.fa', 'PF06071.json', 'PF06071')
 	pass
 
+'''
 # main routine
+'''
 def main():
 	if len(sys.argv)<2:
 		print 'Usage: python utils_protein.py cmd pdbfile [args ...]'
@@ -201,6 +203,7 @@ def main():
 		return
 	else:
 		dispatch[sys.argv[1]](sys.argv[2:])
+'''
 
 if __name__ == '__main__':
-	main()
+	cp.dispatch(__name__)
