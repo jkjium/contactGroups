@@ -213,7 +213,77 @@ def sdii2resi(arglist):
 
 
 
+def cg2msai_sdii(arglist):
+	if len(arglist) < 5:
+		cp._err('Usage: python utils_resimap cg2msai cgfile mapfile_left mapfile_right sdiifile outfile')
 
+	cgfile = arglist[0]
+	mapfile1 = arglist[1]
+	mapfile2 = arglist[2]
+	sdiifile = arglist[3]
+	outfile = arglist[4]
+
+	# load map
+	resmap1 = {}
+	with open(mapfile1) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#resi resn msai msan
+			#149 P 88 Q
+			#resmap[sarr[2]] = sarr[0]
+			#		resi 		msai
+			resmap1[sarr[0]] = sarr[2]
+
+
+	resmap2 = {}
+	with open(mapfile2) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#resi resn msai msan
+			#149 P 88 Q
+			#resmap[sarr[2]] = sarr[0]
+			#		resi 		msai
+			resmap2[sarr[0]] = sarr[2]
+
+	# load sdii
+	sdii = {}
+	with open(sdiifile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#msai msai mi resi1 resi1 resi2 resi2 .... 
+			#326 653 0.315745486152245 232 328 117 213 115 211
+			sdii['%s %s' % (sarr[0], sarr[1])] = sarr[2]
+
+	#print repr(sdii)
+	outstr = []
+	with open(cgfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#  map1 map2
+			#122 F 254 W chain E A
+			if (sarr[0] in resmap1) and (sarr[2] in resmap2):
+				msai1 = resmap1[sarr[0]]
+				msai2 = resmap2[sarr[2]]
+				sdiikey = '%s %s' % (msai2, msai1) if int(msai1) >= int(msai2) else '%s %s' % (msai1, msai2)
+				#print sdiikey
+				if sdiikey in sdii:
+					outstr.append('%s %s %s %s' %(line, msai1, msai2, sdii[sdiikey]))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outstr))
+	cp._info('save %d records to %s' % (len(outstr), outfile))	
 
 
 
