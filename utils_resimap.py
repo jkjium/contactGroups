@@ -192,6 +192,7 @@ def sdii2resi(arglist):
 			if len(line) == 0:
 				continue
 			sarr = line.split(' ')
+			#resi resn msai msan
 			#149 P 88 Q
 			resmap[sarr[2]] = sarr[0]
 
@@ -204,7 +205,7 @@ def sdii2resi(arglist):
 			sarr = line.split(' ')
 			#326 653 0.315745486152245
 			if (sarr[0] in resmap) and (sarr[1] in resmap):
-				outstr.append('%s %s %s' %(resmap[sarr[0]], resmap[sarr[1]], line))
+				outstr.append('%s %s %s' %(line, resmap[sarr[0]], resmap[sarr[1]]))
 
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % '\n'.join(outstr))

@@ -112,7 +112,7 @@ def seqaafreq(arglist):
 #def contactbycutoff(arglist):
 def writecontact(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: python utils_protein2.py contactbycutoff 1t3r.pdb chain sgc cutoff')
+		cp._err('Usage: python utils_protein2.py writecontact 1t3r.pdb chain sgc cutoff')
 	pdbfile = arglist[0] #sys.argv[2]
 	chainid = arglist[1] #sys.argv[3]
 	method = arglist[2] #sys.argv[4]
