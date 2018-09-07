@@ -140,7 +140,7 @@ def writecontact(arglist):
 	outcgfile = '%s.%s.%s.cg' % (pdbfile, chainid, method)
 	with open(outcgfile, 'w') as fp:
 		for a,b in cglist:
-			fp.write('%d %s %d %s\n' % (a.resSeq, cp.aa2a[a.resName], b.resSeq, cp.aa2a[b.resName]))
+			fp.write('%d %s %d %s chain %s %s\n' % (a.resSeq, cp.aa2a[a.resName], b.resSeq, cp.aa2a[b.resName], a.chainID, b.chainID))
 	cp._info('save cg file: %s' % outcgfile)
 
 
