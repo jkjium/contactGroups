@@ -77,7 +77,7 @@ class naccess(object):
 
 	# nafile name must in the format of "XXXX.rsa"
 	def __init__(self, nafile):
-		self.pdb = nafile[0:4]
+		self.pdb = nafile
 		self.rsaDict = {}
 		self.resiDict = defaultdict(lambda: '')
 		self.alphabet = ['B', 'E']
@@ -87,7 +87,8 @@ class naccess(object):
 		for naline in lines:
 			head = naline[0:3]
 			if head == 'RES':
-				r = rsa(naline)
+				nline = '%s %s' % (naline[0:9], naline[9:]) # RES ILE B1000     0.00   0.0   0.00 cause problem
+				r = rsa(nline)
 				key = '%s%s%s' % (aamap.getAAmap(r.resn), r.chain, r.resi)
 				self.rsaDict[key] = r
 
