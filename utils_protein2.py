@@ -37,6 +37,21 @@ def cgfreq(arglist):
 	cp._info('save to %s' % outfile)
 
 
+def writechain(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_protein2.py writechain pdbfile chainID')
+	pdbfile = arglist[0]
+	c = arglist[1]
+	outfile = '%s.%s.pdb' % (pdbfile, c)
+
+	p = protein(pdbfile, chain=c)
+
+	with open(outfile, 'w') as fout:
+		for a in p.atoms:
+			fout.write(a.writeAtom())
+	cp._info('save %s chain %s to %s' % (pdbfile, c, outfile))
+
+
 def ncgfreq(arglist):
 	if len(arglist)<3:
 		cp._err('Usage: python utils_protein2.py ncgfreq cglistfile bgfreqfile outprefix')
