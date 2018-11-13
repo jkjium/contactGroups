@@ -232,6 +232,18 @@ def outemboss(core):
 	cp.b62edge[:20, :20] = core
 	return cp.smstr(cp.b62edge, cp.smaa1)
 
+def savecolvec(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage:python utils_sm.py savecolvec sm.emboss outfile')
+
+	sm = smatrix(arglist[0])
+	outfile = arglist[1]
+
+	outstr = ['%s%s %d' % (cp.aat01[i], cp.aat01[j], sm.score[cp.aat01[i]+cp.aat01[j]]) for i in xrange(0, len(cp.aat01)) for j in xrange(i, len(cp.aat01))]
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outstr)))
+	cp._info('save to %s' % outfile)
+
 
 def test(arglist):
 	if len(arglist) < 1:
@@ -261,6 +273,7 @@ def main():
 		'printflatten':	printflatten,
 		'scalepn':		scalepn,
 		'stat':			stat,
+		'savecolvec':	savecolvec,
 		'transform':	transform,
 		'test':			test
 	}

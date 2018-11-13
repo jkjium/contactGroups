@@ -35,7 +35,7 @@ def rcflat(arglist):
 			outlist.append('%s %s %s' % (line, rel1, rel2))
 
 	with open(outfile, 'w') as fout:
-		fout.write('%s' % '\n'.join(outlist))
+		fout.write('%s\n' % '\n'.join(outlist))
 	cp._info('save rcflat %s' % outfile)
 
 
