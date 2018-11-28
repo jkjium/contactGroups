@@ -28,6 +28,9 @@ class smatrix(object):
 
 	def lowest(self):
 		return self.core.min()
+
+	def highest(self):
+		return self.core.max()
 	#
 	def dump(self):
 		self.edge[:20,:20] = self.core
@@ -190,7 +193,8 @@ def transform(arglist):
 		sm.scale_pn(p,n)
 		sm.translate(t)
 
-	sm.dump()
+	(p,n,ps,ns)= sm.stat()
+	cp._info('p %d n %d ps %d ns %d min: %d max %d' % (p,n,ps,ns,sm.lowest(), sm.highest()))
 
 	with open(outsm, 'w') as fout:
 		fout.write(outemboss(sm.core))

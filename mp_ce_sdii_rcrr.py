@@ -37,7 +37,6 @@ def init():
 
 	# msa init
 	score = np.loadtxt(scoreFile, delimiter=',')
-	w = np.loadtxt(weightfile)
 
 	#rowIndex = [int(i) for i in np.loadtxt(rowIndexFile, delimiter=',')]
 	colIndex = [int(j) for j in np.loadtxt(colIndexFile, delimiter=',')]
@@ -59,6 +58,7 @@ def init():
 	sdii_core.setTarget(targetVar)
 	print 'Setting task order ...'
 	if weightfile != 'na':
+		w = np.loadtxt(weightfile)
 		sdii_core.setWeight(w)
 		print 'Setting weight ...'
 	else:

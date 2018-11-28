@@ -325,6 +325,11 @@ def freqlookupscol(arglist):
 
 
 # get single MSA gapped / ungapped fa with sequence name or null
+'''
+output: save [null] raw seq : PF00008_p90_seq.fa , MSA seq : PF00008_p90_MSA.fa
+PF00008_p90_seq.fa: ungapped fa, for pfamscan
+PF00008_p90_MSA.fa: gapped fa, for resimap
+'''
 def getsinglemsa(arglist):
 	if len(arglist) < 1:
 		cp._err('Usage: python utils_pfammsa.py getsinglemsa PF00000.txt head PF00000')
@@ -358,6 +363,7 @@ def getsinglemsa(arglist):
 # improved version of utils_msa.MSAReduction()
 # input : PF0000.txt, scoretags, gapcutoff(max gap percentage), weightcutoff
 # output: PF0000.txt.{stag.score, col, row}
+# python utils_pfammsa.py msareduce t.txt aa 0.2 -1 // save columns have < 20% of gaps
 def msareduce(arglist):
 	if len(arglist) < 4:
 		cp._err('Usage: $ python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.7 -1') 
