@@ -649,9 +649,9 @@ def wfreqs(arglist):
 		if len(line.strip())==0:
 			cp._info('%s no scol pairs avaiable' % scolfile)
 			return
-		scolset = set([p for p in line.split(' ')])
+		scolset = set([p for p in line.split(',')])
 	#print repr(scolset)		
-
+	
 	wfreqdict = collections.defaultdict(float)	 # for denominator from all column
 	wsfreqdict = collections.defaultdict(float)	 # for denominator from scol
 	wscoldict =	collections.defaultdict(list) 
