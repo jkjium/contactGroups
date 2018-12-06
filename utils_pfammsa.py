@@ -626,6 +626,85 @@ def wfreq(arglist):
 	cp._info('save wfreq to %s' % outfile)
 
 
+
+# accumulate weighted background frequcney for each AA 
+# from sscol: 23 32 151
+def wfreqs(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py wfreqs PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF13507_p90_tip.sscol PF01012.w70.wfreq')
+
+	flufile = arglist[0]
+	wfile = arglist[1]
+	scolfile = arglist[2]
+	outfile = arglist[3]
+
+	# load w
+	if wfile != 'na':
+		w = np.loadtxt(wfile)
+
+	# load selected col
+	scolset = set()
+	with open(scolfile) as fp:
+		line = fp.readline().strip()
+		if len(line.strip())==0:
+			cp._info('%s no scol pairs avaiable' % scolfile)
+			return
+		scolset = set([p for p in line.split(' ')])
+	#print repr(scolset)		
+
+	wfreqdict = collections.defaultdict(float)	 # for denominator from all column
+	wsfreqdict = collections.defaultdict(float)	 # for denominator from scol
+	wscoldict =	collections.defaultdict(list) 
+	# calculate sinlgle wfreq
+	# 206 C .5,111,133,158,210,241
+	with open(flufile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			if wfile == 'na':
+				wfreq = len(sarr[3].split(','))
+			else:
+				wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
+			wfreqdict[sarr[1]]+= wfreq
+			#print '%s, %s, %s, %.4f' % (sarr[1], [int(i) for i in sarr[3].split(',')], repr(w[[int(i) for i in sarr[3].split(',')]]), wfreqdict[sarr[1]])
+			# save freq of scol for substitution frequency calculation
+			if sarr[0] in scolset:
+				wscoldict[sarr[0]].append((sarr[1], wfreq))
+				wsfreqdict[sarr[1]]+= wfreq
+	#print repr(wscoldict)
+
+	# calculate substitution wfreq
+	wsmdict = collections.defaultdict(float)
+	for c in wscoldict: # {'205': [('C', 0.7), ('D', 0.5)], '207': [('C', 1.0)]}
+		wfl = wscoldict[c]
+		for i in xrange(len(wfl)):
+			A = wfl[i][0]
+			if A in cp.abaa:
+				continue
+			for j in xrange(i+1, len(wfl)):
+				B = wfl[j][0]
+				if B in cp.abaa:
+					continue
+				k = A+B if A < B else B+A
+				wsmdict[k]+=wfl[i][1]*wfl[j][1]
+			wsmdict[A+A]+=wfl[i][1]*wfl[i][1]/2
+
+	# output
+	with open(outfile, 'w') as fp:
+		# save single wfreq
+		for c in wfreqdict:
+			fp.write('wf %s %.8f\n' % (c, wfreqdict[c]))
+		# save single wfreq from scol
+		for c in wsfreqdict:
+			fp.write('sf %s %.8f\n' % (c, wsfreqdict[c]))
+		# save substitution wfreq
+		for k in wsmdict:
+			fp.write('sd %s %.8f\n' %(k, wsmdict[k]))
+	cp._info('save wfreq to %s' % outfile)
+
+
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
 		if len(arglist) < 3:
@@ -757,6 +836,7 @@ def main():
 		'splitfa': splitfa,
 		'splithidfa': splithidfa,
 		'wfreq': wfreq,
+		'wfreqs': wfreqs,
 		'wfreq2sm': wfreq2sm
 	}
 
