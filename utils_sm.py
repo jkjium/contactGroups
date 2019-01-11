@@ -1,6 +1,7 @@
 import sys
 import commp as cp
 import numpy as np
+import copy
 
 class smatrix(object):
 	# read emboss format matrix or 20x20 core matrix
@@ -33,9 +34,21 @@ class smatrix(object):
 		return self.core.max()
 	#
 	def dump(self):
+		print self.name
 		self.edge[:20,:20] = self.core
 		print '%s, max: %d, min: %d' % (self.name, np.max(self.core), np.min(self.core))
 		print cp.smstr(self.edge, self.aa)
+
+	# copy from below
+	def outemboss(self, outname):
+		cp.b62edge[:20, :20] = self.core
+		with open(outname, 'w') as fout:
+			fout.write(cp.smstr(cp.b62edge, cp.smaa1))
+
+	# return an 1x210 np array of current sm
+	def out210vec(self):
+		return np.array([self.core[i][j] for i in xrange(20) for j in xrange(i,20)])
+
 
 	def score2core(self):
 		'''
@@ -84,7 +97,14 @@ class smatrix(object):
 			self.score[s]+=t
 		self.score2core()
 
-
+	# update sm core with input np.array 1x210
+	def updateby210vec(self, np210vec):
+		iforward = 0
+		for i in xrange(20):
+			for j in xrange(i, 20):
+				self.core[i][j] = np210vec[iforward]
+				self.core[j][i] = np210vec[iforward]
+				iforward+=1
 
 
 # combine two matrices with weight
@@ -104,6 +124,90 @@ def combinesm(arglist):
 	with open(outfile, 'w') as fp:
 		fp.write(outemboss(outcore))
 	cp._info('write %s, min: %d, max: %d' % (outfile, np.min(outcore), np.max(outcore)))
+
+
+def gabreed(arglist):
+	if len(arglist) < 5:
+		errout = [
+		"\n",
+		"sm cross breeding function",
+		"Usage: python utils_sm.py gabreed smlistfile mutate_distribution_file factor_of_mutate factor_of_cross outsmprefix",
+		"smlistfile: file contains all the seed sm. one sm for each line",
+		"mutate_distribution_file: file contains the probabilities of 0: unchange, +1: score+1, -1: score-1, +2: score+2, -2: score-2 in correponding order",
+		"factor_of_mutate: how many times of seed sm with mutation only",
+		"factor_of_cross: how many times of seed sm with crossover only"
+		"outsmprefix: the prefix for output sm",
+		"example: python utils_sm.py gabreed smlist.txt odds.txt 30 sm20190104"
+		]
+		cp._err('\n'.join(errout))
+
+	smlistfile = arglist[0]
+	distfile = arglist[1]
+	nm = int(arglist[2])
+	ncm = int(arglist[3])
+	outprefix = arglist[4]
+
+	# load sm into sm array
+	smlist=[]
+	with open(smlistfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			smlist.append(smatrix(line))
+
+	if len(smlist)!=4:
+		cp._err('only 4 candidate sm allowed.')
+
+	# load mutation distribution 0 +1 -1 +2 -2
+	with open(distfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0 or line[0] == '#':
+				continue
+			odds = [float(i) for i in line.split(' ')]
+	print repr(odds)
+
+	# mutate loop
+	count = 0
+	for sm in smlist:
+		for i in xrange(nm):
+			# get mutate layer 210vec
+			#sm.dump()
+			overlay = np.random.choice([0,1,-1,2,-2], 210, p=odds)
+			#print repr(overlay)
+			outsm = copy.deepcopy(sm)
+			outsm.updateby210vec(overlay+outsm.out210vec())
+			outsm.name = '%s.mu.%02d.sm' % (outprefix, count)
+			outsm.outemboss(outsm.name)
+			count+=1
+			#outsm.dump()
+	cp._info('%d mutation sm generated.' % (count))
+
+	# cross over loop
+	# each candidate cross nmc times as primary gene
+	count=0
+	permulist = [[0,1,2,3], [1,0,2,3], [2,1,0,3], [3,1,2,0]]
+	for p in xrange(len(smlist)):
+		sm = smlist[p]
+		permu = permulist[p]
+		outsm = copy.deepcopy(sm)
+		for k in xrange(ncm): # generate k cross breeds for one sm
+			smindex = np.random.choice(permu, 210, p=[0.85, 0.05, 0.05, 0.05])
+			idx = 0
+			# 210 loop
+			for i in xrange(20):
+				for j in xrange(i, 20):
+					outsm.core[i][j] = smlist[smindex[idx]].core[i][j]
+					outsm.core[j][i] = outsm.core[i][j]
+					idx+=1
+			outsm.name = '%s.mc.%02d.sm' % (outprefix, count)
+			outsm.outemboss(outsm.name)
+			count+=1
+	cp._info('%d crossbreed sm generated.' % (count))
+
+	cp._info('done.')
+
 
 
 
@@ -271,6 +375,7 @@ def main():
 
 	dispatch = {
 		'combinesm':	combinesm,
+		'gabreed':		gabreed,
 		'interpolate': 	interpolate,
 		'outblast': 	outblast,
 		'outblast62':	outblast62,
