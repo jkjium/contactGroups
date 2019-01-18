@@ -58,12 +58,11 @@ def alnRMSD(pa):
 	return (cp.rmsd(v,w), len(v))
 
 # output the RMSD for all the pair alignments in the flat file
-def main():
-	if len(sys.argv) < 2:
-		print 'Usage: python proc_flatrmsd.py cathpair88.pool.1.align.flat'
-		exit(1)
+def flatrmsd(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python proc_flatrmsd.py flatrmsd cathpair88.pool.1.align.flat')
 
-	flatfile = sys.argv[1]
+	flatfile = arglist[0]
 	outfile = '%s.rmsd' % flatfile
 
 	gap = ['.', '-']
@@ -79,8 +78,8 @@ def main():
 		rmsd,n = alnRMSD(pa) 
 		#print rmsd,n
 		fout.write('%s %d %.4f\n' % (pa.name, n, rmsd))
-	cp._info('save to %s\n' % outfile)
+	cp._info('save to %s' % outfile)
 	fout.close()
 
 if __name__ == '__main__':
-	main()
+	cp.dispatch(__name__)
