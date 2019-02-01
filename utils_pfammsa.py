@@ -44,6 +44,10 @@ class pfammsa(object):
 	def msacol(self, i):
 		return [s[1][i] for s in self.msalist]
 
+	# return ith column and fa header 
+	def msacolfa(self, i):
+		return ['>%s\n%s\n' % (s[0], s[1][i]) for s in self.msalist]
+
 	# return a dictionary with dict['A'] = 10
 	# cp.freq returns a dictionary for the current sequence
 	# input: collist: column index in (int) type, start from 0
@@ -322,6 +326,23 @@ def freqlookupscol(arglist):
 												','.join([str(a) for a in lookup])))
 
 	cp._info('save to %s' % outfile)
+
+# get a single column from MSA
+def getcolumn(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py getcolumn pfamID column_idx{start from 0} outfile')
+
+	msafile = arglist[0]
+	colindex = int(arglist[1])
+	outfile = arglist[2]
+
+	pfm = pfammsa(msafile)
+	if colindex >= pfm.msalen:
+		cp._err('colindex : %d is larger than MSA len %d' % (colindex, pfm.msalen))
+	colstrlist = pfm.msacolfa(colindex)
+	with open(outfile, 'w') as fout:
+		fout.write(''.join(colstrlist))
+	cp._info('column data save to %s' % outfile)
 
 
 # get single MSA gapped / ungapped fa with sequence name or null
@@ -827,6 +848,7 @@ def main():
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
+		'getcolumn': getcolumn, # get a single column from MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
