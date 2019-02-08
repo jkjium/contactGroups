@@ -1,5 +1,6 @@
 import sys
 import json
+import collections
 
 from utils_pfamscan import utils_pfamscan as ups
 from utils_embossalign import embossalign as ea
@@ -127,6 +128,42 @@ def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonf
 	'''
 
 	return outstr	
+
+# append resi to file with msai column
+def appendresi(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_resimap.py appendresi infile msai_col mapfile outfile')
+
+	infile = arglist[0]
+	col = int(arglist[1])
+	mapfile = arglist[2]
+	outfile = arglist[3]
+
+	residict = collections.defaultdict(lambda:-1)
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			# resi resn msai msan
+			# 406 K 269 G
+			sarr = line.split(' ')
+			residict[sarr[2]] = sarr[0]
+	#cp._info('%d map loaded.' % len(residict))
+
+	fout = open(outfile, 'w')
+	# load input file
+	with open(infile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			fout.write('%s %s\n' % (line, residict[sarr[col]]))
+	fout.close()
+	cp._info('save to %s' % outfile)	 	
+
+
 
 def resi2msa(arglist):
 	if len(arglist) < 7:
