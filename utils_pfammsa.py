@@ -6,6 +6,9 @@ import collections
 import string
 import math
 
+import correlation as corr
+
+
 
 """
 updated utils_msa.py
@@ -223,6 +226,28 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# calculate entropy of all columns in score file
+# input: score file, rcol file (pos indices)
+def entropyall(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py entropyall msa.score msa.rcol outfile')
+
+	scorefile = arglist[0]
+	rcolfile = arglist[1]
+	outfile = arglist[2]
+
+	score = np.loadtxt(scorefile, delimiter=',')
+	cols = [int(j) for j in np.loadtxt(rcolfile, delimiter=',')]
+	'''
+	print score[:,0] # not working!!
+	print score[:,[0]] # must in this format!!
+	'''
+	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
+	with open(outfile, 'w') as fout:
+		fout.write('\n'.join(H))
+	cp._info('save to %s' % outfile)
+
+
 # for homolog testcase
 # save the first entry to a fasta file
 def seqfa(arglist):
@@ -361,13 +386,17 @@ def getsinglemsa(arglist):
 
 	pfm = pfammsa(msafile)
 	# with head
+	msa = 'null'
 	if head!='null':
 		for s in pfm.msalist:
-			if head in s:
+			if head in s[0]:
 				msa = s
 	# no head, get the first MSA
 	else:
 		msa = pfm.msalist[0]
+
+	if msa=='null':
+		cp._err('head %s not found' % head)
 
 	outseqfile = '%s_seq.fa' % outprefix
 	with open(outseqfile, 'w') as fp:
@@ -844,6 +873,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'entropyall': entropyall,
 		'seqfa': seqfa,
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
