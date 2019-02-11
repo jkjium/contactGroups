@@ -47,9 +47,9 @@ class pfammsa(object):
 	def msacol(self, i):
 		return [s[1][i] for s in self.msalist]
 
-	# return ith column and fa header 
-	def msacolfa(self, i):
-		return ['>%s\n%s\n' % (s[0], s[1][i]) for s in self.msalist]
+	# return tuple (header, colums_MSA)
+	def msacolsfa(self, idxlist):
+		return [(s[0], ''.join([s[1][i] for i in idxlist])) for s in self.msalist]
 
 	# return a dictionary with dict['A'] = 10
 	# cp.freq returns a dictionary for the current sequence
@@ -352,22 +352,27 @@ def freqlookupscol(arglist):
 
 	cp._info('save to %s' % outfile)
 
-# get a single column from MSA
-def getcolumn(arglist):
-	if len(arglist) < 3:
-		cp._err('Usage: python utils_pfammsa.py getcolumn pfamID column_idx{start from 0} outfile')
-
+# improved version of the previous getcolumn function
+# multiple columns
+# header switch 
+def getcolumns(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py getcolumns msafile column_list{0,1,2} header_flag outfile')
 	msafile = arglist[0]
-	colindex = int(arglist[1])
-	outfile = arglist[2]
+	cols = [int(a) for a in arglist[1].split(',')]
+	header_flag = int(arglist[2])
+	outfile = arglist[3]
 
 	pfm = pfammsa(msafile)
-	if colindex >= pfm.msalen:
-		cp._err('colindex : %d is larger than MSA len %d' % (colindex, pfm.msalen))
-	colstrlist = pfm.msacolfa(colindex)
+	if max(cols) >= pfm.msalen:
+		cp._err('cols: %s exceeds MSA length' % repr(cols))
+
+	colstrlist = pfm.msacolsfa(cols)
 	with open(outfile, 'w') as fout:
-		fout.write(''.join(colstrlist))
-	cp._info('column data save to %s' % outfile)
+		for t in colstrlist:
+			outstr = '>%s\n%s\n' % (t[0], t[1]) if header_flag == 1 else '%s\n' % (t[1])
+			fout.write(outstr)
+	cp._info('column(s) data save to %s' % outfile)
 
 
 # get single MSA gapped / ungapped fa with sequence name or null
@@ -878,7 +883,7 @@ def main():
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
-		'getcolumn': getcolumn, # get a single column from MSA
+		'getcolumns': getcolumns, # get columns from MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
