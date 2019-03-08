@@ -40,25 +40,23 @@ def init():
 
 	# calculating total tasks
 	tasks = []
-	with open(varfile) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line)==0:
-				continue
-			tasks.append([int(i) for i in line.split(' ')])
-	totalnum = len(tasks)
-	if totalnum == 0:
-		cp._err('task exit for EMPTY TASK.')
-	cp._info('In total %d tasks for order %d.' % (totalnum, order))
-
-	'''
-	# calculating total tasks
-	totalnum = cp.ncr(len(varlist), order)
-	tasks = []
-	for s in set(itertools.combinations(list(range(len(varlist))), order)):
-		tasks.append(list(s))
-	cp._info('In total %d/%d for order %d.' % (len(tasks), totalnum, order))
-	'''
+	if varfile != 'na':
+		with open(varfile) as fp:
+			for line in fp:
+				line = line.strip()
+				if len(line)==0:
+					continue
+				tasks.append([int(i) for i in line.split(' ')])
+		totalnum = len(tasks)
+		if totalnum == 0:
+			cp._err('task exit for EMPTY TASK.')
+		cp._info('In total %d tasks from varfile for order %d.' % (totalnum, order))
+	else:
+		# generating total tasks
+		totalnum = cp.ncr(len(varlist), order)
+		for s in set(itertools.combinations(list(range(len(varlist))), order)):
+			tasks.append(list(s))
+		cp._info('In total %d/%d for order %d.' % (len(tasks), totalnum, order))
 
 	sdii_core.setTotalTask(len(tasks))
 	# split tasks into blocks
