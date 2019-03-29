@@ -5,9 +5,9 @@
 
 import commp as cp
 
-def buriedchargedpair(arglist):
+def buriedchargepair(arglist):
 	if len(arglist) < 2:
-		cp._err('Usage: python utils_cflat.py buriedchargedpair inrcflatfile outfile')
+		cp._err('Usage: python utils_cflat.py buriedchargepair inrcflatfile outfile')
 
 	infile = arglist[0]
 	outfile = arglist[1]

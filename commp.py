@@ -302,6 +302,8 @@ scorerdict = {
 msaaa = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 
 		'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '.', '-']
 
+chargedaa = ['R', 'H', 'K', 'D', 'E']
+
 
 # EBLOSUM matrices gaps preset
 #gapb80 = [(9,2), (8,2), (7,2), (6,2), (11,1), (10,1), (9,1)]
@@ -324,6 +326,7 @@ gapdict = {
 	'PAM30':gappam30,
 	'PAM70':gappam70
 }
+
 
 time0 = time.time()
 
