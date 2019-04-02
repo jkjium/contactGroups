@@ -226,6 +226,44 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# read bcp file 
+# find switched charge pairs
+# 20190328
+def chargepair_bcp(arglist):
+	if len(arglist)<3:
+		cp._err('Usage: python utils_pfammsa.py chargepair_bcp bcpfile pfammsa.txt outfile')
+
+	bcpfile = arglist[0]
+	msafile = arglist[1]
+	outfile = arglist[2]
+
+	msa = pfammsa(msafile)
+	# read bcp file
+	# format same as .rcflat
+	# p.pdb,chainid,r1,r2,res1,res2,dist_sgc,dist_tip,dist_ca,pfamid,p1,p2,mip,dca,area1,area2
+	# 0     1       2  3  4    5    6        7        8       9      10 11 12  13  14    15
+	cpairlist = []
+	with open(bcpfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			sarr = line.split(' ')
+			pos1 = int(sarr[10])
+			pos2 = int(sarr[11])
+			cpairlist.append((pos1,pos2))
+
+	cpairout = []
+	for (p1,p2) in cpairlist:
+		for head, seq in cp.fasta_iter(msafile):
+			if (seq[p1] in cp.chargedaa) and (seq[p2] in cp.chargedaa):
+				cpairout.append('%s %s %d-%d %s%s %s%s' % (msafile, head, p1, p2, seq[p1], seq[p2], aacharge[seq[p1]], aacharge[seq[p2]]))
+	cp._info('%s %d records\n' % (msafile, len(cpairout)))
+
+	with open(outfile,'w') as fout:
+		fout.write('%s\n' % ('\n'.join(cpairout)))
+
+
 # calculate entropy of all columns in score file
 # input: score file, rcol file (pos indices)
 def entropyall(arglist):
@@ -878,6 +916,7 @@ def main():
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
+		'chargepair_bcp': chargepair_bcp,
 		'entropyall': entropyall,
 		'seqfa': seqfa,
 		'scoreentropy': scoreentropy,

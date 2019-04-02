@@ -303,7 +303,7 @@ msaaa = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M',
 		'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '.', '-']
 
 chargedaa = ['R', 'H', 'K', 'D', 'E']
-
+aacharge = {'R':'P', 'H':'P', 'K':'P', 'D':'N', 'E':'N'}
 
 # EBLOSUM matrices gaps preset
 #gapb80 = [(9,2), (8,2), (7,2), (6,2), (11,1), (10,1), (9,1)]
