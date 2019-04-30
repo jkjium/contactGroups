@@ -129,6 +129,16 @@ def pdbResi2MSA(pdbfile, chainid, pdbseqfafile, pdbjsonfile, msafafile, msajsonf
 
 	return outstr	
 
+# main mapping function
+def resi2msa(arglist):
+	if len(arglist) < 7:
+		print 'Usage: python utils_resimap.py resi2msa pdbfile pdbseqfafile pdbjsonfile msafafile msajsonfile pfamid'
+		print '$ python utils_resimap.py resi2msa 1a8v.pdb B 1a8v.pdb.B.fa 1a8v.pdb.B.fa.json PF07497_p90_MSA.fa PF07497_p90_seq.fa.json PF07497'
+		exit()
+	#pdbResi2MSA(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
+
+
 # append resi to file with msai column
 def appendresi(arglist):
 	if len(arglist) < 4:
@@ -165,13 +175,114 @@ def appendresi(arglist):
 
 
 
-def resi2msa(arglist):
-	if len(arglist) < 7:
-		print 'Usage: python utils_resimap.py resi2msa pdbfile pdbseqfafile pdbjsonfile msafafile msajsonfile pfamid'
-		print '$ python utils_resimap.py resi2msa 1a8v.pdb B 1a8v.pdb.B.fa 1a8v.pdb.B.fa.json PF07497_p90_MSA.fa PF07497_p90_seq.fa.json PF07497'
-		exit()
-	#pdbResi2MSA(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
+def cg2msai_sdii(arglist):
+	if len(arglist) < 5:
+		cp._err('Usage: python utils_resimap cg2msai cgfile mapfile_left mapfile_right sdiifile outfile')
+
+	cgfile = arglist[0]
+	mapfile1 = arglist[1]
+	mapfile2 = arglist[2]
+	sdiifile = arglist[3]
+	outfile = arglist[4]
+
+	# load map
+	resmap1 = {}
+	with open(mapfile1) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#resi resn msai msan
+			#149 P 88 Q
+			#resmap[sarr[2]] = sarr[0]
+			#		resi 		msai
+			resmap1[sarr[0]] = sarr[2]
+
+
+	resmap2 = {}
+	with open(mapfile2) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#resi resn msai msan
+			#149 P 88 Q
+			#resmap[sarr[2]] = sarr[0]
+			#		resi 		msai
+			resmap2[sarr[0]] = sarr[2]
+
+	# load sdii
+	sdii = {}
+	with open(sdiifile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#msai msai mi resi1 resi1 resi2 resi2 .... 
+			#326 653 0.315745486152245 232 328 117 213 115 211
+			sdii['%s %s' % (sarr[0], sarr[1])] = sarr[2]
+
+	#print repr(sdii)
+	outstr = []
+	with open(cgfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#  map1 map2
+			#122 F 254 W chain E A
+			if (sarr[0] in resmap1) and (sarr[2] in resmap2):
+				msai1 = resmap1[sarr[0]]
+				msai2 = resmap2[sarr[2]]
+				sdiikey = '%s %s' % (msai2, msai1) if int(msai1) >= int(msai2) else '%s %s' % (msai1, msai2)
+				#print sdiikey
+				if sdiikey in sdii:
+					outstr.append('%s %s %s %s' %(line, msai1, msai2, sdii[sdiikey]))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outstr))
+	cp._info('save %d records to %s' % (len(outstr), outfile))	
+
+
+# column (group) to resi
+# convert column (group) into resi
+# one group per line
+def col2resi(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_resimap.py col2resi mapfile colfile outresifile')
+
+	mapfile = arglist[0]
+	colfile = arglist[1]
+	outfile = arglist[2]
+
+	resmap = {}
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#resi resn msai msan
+			#149 P 88 Q
+			resmap[sarr[2]] = sarr[0]
+
+	outstr = []
+	with open(colfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#326 653 
+			outstr.append(' '.join([resmap[c] for c in sarr]))
+
+	with open(outfile, 'w') as fout:
+		fout.write("%s\n" % ('\n'.join(outstr)))
+	cp._info('save to %s' % outfile)
 
 
 # append msai to dca output
@@ -249,6 +360,7 @@ def sdii2resi(arglist):
 	cp._info('save %d records to %s' % (len(outstr), outfile))
 
 
+
 # append resi to triplets SDII output 
 def triplet2resi(arglist):
 	if len(arglist) < 3:
@@ -286,77 +398,7 @@ def triplet2resi(arglist):
 	cp._info('save %d records to %s' % (len(outstr), outfile))
 
 
-def cg2msai_sdii(arglist):
-	if len(arglist) < 5:
-		cp._err('Usage: python utils_resimap cg2msai cgfile mapfile_left mapfile_right sdiifile outfile')
 
-	cgfile = arglist[0]
-	mapfile1 = arglist[1]
-	mapfile2 = arglist[2]
-	sdiifile = arglist[3]
-	outfile = arglist[4]
-
-	# load map
-	resmap1 = {}
-	with open(mapfile1) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) == 0:
-				continue
-			sarr = line.split(' ')
-			#resi resn msai msan
-			#149 P 88 Q
-			#resmap[sarr[2]] = sarr[0]
-			#		resi 		msai
-			resmap1[sarr[0]] = sarr[2]
-
-
-	resmap2 = {}
-	with open(mapfile2) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) == 0:
-				continue
-			sarr = line.split(' ')
-			#resi resn msai msan
-			#149 P 88 Q
-			#resmap[sarr[2]] = sarr[0]
-			#		resi 		msai
-			resmap2[sarr[0]] = sarr[2]
-
-	# load sdii
-	sdii = {}
-	with open(sdiifile) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) == 0:
-				continue
-			sarr = line.split(' ')
-			#msai msai mi resi1 resi1 resi2 resi2 .... 
-			#326 653 0.315745486152245 232 328 117 213 115 211
-			sdii['%s %s' % (sarr[0], sarr[1])] = sarr[2]
-
-	#print repr(sdii)
-	outstr = []
-	with open(cgfile) as fp:
-		for line in fp:
-			line = line.strip()
-			if len(line) == 0:
-				continue
-			sarr = line.split(' ')
-			#  map1 map2
-			#122 F 254 W chain E A
-			if (sarr[0] in resmap1) and (sarr[2] in resmap2):
-				msai1 = resmap1[sarr[0]]
-				msai2 = resmap2[sarr[2]]
-				sdiikey = '%s %s' % (msai2, msai1) if int(msai1) >= int(msai2) else '%s %s' % (msai1, msai2)
-				#print sdiikey
-				if sdiikey in sdii:
-					outstr.append('%s %s %s %s' %(line, msai1, msai2, sdii[sdiikey]))
-
-	with open(outfile, 'w') as fout:
-		fout.write('%s\n' % '\n'.join(outstr))
-	cp._info('save %d records to %s' % (len(outstr), outfile))	
 
 
 

@@ -41,7 +41,7 @@ def buriedchargepair(arglist):
 
 			if (
 					resn1 in cp.chargedaa and resn2 in cp.chargedaa and
-					( d1 < 4.5 or d2 <4.5 or d3<4.5 ) and 
+					d3 > 3 and d2 <4.5 and 
 					( (area1 + area2) < 5 )
 				):
 				outlist.append(line)

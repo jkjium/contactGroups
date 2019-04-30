@@ -38,11 +38,11 @@ def cgfreq(arglist):
 
 
 def writechain(arglist):
-	if len(arglist) < 2:
+	if len(arglist) < 3:
 		cp._err('Usage: python utils_protein2.py writechain pdbfile chainID')
 	pdbfile = arglist[0]
 	c = arglist[1]
-	outfile = '%s.%s.pdb' % (pdbfile, c)
+	outfile = arglist[2]
 
 	p = protein(pdbfile, chain=c)
 

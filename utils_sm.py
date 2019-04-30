@@ -126,6 +126,25 @@ def combinesm(arglist):
 	cp._info('write %s, min: %d, max: %d' % (outfile, np.min(outcore), np.max(outcore)))
 
 
+# compare two matrices 
+# save (S1 - S2) 20x20 as a result
+def diff(arglist):
+	if len(arglist)<3:
+		cp._err('Usage:python utils_sm.py smfile1 smfile2 outfile(sm1-sm2)')
+
+	smfile1 = arglist[0]
+	smfile2 = arglist[1]
+	outfile = arglist[2]
+
+	sm1 = smatrix(smfile1)
+	sm2 = smatrix(smfile2)
+	outcore = sm1.core - sm2.core
+
+	with open(outfile, 'w') as fout:
+		fout.write(outemboss(outcore))
+	cp._info('write diff matrix %s' % (outfile))
+
+
 def gabreed(arglist):
 	if len(arglist) < 5:
 		errout = [
@@ -375,6 +394,7 @@ def main():
 
 	dispatch = {
 		'combinesm':	combinesm,
+		'diff':			diff,
 		'gabreed':		gabreed,
 		'interpolate': 	interpolate,
 		'outblast': 	outblast,

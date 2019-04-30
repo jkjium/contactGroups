@@ -257,7 +257,7 @@ def chargepair_bcp(arglist):
 	for (p1,p2) in cpairlist:
 		for head, seq in cp.fasta_iter(msafile):
 			if (seq[p1] in cp.chargedaa) and (seq[p2] in cp.chargedaa):
-				cpairout.append('%s %s %d-%d %s%s %s%s' % (msafile, head, p1, p2, seq[p1], seq[p2], aacharge[seq[p1]], aacharge[seq[p2]]))
+				cpairout.append('%s %s %d-%d %s%s %s%s' % (msafile, head, p1, p2, seq[p1], seq[p2], cp.aacharge[seq[p1]], cp.aacharge[seq[p2]]))
 	cp._info('%s %d records\n' % (msafile, len(cpairout)))
 
 	with open(outfile,'w') as fout:
@@ -265,6 +265,47 @@ def chargepair_bcp(arglist):
 
 
 # calculate entropy of all columns in score file
+# input: score file, rcol file (pos indices)
+def entropyfromfile(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_pfammsa.py entropyall msa.score rcolfile column_set_file outfile')
+
+	scorefile = arglist[0]
+	rcolfile = arglist[1]
+	colsetfile = arglist[2]
+	outfile = arglist[3]
+
+	rcols = [int(j) for j in np.loadtxt(rcolfile, delimiter=',')]
+	# reverse index
+	colidx_dict = dict((int(rcols[i]), i) for i in xrange(len(rcols)))
+
+	print colidx_dict
+
+	cols = []
+	score = np.loadtxt(scorefile, delimiter=',')
+	# convert col group to score index group
+	with open(colsetfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line)==0:
+				continue
+			sarr = line.split(' ')
+			cols.append([colidx_dict[int(i)] for i in sarr])
+	print cols
+	H = ['%s %.4f' % (' '.join(['%d' % rcols[k] for k in i]), corr.entropy(score[:,i].T)) for i in cols]
+	#H = ['%s %.4f' % (cols[i[0]], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
+	'''
+	#print score[:,0] # not working!!
+	#print score[:,[0]] # must in this format!!
+	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
+	'''
+	with open(outfile, 'w') as fout:
+		fout.write('\n'.join(H))
+	cp._info('save to %s' % outfile)
+
+
+
+# calculate (joint) entropy for a set of column(s) in the file 
 # input: score file, rcol file (pos indices)
 def entropyall(arglist):
 	if len(arglist) < 3:
@@ -284,6 +325,8 @@ def entropyall(arglist):
 	with open(outfile, 'w') as fout:
 		fout.write('\n'.join(H))
 	cp._info('save to %s' % outfile)
+
+
 
 
 # for homolog testcase
@@ -918,6 +961,7 @@ def main():
 		'columnselect': columnselect,
 		'chargepair_bcp': chargepair_bcp,
 		'entropyall': entropyall,
+		'entropyfromfile': entropyfromfile,
 		'seqfa': seqfa,
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
