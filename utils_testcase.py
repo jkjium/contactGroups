@@ -669,6 +669,30 @@ def cvepoint(arglist):
 	print ('%d %s %d' % (len(cveticks), outfile, auc))
 
 
+# generate paired sequence file: p.xxxx.xxxx.seq
+# 	pairlistfile format:
+#	1hk5A03 1udA00
+# name outfile as p.seqname1.seqname2.seq
+# test: $ python utils_testcase.py pairseq 1awcA00.fa 1b4aA01.fa
+def pairseq(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase.py pairseq xxxxx.fa xxxxx.fa')
+	seqfile1 = arglist[0]
+	seqfile2 = arglist[1]
+
+	for s in cp.fasta_iter(seqfile1):
+		h1 = s[0]
+		s1 = s[1]
+	for s in cp.fasta_iter(seqfile2):
+		h2 = s[0]
+		s2 = s[1]
+
+	outfile = 'p.%s.%s.seq' % (seqfile1,seqfile2)
+	with open(outfile ,'w') as fout:
+		fout.write('%s %s\n' % (s1,s2))
+	cp._info('save %s' % outfile)
+
+
 
 ##################################################################
 # main routine
@@ -681,7 +705,8 @@ def main():
 		'blasttpfptuple': blasttpfptuple,
 		'blast2cve': blast2cve,
 		'tpfpbygap': tpfpbygap,
-		'cvepoint': cvepoint
+		'cvepoint': cvepoint,
+		'pairseq':	pairseq
 	}
 	if sys.argv[1] in dispatch:
 		dispatch[sys.argv[1]](sys.argv[2:])
