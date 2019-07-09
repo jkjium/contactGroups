@@ -685,7 +685,7 @@ def splithidfa(arglist):
 # accumulate weighted background frequcney for each AA 
 def wfreq(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: python utils_pfammsa.py wfreq PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF13507_p90_tip.scol PF01012.w70.wfreq')
+		cp._err('Usage: python utils_pfammsa.py wfreq PF01012_p90.txt.score.1.flu PF00107_p90.txt.62.weight PF13507_p90_tip.scol PF01012.w70.wfreq')
 
 	flufile = arglist[0]
 	wfile = arglist[1]
@@ -709,13 +709,13 @@ def wfreq(arglist):
 			scolset.add(c[1])
 	#print repr(scolset)		
 
-	wfreqdict = collections.defaultdict(float)	 # for denominator from all column
-	wsfreqdict = collections.defaultdict(float)	 # for denominator from scol
+	wfreqdict = collections.defaultdict(float)	 # for denominator counting from all column
+	wsfreqdict = collections.defaultdict(float)	 # for denominator counting from scol
 	wscoldict =	collections.defaultdict(list) 
 	# calculate sinlgle wfreq
 	# 206 C .5,111,133,158,210,241
 	with open(flufile) as fp:
-		for line in fp:
+		for line in fp: 
 			line = line.strip()
 			if len(line) == 0:
 				continue
@@ -723,10 +723,16 @@ def wfreq(arglist):
 			if wfile == 'na':
 				wfreq = len(sarr[3].split(','))
 			else:
+				# sum up row weight 
 				wfreq = sum(w[[int(i) for i in sarr[3].split(',')]])
 			wfreqdict[sarr[1]]+= wfreq
 			#print '%s, %s, %s, %.4f' % (sarr[1], [int(i) for i in sarr[3].split(',')], repr(w[[int(i) for i in sarr[3].split(',')]]), wfreqdict[sarr[1]])
 			# save freq of scol for substitution frequency calculation
+			# .flu file:
+			# 545 E 0.0023 92,108,112
+			# sarr[0]: column index
+			# sarr[1]: amino acid name
+			# sarr[3]: row index set
 			if sarr[0] in scolset:
 				wscoldict[sarr[0]].append((sarr[1], wfreq))
 				wsfreqdict[sarr[1]]+= wfreq
@@ -737,7 +743,7 @@ def wfreq(arglist):
 	for c in wscoldict: # {'205': [('C', 0.7), ('D', 0.5)], '207': [('C', 1.0)]}
 		wfl = wscoldict[c]
 		for i in xrange(len(wfl)):
-			A = wfl[i][0]
+			A = wfl[i][0] # amino acid name
 			if A in cp.abaa:
 				continue
 			for j in xrange(i+1, len(wfl)):
@@ -750,21 +756,79 @@ def wfreq(arglist):
 
 	# output
 	with open(outfile, 'w') as fp:
-		# save single wfreq
+		# save single wfreq # weighted background frequency from all columns in the current MSA (1.flu)
 		for c in wfreqdict:
 			fp.write('wf %s %.8f\n' % (c, wfreqdict[c]))
-		# save single wfreq from scol
+		# save single wfreq from scol # weighted background frequency from scols
 		for c in wsfreqdict:
 			fp.write('sf %s %.8f\n' % (c, wsfreqdict[c]))
-		# save substitution wfreq
+		# save substitution wfreq # substitution frequency (nominator) calculated from weighted AA frequency
 		for k in wsmdict:
 			fp.write('sd %s %.8f\n' %(k, wsmdict[k]))
 	cp._info('save wfreq to %s' % outfile)
 
 
+# count conditional substitution from .ps (pairsubstitution) file
+# input: pfam2247.allpsub.ps
+# 	t9 .YPC 85670 8.630681 0.006253 2
+# 	t2 DTRY 2825912 217.576898 0.022757 8
+# 	t1 FGFQ 3517170 252.519810 0.026510 5
+# input: data source column index {2,3} from .ps file
+#  	2: original count
+#	3: normalized by num of seq in Pfam MSA
+# output: .cs
+# formation: follows .wfreq file
+# later the result will combine with .allwfreq with 'cs' prefix
+def wfreqcs(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py wfreqcs pfam2247.allpsub.ps {2,3}')
+
+	psfile = arglist[0]	
+	opt = int(arglist[1])
+	outfile = '%s.%d.cs' % (psfile, opt)
+
+	cp._info('Counting conditional substitutions from %s %d ...' % (psfile, opt))
+	csdict = {} # csdict[condition][singlet substitution count], len(csdict) == 210
+	with open(psfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			ps_name = sarr[1]
+			ps_count = float(sarr[opt]) # frequency normalized by number of sequence in Pfam MSA
+			# skip gaps
+			if '.' in ps_name:
+				continue
+			sub1 = '%s%s' % (ps_name[0], ps_name[2]) if ps_name[0] < ps_name[2] else '%s%s' % (ps_name[2], ps_name[0])
+			sub2 = '%s%s' % (ps_name[1], ps_name[3]) if ps_name[1] < ps_name[3] else '%s%s' % (ps_name[3], ps_name[1])
+			# t2 DREK 999
+			# sub1 = 'DE', sub2 = 'RK'
+			# csdict = {'DE':{RK: 999}}
+			if sub1 not in csdict:
+				csdict[sub1] = collections.defaultdict(float)
+			else:
+				csdict[sub1][sub2]+= ps_count
+
+			# csdict = {'DE':{'RK':999}, 'RK':{'DE':999}}
+			if sub2 not in csdict:
+				csdict[sub2] = collections.defaultdict(float)
+			else:
+				csdict[sub2][sub1]+= ps_count
+	cp._info('csdict: %d' % len(csdict))
+
+	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+
+	cp._info('Writing outfile %s ... ' % outfile)
+	with open(outfile ,'w') as fout:
+		for k in csdict:
+			outstr = '\n'.join(['cs%s %s %.4f' % (k.lower(), AA, csdict[k][AA]) for AA in AAidx])
+			fout.write('%s\n' % outstr)
+
 
 # accumulate weighted background frequcney for each AA 
-# from sscol: 23 32 151
+# from sscol: 23,32,151
+# updated wfreq
 def wfreqs(arglist):
 	if len(arglist) < 4:
 		cp._err('Usage: python utils_pfammsa.py wfreqs PF01012_p90.txt.score.flu.1 PF00107_p90.txt.62.weight PF13507_p90_tip.sscol PF01012.w70.wfreq')
@@ -846,8 +910,8 @@ def wfreq2sm(arglist):
 		if len(arglist) < 3:
 			cp._err('Usage: python utils_pfammsa.py wfreq2sm combine.wfreq wf|sf outfile')
 
-		wfreqfile = arglist[0]
-		opt = arglist[1]
+		wfreqfile = arglist[0] # file contains denominator (background)
+		opt = arglist[1] # determine which background distribution to be used
 		outprefix = arglist[2]
 
 		qij = collections.defaultdict(float)
@@ -858,29 +922,29 @@ def wfreq2sm(arglist):
 						if len(line)==0:
 								continue
 						sarr = line.split(' ')
-						t = sarr[0]
-						k = sarr[1]
-						f = float(sarr[2])
-						# sf M 3511.29
+						t = sarr[0] # frequency name
+						k = sarr[1] # amino acid name ({wf, sf} single, {sd} double)
+						f = float(sarr[2]) # weighed frequency value
+						# sf M 3511.29 
 						if t == opt:
 						#if len(k) == 1:
 								eij[k]+=f
-						# sd QR 95488.206
+						# sd QR 95488.206 # in total 210
 						elif t == 'sd':
 						#elif len(k)== 2:
 								qij[k]+=f
 
-		# single freq
+		# convert accumulative frequency into probability
+		# background probability
 		total_e = sum(eij.values())
 		for k in eij:
 				eij[k]=eij[k]/total_e
-		# substitution freq
+		# substitution probability
 		total_q = sum(qij.values())
 		for k in qij:
 				qij[k]=qij[k]/total_q
 
-		#print 'len(qij): %d' % len(qij)
-		# calculate sm
+		# calculate log-odds ratio
 		sm = collections.defaultdict(int)
 		for k in qij:
 			A = k[0]
@@ -977,6 +1041,7 @@ def main():
 		'splithidfa': splithidfa,
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,
+		'wfreqcs':wfreqcs,
 		'wfreq2sm': wfreq2sm
 	}
 
