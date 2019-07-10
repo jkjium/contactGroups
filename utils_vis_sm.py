@@ -99,7 +99,7 @@ def dendrogram_fgdist(arglist):
     outfile = '%s.dendrogram.png' % datafile
     x = np.loadtxt(datafile, delimiter=' ')
 
-    linkage_matrix = linkage(x, "single", metric='cosine')
+    linkage_matrix = linkage(x, "single", metric='correlation')
     plt.figure(figsize=(24, 15))
     #ddata = dendrogram(linkage_matrix)
     xt = ['%s-%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
