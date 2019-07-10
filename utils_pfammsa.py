@@ -796,7 +796,7 @@ def wfreqcs(arglist):
 				continue
 			sarr = line.split(' ')
 			ps_name = sarr[1]
-			ps_count = float(sarr[opt]) # frequency normalized by number of sequence in Pfam MSA
+			ps_count = float(sarr[opt]) 
 			# skip gaps
 			if '.' in ps_name:
 				continue
@@ -980,6 +980,148 @@ def wfreq2sm(arglist):
 		cp._info('save emboss sm to %s' % embossfile)
 
 
+
+# combine single frequency and conditional substitution frequency into sm
+def wfreqcs2sm(arglist):
+		if len(arglist) < 4:
+			cp._err('Usage: python utils_pfammsa.py wfreqcs2sm combine.wfreq wf|sf AA|AC outfile')
+
+		wfreqfile = arglist[0] # file contains denominator (background)
+		opt = arglist[1] # determine which background distribution to be used
+		cs = 'cs%s' % arglist[2].lower()
+		outprefix = arglist[3]
+
+		qij = collections.defaultdict(float)
+		eij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						t = sarr[0] # frequency name
+						k = sarr[1] # amino acid name ({wf, sf} single, {sd} double)
+						f = float(sarr[2]) # weighed frequency value
+						# sf M 3511.29 
+						if t == opt:
+						#if len(k) == 1:
+								eij[k]+=f
+						## sd QR 95488.206 # in total 210
+						#elif t == 'sd':
+						# csww AC 342.3541
+						elif t == cs:
+						#elif len(k)== 2:
+								qij[k]+=f
+
+		# convert accumulative frequency into probability
+		# background probability
+		total_e = sum(eij.values())
+		for k in eij:
+				eij[k]=eij[k]/total_e
+		# substitution probability
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		# calculate log-odds ratio
+		sm = collections.defaultdict(int)
+		for k in qij:
+			A = k[0]
+			B = k[1]
+			if A==B:
+				sm[A+B] = int(round(2*math.log(qij[A+B]/(eij[A]*eij[B]),2))) if qij[A+B]!=0.0 else int(0)
+			else:
+				sm[A+B] = int(round(2*math.log(qij[A+B]/(2*eij[A]*eij[B]),2))) if qij[A+B]!=0.0 else int(-5)
+			sm[B+A] = sm[A+B]
+		#print min(sm.values()), max(sm.values())
+
+		# output emboss sm
+		embossfile = outprefix + '.emboss.sm'
+		npemboss = np.array([[sm[A+B] for B in cp.smaa2] for A in cp.smaa2])
+		cp.b62edge[:npemboss.shape[0], :npemboss.shape[1]] = npemboss
+		with open(embossfile, 'w') as fp:
+			fp.write(cp.smstr(cp.b62edge, cp.smaa1))
+		cp._info('save emboss sm to %s' % embossfile)
+
+
+# save background distribution (alternative hypothesis)
+def wfreqbgdist(arglist):
+		if len(arglist) < 3:
+			cp._err('Usage: python utils_pfammsa.py wfreqbgdist .allwfreq(cs) wf|sf outfile')
+
+		wfreqfile = arglist[0] # file contains denominator (background)
+		opt = arglist[1] # determine which background distribution to be used
+		outfile = arglist[2]
+
+		eij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						t = sarr[0] # frequency name
+						k = sarr[1] # amino acid name ({wf, sf} single, {sd} double)
+						if k == '.':
+							continue
+						f = float(sarr[2]) # weighed frequency value
+
+						# sf M 3511.29 
+						if t == opt:
+								eij[k]+=f
+
+		# convert accumulative frequency into probability
+		# background probability
+		total_e = sum(eij.values())
+		'''
+		print len(eij)
+		print '%s\n' % (' '.join(['%.4f' % eij[k] for k in cp.aat01]))
+		print total_e
+		'''
+		for k in eij:
+				eij[k]=eij[k]/total_e
+
+		with open(outfile, 'w') as fp:
+			fp.write('%s\n' %(' '.join(['%.4f' % eij[k] for k in cp.aat01])))
+		cp._info('save background distribution to %s' % outfile)
+
+
+# combine single frequency and conditional substitution frequency into sm
+def wfreqcsfgdist(arglist):
+		if len(arglist) < 3:
+			cp._err('Usage: python utils_pfammsa.py wfreqcsfgdist pfam2247.70.cs3.allwfreq AA|AC outfile')
+
+		wfreqfile = arglist[0] # file contains denominator (background)
+		cs = 'cs%s' % arglist[1].lower()
+		outfile = arglist[2]
+
+		qij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						t = sarr[0] # frequency name
+						k = sarr[1] # amino acid name ({wf, sf} single, {sd} double)
+						f = float(sarr[2]) # weighed frequency value
+						# csww AC 342.3541
+						if t == cs:
+							qij[k]+=f
+
+		# convert accumulative frequency into probability
+		# substitution probability
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+		with open(outfile, 'w') as fp:
+			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
+		cp._info('save %s foreground distribution to %s' % (cs, outfile))
+
+
+
 # testing routine
 def test(arglist):
 	# test columnselect
@@ -1042,7 +1184,10 @@ def main():
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,
 		'wfreqcs':wfreqcs,
-		'wfreq2sm': wfreq2sm
+		'wfreq2sm': wfreq2sm,
+		'wfreqcs2sm':wfreqcs2sm,
+		'wfreqbgdist': wfreqbgdist,
+		'wfreqcsfgdist':wfreqcsfgdist
 	}
 
 	if sys.argv[1] not in dispatch:
