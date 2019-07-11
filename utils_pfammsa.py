@@ -788,7 +788,12 @@ def wfreqcs(arglist):
 	outfile = '%s.%d.cs' % (psfile, opt)
 
 	cp._info('Counting conditional substitutions from %s %d ...' % (psfile, opt))
+
 	csdict = {} # csdict[condition][singlet substitution count], len(csdict) == 210
+	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+	for aa in AAidx:
+		csdict[aa] = collections.defaultdict(float)
+
 	with open(psfile) as fp:
 		for line in fp:
 			line = line.strip()
@@ -805,16 +810,62 @@ def wfreqcs(arglist):
 			# t2 DREK 999
 			# sub1 = 'DE', sub2 = 'RK'
 			# csdict = {'DE':{RK: 999}}
-			if sub1 not in csdict:
-				csdict[sub1] = collections.defaultdict(float)
-			else:
-				csdict[sub1][sub2]+= ps_count
-
+			csdict[sub1][sub2]+= ps_count
 			# csdict = {'DE':{'RK':999}, 'RK':{'DE':999}}
-			if sub2 not in csdict:
-				csdict[sub2] = collections.defaultdict(float)
-			else:
-				csdict[sub2][sub1]+= ps_count
+			csdict[sub2][sub1]+= ps_count
+	cp._info('csdict: %d' % len(csdict))
+
+	cp._info('Writing outfile %s ... ' % outfile)
+	with open(outfile ,'w') as fout:
+		for k in csdict:
+			outstr = '\n'.join(['cs%s %s %.4f' % (k.lower(), AA, csdict[k][AA]) for AA in AAidx])
+			fout.write('%s\n' % outstr)
+
+
+# count single conditional substitution from .ps (pairsubstitution) file
+# input: pfam2247.allpsub.ps
+# 	t9 .YPC 85670 8.630681 0.006253 2
+# 	t2 DTRY 2825912 217.576898 0.022757 8
+# 	t1 FGFQ 3517170 252.519810 0.026510 5
+# input: data source column index {2,3} from .ps file
+#  	2: original count
+#	3: normalized by num of seq in Pfam MSA
+# output: .cs_1
+# formation: follows .wfreq file
+# later the result will combine with .allwfreq with 'cs1' prefix
+def wfreqcs_1(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py wfreqcs_1 pfam2247.allpsub.ps {2,3}')
+
+	psfile = arglist[0]	
+	opt = int(arglist[1])
+	outfile = '%s.%d.cs_1' % (psfile, opt)
+
+	cp._info('Counting conditional substitutions from %s %d ...' % (psfile, opt))
+	csdict = {} # csdict[condition][singlet substitution count], len(csdict) == 210
+	for a in cp.aas01:
+		csdict[a] = collections.defaultdict(float)
+	with open(psfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			ps_name = sarr[1]
+			ps_count = float(sarr[opt]) 
+			# skip gaps
+			if '.' in ps_name:
+				continue
+			sub1 = '%s%s' % (ps_name[0], ps_name[2]) if ps_name[0] < ps_name[2] else '%s%s' % (ps_name[2], ps_name[0])
+			sub2 = '%s%s' % (ps_name[1], ps_name[3]) if ps_name[1] < ps_name[3] else '%s%s' % (ps_name[3], ps_name[1])
+
+			csdict[ps_name[0]][sub2]+=ps_count
+			csdict[ps_name[2]][sub2]+=ps_count
+
+			csdict[ps_name[1]][sub1]+=ps_count
+			csdict[ps_name[3]][sub1]+=ps_count
+			# csdict = {'D':{RK: 999}}
+
 	cp._info('csdict: %d' % len(csdict))
 
 	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
@@ -822,8 +873,9 @@ def wfreqcs(arglist):
 	cp._info('Writing outfile %s ... ' % outfile)
 	with open(outfile ,'w') as fout:
 		for k in csdict:
-			outstr = '\n'.join(['cs%s %s %.4f' % (k.lower(), AA, csdict[k][AA]) for AA in AAidx])
+			outstr = '\n'.join(['cs1%s %s %.4f' % (k.lower(), AA, csdict[k][AA]) for AA in AAidx])
 			fout.write('%s\n' % outstr)
+
 
 
 # accumulate weighted background frequcney for each AA 
@@ -1086,7 +1138,7 @@ def wfreqbgdist(arglist):
 		cp._info('save background distribution to %s' % outfile)
 
 
-# combine single frequency and conditional substitution frequency into sm
+# calculate doubled conditional subsitution foreground distribution
 def wfreqcsfgdist(arglist):
 		if len(arglist) < 3:
 			cp._err('Usage: python utils_pfammsa.py wfreqcsfgdist pfam2247.70.cs3.allwfreq AA|AC outfile')
@@ -1120,6 +1172,40 @@ def wfreqcsfgdist(arglist):
 			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
 		cp._info('save %s foreground distribution to %s' % (cs, outfile))
 
+
+# calculate single conditional subsitution foreground distribution
+def wfreqcsfgdist_1(arglist):
+		if len(arglist) < 3:
+			cp._err('Usage: python utils_pfammsa.py wfreqcsfgdist_1 pfam2247.70.cs3_21.allwfreq A|C outfile')
+
+		wfreqfile = arglist[0] # file contains denominator (background)
+		cs = 'cs1%s' % arglist[1].lower()
+		outfile = arglist[2]
+
+		qij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						t = sarr[0] # frequency name
+						k = sarr[1] # amino acid name ({wf, sf} single, {sd} double)
+						f = float(sarr[2]) # weighed frequency value
+						# csww AC 342.3541
+						if t == cs:
+							qij[k]+=f
+
+		# convert accumulative frequency into probability
+		# substitution probability
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+		with open(outfile, 'w') as fp:
+			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
+		cp._info('save %s foreground distribution to %s' % (cs, outfile))
 
 
 # testing routine
@@ -1184,10 +1270,12 @@ def main():
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,
 		'wfreqcs':wfreqcs,
+		'wfreqcs_1':wfreqcs_1,
 		'wfreq2sm': wfreq2sm,
 		'wfreqcs2sm':wfreqcs2sm,
 		'wfreqbgdist': wfreqbgdist,
-		'wfreqcsfgdist':wfreqcsfgdist
+		'wfreqcsfgdist':wfreqcsfgdist,
+		'wfreqcsfgdist_1':wfreqcsfgdist_1
 	}
 
 	if sys.argv[1] not in dispatch:

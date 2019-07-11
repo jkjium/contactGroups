@@ -110,5 +110,24 @@ def dendrogram_fgdist(arglist):
     cp._info('save to %s' % outfile)
 
 
+def dendrogram_fgdist_1(arglist):
+    if len(arglist) < 1:
+	    cp._err('Usage: python utils_vis_sm.py dendrogram_fgdist_1 cs3.210dist_1.vec')
+    sys.setrecursionlimit(10000)
+
+    datafile = arglist[0]
+    outfile = '%s.dendrogram.png' % datafile
+    x = np.loadtxt(datafile, delimiter=' ')
+
+    linkage_matrix = linkage(x, "single", metric='correlation')
+    plt.figure(figsize=(24, 15))
+    #ddata = dendrogram(linkage_matrix)
+    xt = cp.aas01
+    ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
+    #ddata = _augmented_dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
+    #plt.show()	        
+    plt.savefig(outfile)
+    cp._info('save to %s' % outfile)
+
 if __name__ == '__main__':
         cp.dispatch(__name__)
