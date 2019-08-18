@@ -707,7 +707,11 @@ def rankstd(d):
 	#print m,s
 	return dict((k, (d[k] - m)/s) for k in d)
 
-
+# load all lines except for the empty lines
+def loadlines(filename):
+    with open(filename) as fp:
+        lines = filter(None, (line.rstrip() for line in fp))
+	return lines
 
 # given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format
 # return RMSD
