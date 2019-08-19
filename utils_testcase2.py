@@ -578,6 +578,52 @@ def batchblastgen(arglist):
 	fout.close()
 	cp._info('batch_blast.sh sm: %s len: %d' % (sm, count))
 
+# used in casp target homolog
+# re-format .out file into .outflat file
+# output: .outflat [target xxxx all --sx-x--x- xxxx B ---dsd---s-s- b62 10-1 1e-4]
+# combine .outflat then cut pdb by alignments
+# H1022.fa.mc10.10-1.out
+# 	6j0m_C mol:protein length:538  Pvc8,1e-130,26,527,INEIPLAQLELHIPT,28,536,INEIPLAQLELHIPT
+def blastflat_casptarget(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase2.py blastflat_casptarget .tsvfile .outfile')
+	tsvfile = arglist[0]
+	outfile = arglist[1]
+
+	targetlist = cp.loadlines(tsvfile)
+	targetdict = {}
+	for target in targetlist:
+		sarr = target.split(' ')
+		# given target output pdb name
+		targetdict[sarr[0]] = sarr[1]
+
+	pdbset = set() # remove all the repeat pdb names xxxx_A,B,C,D
+	sarr = outfile.split('.')
+	targetname = sarr[0]
+	sm = sarr[2]
+	gap = sarr[3]
+	outlist = cp.loadlines(outfile)
+
+	outfile = outfile + '.outflat'
+	fout = open(outfile, 'w')
+	for out in outlist:
+		sarr = out.split(',')
+		title = sarr[0] #6j0m_C mol:protein length:538
+		tarr = title.split(' ')
+		uarr = tarr[0].split('_')
+		pdbname = uarr[0]
+		if pdbname in pdbset:
+			continue
+		pdbset.add(pdbname)
+		chain = uarr[1]
+		evalue = sarr[1]
+		qseq = sarr[4]
+		sseq = sarr[7]
+		outstr = '%s %s all %s %s %s %s %s %s %s\n' % (targetname, targetdict[targetname], qseq, pdbname, chain, sseq, sm, gap, evalue)
+		fout.write(outstr)
+	fout.close()
+	cp._info('save to %s' % outfile)
+
 
 
 # combine all .out file into coverage vs EPQ format
@@ -699,6 +745,7 @@ def main():
 		'printpair':printpair,
 		'testpool':testpool,
 		'batchblastgen':batchblastgen,
+		'blastflat_casptarget': blastflat_casptarget,
 		'blastcolbystub': blastcolbystub,
 		'blastcathbystub': blastcathbystub,
 		'blasttpfptuple': blasttpfptuple,
