@@ -700,5 +700,12 @@ class protein(object):
     def getClusterNum(self):
 		return len(self.clusters) 
 
+    # return sliced pdb atom array
+    # s: input seq(substring) to match pdb seq
+    def slicebyseq(self, s):
+        pdbseq = self.seq.upper()
+        idx = pdbseq.find(s)
+        return self.resAtoms[idx:idx+len(s)] if idx != -1 else []
+
 
 

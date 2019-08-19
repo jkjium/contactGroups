@@ -121,6 +121,32 @@ def seqaafreq(arglist):
 		fout.write('%s\n' % outstr)
 	cp._info('save to %s' % outfile)
 
+
+# cut pdb using one sequence segment
+def splitpdbbyseq(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_protein2.py splitpdbbyseq pdbfile seqfafile outpdbfile')
+	pdbfile = arglist[0]
+	seqfile = arglist[1]
+	outfile = arglist[2]
+
+	# load pdb
+	p = protein(pdbfile)
+	# load seqfa
+	for h,s in cp.fasta_iter(seqfile):
+		seqheader = h
+		seqbody=s.translate(None, ''.join(cp.gaps)).upper()
+	
+	outres = p.slicebyseq(seqbody)
+	if len(outres) == 0:
+		cp._err('mismatch %s %s' % (pdbfile, seqfile))
+	with open(outfile, 'w') as fout:
+		for r in outres:
+			for a in r:
+				fout.write(a.writeAtom())
+	cp._info('save %d residues to %s' % (len(seqbody), outfile))
+
+
 # write cutoff contact by specific method
 # output: 1. method residue pdb file
 # 		  2. contact file	
