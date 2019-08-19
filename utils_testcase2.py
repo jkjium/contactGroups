@@ -582,8 +582,8 @@ def batchblastgen(arglist):
 # re-format .out file into .outflat file
 # output: .outflat [target xxxx all --sx-x--x- xxxx B ---dsd---s-s- b62 10-1 1e-4]
 # combine .outflat then cut pdb by alignments
-# H1022.fa.mc10.10-1.out
-# 	6j0m_C mol:protein length:538  Pvc8,1e-130,26,527,INEIPLAQLELHIPT,28,536,INEIPLAQLELHIPT
+# H0953.fa.mc26.sm.9-2.out:
+# 	6f45_D,0.0,1,249,MAVQG,1,249,MAVQG
 def blastflat_casptarget(arglist):
 	if len(arglist) < 2:
 		cp._err('Usage: python utils_testcase2.py blastflat_casptarget .tsvfile .outfile')
@@ -601,16 +601,14 @@ def blastflat_casptarget(arglist):
 	sarr = outfile.split('.')
 	targetname = sarr[0]
 	sm = sarr[2]
-	gap = sarr[3]
+	gap = sarr[4]
 	outlist = cp.loadlines(outfile)
 
 	outfile = outfile + '.outflat'
 	fout = open(outfile, 'w')
 	for out in outlist:
 		sarr = out.split(',')
-		title = sarr[0] #6j0m_C mol:protein length:538
-		tarr = title.split(' ')
-		uarr = tarr[0].split('_')
+		uarr = sarr[0].split('_') # 6f45_D
 		pdbname = uarr[0]
 		if pdbname in pdbset:
 			continue
