@@ -129,5 +129,39 @@ def dendrogram_fgdist_1(arglist):
     plt.savefig(outfile)
     cp._info('save to %s' % outfile)
 
+# generate histogram from data.list
+# input: one column (float number) data
+def hist(arglist):
+    if len(arglist) <1:
+        cp._err('Usage: python utils_vis_sm.py histogram data.list')
+    datafile = arglist[0]
+    x = np.loadtxt(datafile)
+    n = x.shape[0]
+    n_bins = 50
+    print n
+    fig, axs = plt.subplots(tight_layout=True)
+    axs.hist(x, bins=n_bins)
+    plt.show()
+
+# generate side-by-side histogram from data2.list
+# input: two one-column (float number) data files
+def hist_sbs(arglist):
+    if len(arglist) <2:
+        cp._err('Usage: python utils_vis_sm.py hist_sbs data1.list data2.list')
+    datafile1 = arglist[0]
+    datafile2 = arglist[1]
+    data1 = np.loadtxt(datafile1)
+    data2 = np.loadtxt(datafile2)
+    print data1.shape
+    print data2.shape
+    x = data1
+    y = data2
+    n_bins = 50
+    fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+    axs[0].hist(x, bins=n_bins)
+    axs[1].hist(y, bins=n_bins)
+
+    plt.show()
+
 if __name__ == '__main__':
         cp.dispatch(__name__)
