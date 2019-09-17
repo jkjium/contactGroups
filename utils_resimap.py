@@ -139,10 +139,10 @@ def resi2msa(arglist):
 	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
 
 
-# append resi to file with msai column
+# append resi to tsvfile according the column id in tsvfile
 def appendresi(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: python utils_resimap.py appendresi infile msai_col mapfile outfile')
+		cp._err('Usage: python utils_resimap.py appendresi tsvfile column_index mapfile outfile')
 
 	infile = arglist[0]
 	col = int(arglist[1])
@@ -172,7 +172,6 @@ def appendresi(arglist):
 			fout.write('%s %s\n' % (line, residict[sarr[col]]))
 	fout.close()
 	cp._info('save to %s' % outfile)	 	
-
 
 
 def cg2msai_sdii(arglist):
