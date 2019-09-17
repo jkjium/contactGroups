@@ -440,8 +440,8 @@ def getcolumns(arglist):
 		cp._err('Usage: python utils_pfammsa.py getcolumns msafile column_list{0,1,2} outfile')
 	msafile = arglist[0]
 	cols = [int(a) for a in arglist[1].split(',')]
-	header_flag = int(arglist[2])
-	outfile = arglist[3]
+	#header_flag = int(arglist[2])
+	outfile = arglist[2]
 
 	pfm = pfammsa(msafile)
 	if max(cols) >= pfm.msalen:
