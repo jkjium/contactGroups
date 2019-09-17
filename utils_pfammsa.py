@@ -435,10 +435,9 @@ def freqlookupscol(arglist):
 
 # improved version of the previous getcolumn function
 # multiple columns
-# header switch 
 def getcolumns(arglist):
-	if len(arglist) < 4:
-		cp._err('Usage: python utils_pfammsa.py getcolumns msafile column_list{0,1,2} header_flag outfile')
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py getcolumns msafile column_list{0,1,2} outfile')
 	msafile = arglist[0]
 	cols = [int(a) for a in arglist[1].split(',')]
 	header_flag = int(arglist[2])
@@ -451,7 +450,7 @@ def getcolumns(arglist):
 	colstrlist = pfm.msacolsfa(cols)
 	with open(outfile, 'w') as fout:
 		for t in colstrlist:
-			outstr = '>%s\n%s\n' % (t[0], t[1]) if header_flag == 1 else '%s\n' % (t[1])
+			outstr = '%s %s\n' % (t[0], t[1]) #if header_flag == 1 else '%s\n' % (t[1])
 			fout.write(outstr)
 	cp._info('column(s) data save to %s' % outfile)
 
