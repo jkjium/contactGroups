@@ -263,6 +263,61 @@ def chargepair_bcp(arglist):
 	with open(outfile,'w') as fout:
 		fout.write('%s\n' % ('\n'.join(cpairout)))
 
+# p53 project
+# search for naturally happend mutation in the MSA 
+# fetch the top correlated (pairwised) partner for compensation mutatation
+# input: PF00870_ncbi.txt (MSA) mt_cg5.0_ce3.0.cflat (selected significant cflat rows with mutation sites involved)
+# output: save located canditate sequence name resn appended to the original cflat
+def cmlocate2(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py cmlocate2 PF00870_ncbi.txt mt_cg5.0_ce3.0.cflat outfile')
+
+	msafile = arglist[0]
+	pfm=pfammsa(msafile)
+
+	cflatfile = arglist[1]
+	outfile = arglist[2]
+	outlist = []
+	# 0     1      2      3     4     5     6     7          8          9          10      11    12    13       14         15 
+	# mt    pdb    chain  resi1 resi2 resn1 resn2 d.sgc      d.tip      d.ca       pfamid  msai1 msai2 dca      dcazscore  mi
+	# R248L 1gzh_A A      247   248   N     R     4.62258533 3.79313044 3.82220565 PF00870 445   446   0.165428 4.17743804 0.487284
+	for line in cp.loadlines(cflatfile):
+		count=0
+		sarr = line.split(' ')
+		# split 'A161T' into wt='A', mtresi='161', mt='T'
+		wt=sarr[0][0]
+		mtresi = sarr[0][1:len(sarr[0])-1]
+		mt=sarr[0][-1] # expected mutation
+
+		# determine msa id for mutant and the compensation
+		# rows in cflat file record pairwised information
+		if sarr[3]==mtresi:
+			mtmsai = int(sarr[11])
+			cmmsai = int(sarr[12])
+			order = 0
+		elif sarr[4] == mtresi:
+			mtmsai = int(sarr[12])
+			cmmsai = int(sarr[11])
+			order = 1
+		else:
+			cp._err('Mutant ID %d cannot be found' % sarr[0]) 
+
+		for head, seq in pfm.msalist:
+			if seq[mtmsai] == mt:
+				# corresponding the pair order in the original cflat file
+				if order == 0:
+					outstr = '%s %s %s %s' % (line, head, seq[mtmsai], seq[cmmsai])
+				else:
+					outstr = '%s %s %s %s' % (line, head, seq[cmmsai], seq[mtmsai])
+				outlist.append(outstr)
+				count+=1
+		cp._info('%s %d' % (sarr[0], count))
+
+	# save output
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outlist)))
+
+
 
 # calculate entropy of all columns in score file
 # input: score file, rcol file (pos indices)
@@ -1251,6 +1306,7 @@ def main():
 		'aafreqscol': aafreqscol,
 		'columnselect': columnselect,
 		'chargepair_bcp': chargepair_bcp,
+		'cmlocate2': cmlocate2,
 		'entropyall': entropyall,
 		'entropyfromfile': entropyfromfile,
 		'seqfa': seqfa,

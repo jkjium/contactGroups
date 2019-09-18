@@ -394,6 +394,20 @@ def dcall(callstr):
 def drun(runstr):
 	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
 
+# transfer a skewed distribution into normal
+# input: vec, a list of float values
+# input: method: log, rsquare, csquare, default = log
+def disttrans(vec, method='log'):
+	if method == 'csquare':
+		op = lambda x: x ** ( 1. / 3 )
+	elif method == 'rsquare':
+		op = lambda x: x ** ( 1. / 2 )
+	else:
+		print 'use default log transformation'
+		op = lambda x: math.log(x,2)
+	return [op(v) for v in vec]
+
+
 
 # (joint) entropy calculation
 # input: a list of np.array()
