@@ -51,5 +51,96 @@ def buriedchargepair(arglist):
 		with open(outfile, 'w') as fout:
 			fout.write('%s\n' % ('\n'.join(outlist)))
 
+'''
+append a ce value by the stub extracted from cflat
+input: 
+1. stub from cflat 
+	msai1 msai2
+	...
+2. new ce value with msai pairs
+	msai1 msai2 ce.value
+	...
+3. key columns
+	indicate the number of columns are used as a key to match the row from stubfile
+	columns for key must be columns at front of a cefile
+	rest of the columns are output together
+output:
+	values from .cefile corresponding to the stub order
+	print msai for debug
+'''
+def appendbystub(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: utils_cflat.py appendbystub cflat.stub.file new.ce.file 2 out.mapped.ce.vec')
+
+	stubfile = arglist[0]
+	cefile = arglist[1]
+	knum = int(arglist[2])
+	outfile = arglist[3]
+
+	# load ce into a dictionary
+	cedict = {}
+	celist = cp.loadlines(cefile)
+	cp._info('%d ce values loaded' % len(celist))
+	for line in celist:
+		sarr = line.split(' ')
+		key = ' '.join(sarr[:knum])
+		value = ' '.join(sarr[knum:])
+		cedict[key] = value
+
+	fill = ' '.join(['-191']*(len(line.split(' '))-knum))
+	# map stub from cedict
+	outlist = []
+	count = 0
+	for msaipair in cp.loadlines(stubfile):
+		if msaipair in cedict:
+			outlist.append(cedict[msaipair])
+		else:
+			cp._info("key %s has no match in celist" % msaipair)
+			count+=1
+			outlist.append(fill)
+	cp._info('%d records mapped' % len(outlist))
+	cp._info('%d records missed' % count)
+
+	# save outfile
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save to %s' % outfile)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
 	cp.dispatch(__name__)

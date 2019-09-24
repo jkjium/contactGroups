@@ -650,9 +650,10 @@ def posmap_subseq(s1, s2):
 	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) >= len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
 
 	if reverse == True:
-		retmap = [(v, k) for (k, v) in idx_set]
+		retmaplist = [(v, k) for (k, v) in idx_set]
 	else:
-		retmap = idx_set
+		retmaplist = idx_set
+	retmap = dict((k,v) for (k,v) in retmaplist)
 	return retmap
 
 
@@ -720,6 +721,10 @@ def rankstd(d):
 	s = bg.std()
 	#print m,s
 	return dict((k, (d[k] - m)/s) for k in d)
+
+# take nth root
+def root(v, n):
+	return v**(1./n) if 0<=v else -(-v)**(1./n)
 
 # load all lines except for the empty lines
 def loadlines(filename):
