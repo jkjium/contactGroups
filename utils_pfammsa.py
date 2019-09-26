@@ -735,6 +735,25 @@ def splithidfa(arglist):
 	cp._info('%s : save %d .fa files' % (fastafile, count))
 
 
+# same function with splitidfa
+# use fasta header as the file name
+# illegal character (i.e. [ ] [/] [,]) are replace with "_"
+# gaps are striped in the output
+# output: single .fa for each sequence in MSA
+def splitheadfa(arglist):
+	if len(arglist) < 1:
+		cp._err('Usage: python utils_pfammsa.py splitheadfa fastafile')
+	fastafile = arglist[0]
+
+	count = 0 
+	for head, gapseq in cp.fasta_iter(fastafile):
+		h= head.translate(None, ''.join(cp.illab))
+		s= gapseq.translate(None, ''.join(cp.gaps))
+		with open(('%s.fa' % h), 'w') as fout:
+			fout.write(">%s\n%s\n" % (head, s))
+			cp._info('%s %s' % (head, h))
+		count+=1
+	cp._info('save %d .fa files' % count)
 
 # accumulate weighted background frequcney for each AA 
 def wfreq(arglist):
@@ -1322,6 +1341,7 @@ def main():
 		'scoreweight': scoreweight,
 		'splitfa': splitfa,
 		'splithidfa': splithidfa,
+		'splitheadfa': splitheadfa,
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,
 		'wfreqcs':wfreqcs,

@@ -16,7 +16,7 @@ import collections
 # for testing drun dcall
 import subprocess
 
-illab =['/', '+', '?', '*', '&', '$', '\\']
+illab =['/', '+', '?', '*', '&', '$', '\\', ' ', '|']
 
 gaps = ['.','-',' ']
 

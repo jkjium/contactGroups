@@ -461,7 +461,7 @@ def printpair(arglist):
 
 def testpool(arglist):
 	if len(arglist)< 5:
-		cp.err('Usage: python utils_testcase.py testpool 20p.test.pool needle B62 10.0 0.5')
+		cp._err('Usage: python utils_testcase.py testpool 20p.test.pool needle B62 10.0 0.5')
 
 	poolfile = arglist[0]
 	cmd = arglist[1]
