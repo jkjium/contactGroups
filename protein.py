@@ -78,6 +78,28 @@ class protein(object):
         # resArray, gives a list of keys eg. (A,Q,70), (A,I,71), (A,V,72)
         self.seq, self.resArray, self.resAtoms = self.getSeq()
 
+        # resAtomsDict[key] = list() of atom
+        # 1gzh_A.pdb resAtomsDict['A196'] = 
+        '''
+            ATOM    745  N   ARG A 196      20.463  12.417  35.872  1.00 27.01           N
+            ATOM    746  CA  ARG A 196      20.781  11.116  36.427  1.00 29.11           C
+            ATOM    747  C   ARG A 196      19.585  10.190  36.233  1.00 31.25           C
+            ATOM    748  O   ARG A 196      18.502  10.622  35.803  1.00 31.36           O
+            ATOM    749  CB  ARG A 196      21.060  11.231  37.928  1.00 28.76           C
+            ATOM    750  CG  ARG A 196      22.275  12.054  38.291  1.00 30.62           C
+            ATOM    751  CD  ARG A 196      22.548  11.982  39.782  1.00 29.49           C
+            ATOM    752  NE  ARG A 196      23.663  12.845  40.163  1.00 34.64           N
+            ATOM    753  CZ  ARG A 196      24.097  12.997  41.412  1.00 36.70           C
+            ATOM    754  NH1 ARG A 196      25.120  13.806  41.674  1.00 36.31           N1+
+            ATOM    755  NH2 ARG A 196      23.508  12.337  42.403  1.00 38.20           N
+        '''
+        self.resAtomsDict = {} 
+        for rlist in self.resAtoms:
+            key = '%s%d' % (rlist[0].chainID, rlist[0].resSeq)
+            if key in self.resAtomsDict:
+                cp._err('duplicate residue found: %s' % key)
+            self.resAtomsDict[key] = rlist
+
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
         #aamap = AAmap()
         #self.seq = ''.join([aamap.getAAmap(a.resName) for a in self.ca])
@@ -87,6 +109,7 @@ class protein(object):
         self.seqDict = {-1: '.'}
         for r in self.resDict:
             self.seqDict[self.resDict[r][0]] = '%s(%s)' % (r, self.resDict[r][1])
+        
 
     # get atom by atom name, ie. CA, CB, ...
     def atomsbyname(self, aname):
@@ -160,6 +183,25 @@ class protein(object):
             ats.append(reta)
 
         return ats        
+    
+    # return a redundant list of Chain+resi
+    # the redundancy is the contact affinity
+    def contactbyallatom(self, chain, resi, cutoff, seqcutoff=0.0):
+        key = '%s%d' % (chain, resi)
+        neighbors = []
+        for r in self.resAtomsDict:
+            # do not compare with itself
+            if key == r:
+                continue
+            for a in self.resAtomsDict[r]:
+                for b in self.resAtomsDict[key]:
+                    dist =  np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z)))
+                    if dist <= cutoff and abs(a.resSeq-b.resSeq) > seqcutoff:
+                        neighbors.append('%s%d' % (a.chainID, a.resSeq))
+        return neighbors
+
+
+
 
     # output residue contact by dist cutoff and seqcutoff
     # no redundancy 

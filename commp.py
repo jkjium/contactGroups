@@ -484,6 +484,14 @@ def getPDBUniprotMap(mapfile):
 	print 'getPDBUniprotMap: %s %d maps loaded' % (mapfile, len(posmap))
 	return posmap
 
+# return the percentage of how many identical characters
+def hamming_similarity(s1,s2):
+	if len(s1) != len(s2):
+		print 'lengh not match'
+		print s1
+		print s2
+	return 100*sum(ch1 == ch2 for ch1, ch2 in zip(s1, s2))/float(len(s1))
+
 
 # x: str list in np.array format
 #$ python proc_hammingweight.py t_hamming_weight.score 0.9

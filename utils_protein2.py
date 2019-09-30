@@ -37,6 +37,39 @@ def cgfreq(arglist):
 	cp._info('save to %s' % outfile)
 
 
+# input: pdb file, target residue IDs, cutoff distance
+# output: a flat file
+# format:
+# resi n1,n2,n3... neighborstring
+# atom.self.resSeq (int)
+# protein.contactbyallatom(self, chain, resi, cutoff, seqcutoff=0.0); return list: ['A161','A161', A256', ...]
+# example:
+# $ python utils_protein2.py neighborsflatline 1gzh_A.pdb A161,A255 4.0
+# A161 A255 FVRAMIVIYLTITRNF A109,A157,A158,A159,A160,A162,A173,A195,A234,A252,A253,A254,A256,A267,A268,A270
+def neighborsflatline(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_protein2.py neighborsflatline pdbfile A2,B13 4.0')
+
+	pdbfile = arglist[0]
+	p = protein(pdbfile)
+	reslist = [(s[0], s[1:]) for s in arglist[1].split(',')]
+	targetstr = arglist[1].replace(',',' ')
+	cutoff = float(arglist[2])
+
+	# get neighbor information
+	n=[]
+	# [('A', '161'),('A','161'), ('A','256'), ...]
+	for r in reslist:
+		n+=p.contactbyallatom(r[0], int(r[1]), 4.0)
+	# remove redundancy
+	neighbors = list(set(n))
+	neighbors.sort()
+	resstr = ','.join(neighbors)
+	# get local neighbors sequence
+	# p.resDict = 'B529': (132, 'V')
+	neighborseq = ''.join([p.resDict[resi][1] for resi in neighbors])
+	print '%s %s %s' % (targetstr, neighborseq, resstr)
+
 def writechain(arglist):
 	if len(arglist) < 3:
 		cp._err('Usage: python utils_protein2.py writechain pdbfile chainID')

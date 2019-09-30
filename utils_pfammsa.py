@@ -167,7 +167,38 @@ def aafreqscol(arglist):
 		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
 
+# input:
+# msafile
+# columnsfile: each line contains a header and a set of columns
+def columnsmsa(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py columnsmsa msafile columnsfile outfile')
+	msafile = arglist[0]
+	columnsfile = arglist[1]
+	outfile = arglist[2]
 
+	m = pfammsa(msafile)
+	#msadict = dict((s[0].translate(None, ''.join(cp.illab)), s[1])for s in m.msalist)
+	msadict = dict((s[0], s[1])for s in m.msalist)
+
+	# KFB45953/57-241 425 426 429 432 441 444 445 446 452 454
+	outstr = []
+	for line in cp.loadlines(columnsfile):
+		sarr = line.split(' ')
+		head = sarr[0]
+		cols = sarr[1:]
+		msaseq = []
+		for i in cols:
+			if i == '-1':
+				msaseq.append('x')
+			else:
+				msaseq.append(msadict[head][int(i)])
+		#outstr.append(''.join([msadict[head][int(i)] for i in cols if i!='-1' else 'x']))
+		outstr.append(''.join(msaseq))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outstr))
+	cp._info('save to %s' % outfile)
 
 # select key columns by residue contact & top sdii
 # input: 1a0p.pdb.A.sgc.cg, 1a0p.pdb-PF00589.map, PF00589.mip.3.top
@@ -549,6 +580,13 @@ def getsinglemsa(arglist):
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
 
 
+# temp put it here
+def hamming_similarity(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_pfammsa.py hamming_similarity msaseq1 msaseq2')
+	msaseq1 = arglist[0]
+	msaseq2 = arglist[1]
+	print '%.2f' % (cp.hamming_similarity(msaseq1, msaseq2))
 
 # improved version of utils_msa.MSAReduction()
 # input : PF0000.txt, scoretags, gapcutoff(max gap percentage), weightcutoff
@@ -1323,6 +1361,7 @@ def main():
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
+		'columnsmsa': columnsmsa,
 		'columnselect': columnselect,
 		'chargepair_bcp': chargepair_bcp,
 		'cmlocate2': cmlocate2,
@@ -1334,6 +1373,7 @@ def main():
 		'freqlookupscol': freqlookupscol,
 		'getcolumns': getcolumns, # get columns from MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
+		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,

@@ -283,6 +283,38 @@ def col2resi(arglist):
 		fout.write("%s\n" % ('\n'.join(outstr)))
 	cp._info('save to %s' % outfile)
 
+# reverse of col2resi
+# map a group of resi to msai
+def resi2col(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_resimap.py resi2col mapfile resifile outfile')
+	mapfile = arglist[0]
+	resifile = arglist[1]
+	outfile = arglist[2]
+
+	resmap={}
+	# resi resn msai msan
+	# 101 K 2 K
+	for line in cp.loadlines(mapfile):
+		sarr = line.split(' ')
+		resmap[sarr[0]] = sarr[2]
+
+	outstr = []
+	for line in cp.loadlines(resifile):
+		sarr = line.split(' ')
+		# neighbors from pdb file may not be included in the map file
+		cols = []
+		for r in sarr:
+			if r not in resmap:
+				#continue
+				cols.append('-1')
+			else:
+				cols.append(resmap[r])
+		outstr.append(' '.join(cols))
+
+	with open(outfile, 'w') as fout:
+		fout.write("%s\n" % ('\n'.join(outstr)))
+	cp._info('save to %s' % outfile)
 
 # append msai to dca output
 # for cecolumn, cflat
