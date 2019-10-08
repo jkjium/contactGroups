@@ -128,6 +128,7 @@ def combinesm(arglist):
 
 # compare two matrices 
 # save (S1 - S2) 20x20 as a result
+# output np readable txt
 def diff(arglist):
 	if len(arglist)<3:
 		cp._err('Usage:python utils_sm.py smfile1 smfile2 outfile(sm1-sm2)')
@@ -140,6 +141,7 @@ def diff(arglist):
 	sm2 = smatrix(smfile2)
 	outcore = sm1.core - sm2.core
 
+	#np.savetxt(outfile, outcore, fmt='%d')
 	with open(outfile, 'w') as fout:
 		fout.write(outemboss(outcore))
 	cp._info('write diff matrix %s' % (outfile))
