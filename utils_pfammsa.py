@@ -109,6 +109,12 @@ class pfammsa(object):
 
 		return pairsubdict
 
+	# convert sequences into values
+	# input: dictionary of { 'A': 0.05, 'C': 0.2, ... }
+	# output: list of sequences value list
+	def seqvalues(self, kdict):
+		return [[kdict[a] for a in s[1]] for s in self.msalist]
+
 
 # calculate AA frequency by given column indices
 def aafreq(arglist):
@@ -166,6 +172,64 @@ def aafreqscol(arglist):
 	with open(outfile, 'w') as fp:
 		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
+
+
+# for input CE(coevolution) tuple, pair or triplets
+# locate the columns in pfammsa, replace to kidera factor values
+# calculate the (mean std) for delta kidera factors between/among CE columns
+# input: PF00000_full.txt cflat_tuple.stub
+# stub file comes from .cflat
+# output: 10 columns file corresponding to the order of stub
+# ready for append on .cflat file
+def cekidera(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py cekidera pfammsa.txt ce_tuple.stub outfile')
+
+	msafile = arglist[0]
+	stubfile = arglist[1]
+	outfile = arglist[2]
+
+	# load ce tuples from .stub file
+	# 233 325
+	# 111 222
+	# ->
+	# tuples = [[223, 325], [111,222], ...]
+	tuples = [line.split(' ') for line in cp.loadlines(stubfile)]
+
+	# calculate mean, std of 10 kidera factors for each tuple 
+	outlistlist = []
+	m = pfammsa(msafile)
+	for i in xrange(0, 10): # 10 kidera factors
+		# prepare kidera single key-value table
+		kd = dict((k, cp.kidera[k][i]) for k in cp.kidera)
+
+		# replace whole msa sequences into kidera[i] values
+		# list of list
+		nkm = np.array(m.seqvalues(kd))
+		# convert to numpy array for slicing
+		'''
+		>>> v1=[0,1,2,3,4,5]
+		>>> v2=[0,10,20,30,40,50]
+		>>> b=list()
+		>>> b.append(v1)
+		>>> b.append(v2)
+		b = [[0, 1, 2, 3, 4, 5], [0, 10, 20, 30, 40, 50]]
+		>>> c=np.array(b)
+		c = array([[ 0,  1,  2,  3,  4,  5],
+ 		           [ 0, 10, 20, 30, 40, 50]])
+		>>> j=[1,2,3]
+		c[:,j] = array([[ 1,  2,  3],  # seq 1
+			            [10, 20, 30]]) # seq 2
+		>>> p=sum(c[:,j].T) # sum kider values of tuples for each sequence
+		array([ 6, 60, ...])
+		'''
+		# for each kidera factor calculate mean and std
+		#outlistlist.append([sum(nkm[:,t].T).mean() for t in tuples])
+		outlistlist.append([sum(nkm[:,t].T).std() for t in tuples])
+
+	np.savetxt(outfile, np.array(outlistlist).T, fmt='%.4f', delimiter=' ')
+	cp._info('save kidera mean std to %s' % outfile)
+
 
 # input:
 # msafile
@@ -1361,6 +1425,7 @@ def main():
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
+		'cekidera': cekidera,
 		'columnsmsa': columnsmsa,
 		'columnselect': columnselect,
 		'chargepair_bcp': chargepair_bcp,
