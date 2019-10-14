@@ -4,6 +4,7 @@
 '''
 
 import commp as cp
+import numpy as np
 
 def buriedchargepair(arglist):
 	if len(arglist) < 2:
@@ -105,6 +106,20 @@ def appendbystub(arglist):
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % '\n'.join(outlist))
 	cp._info('save to %s' % outfile)
+
+# calculate column based zscore for each elements
+def zscore(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: utils_cflat.py in_value_matrix.file out_zscore_matrix.file')
+	infile = arglist[0]
+	outfile = arglist[1]
+	d = np.loadtxt(infile, delimiter=' ')
+	# d.shape = (row, column)
+	zscorelist = [cp.zscore(d[:,i]) for i in xrange(0, d.shape[1])]
+	np.savetxt(outfile, np.array(zscorelist).T, fmt='%.4f', delimiter=' ')
+	cp._info('save zscore to %s' % outfile)
+
+
 
 
 
