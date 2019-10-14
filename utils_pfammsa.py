@@ -194,7 +194,7 @@ def cekidera(arglist):
 	# 111 222
 	# ->
 	# tuples = [[223, 325], [111,222], ...]
-	tuples = [line.split(' ') for line in cp.loadlines(stubfile)]
+	tuples = [[int(i) for i in line.split(' ')] for line in cp.loadlines(stubfile)]
 
 	# calculate mean, std of 10 kidera factors for each tuple 
 	outlistlist = []
