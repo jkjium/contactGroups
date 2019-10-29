@@ -39,6 +39,11 @@ class smatrix(object):
 		print '%s, max: %d, min: %d' % (self.name, np.max(self.core), np.min(self.core))
 		print cp.smstr(self.edge, self.aa)
 
+	# output npcore as a file
+	# for dendrogram plotting
+	def outnpcore(self, outname):
+		np.savetxt(outname, self.core, fmt='%.8f', delimiter=' ')
+
 	# copy from below
 	def outemboss(self, outname):
 		cp.b62edge[:20, :20] = self.core
@@ -294,6 +299,23 @@ def stat(arglist):
 		fout.write('%d %d %d %d\n' % (p,n,ps,ns))
 	cp._info('save to %s' % outfile )
 
+# take the arth mean of a set of sm(s)
+# for single/double conditional sm
+def smmean(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_sm.py smmean smfiles.list outfile')
+	smlistfile = arglist[0]
+	outfile = arglist[1]
+	smlist = [smatrix(smfile) for smfile in cp.loadlines(smlistfile)]
+
+	total = np.zeros((20,20))
+	for s in smlist:
+		total+=s.core
+	outcore = np.rint(total/len(smlist))
+	outembossfromcore(outcore, outfile)
+	cp._info('mean of %d sm, save to %s' % (len(smlist), outfile))
+
+
 def transform(arglist):
 	'''
 	transform sm by 1. translate; 2. scale p,n
@@ -357,9 +379,21 @@ def outblast62(arglist):
 
 
 # output emboss sm format with b62 edge
-def outemboss(core):
+def outembossfromcore(core, outname):
 	cp.b62edge[:20, :20] = core
-	return cp.smstr(cp.b62edge, cp.smaa1)
+	with open(outname, 'w') as fout:
+		fout.write(cp.smstr(cp.b62edge, cp.smaa1))
+
+
+def outnpcore(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_sm.py smfile outfile')
+	smfile = arglist[0]
+	outfile = arglist[1]
+	sm = smatrix(smfile)
+	sm.outnpcore(outfile)
+	cp._info('save core to %s' % outfile)
+
 
 def savecolvec(arglist):
 	if len(arglist) < 2:
@@ -401,10 +435,12 @@ def main():
 		'interpolate': 	interpolate,
 		'outblast': 	outblast,
 		'outblast62':	outblast62,
+		'outnpcore':	outnpcore,
 		'printflatten':	printflatten,
 		'scalepn':		scalepn,
 		'stat':			stat,
 		'savecolvec':	savecolvec,
+		'smmean':		smmean,
 		'transform':	transform,
 		'test':			test
 	}

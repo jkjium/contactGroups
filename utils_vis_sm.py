@@ -103,7 +103,7 @@ def dendrogram_fgdist(arglist):
     plt.figure(figsize=(24, 15))
     #ddata = dendrogram(linkage_matrix)
     xt = ['%s-%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
-    ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
+    ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1, link_color_func=lambda x: "k")
     #ddata = _augmented_dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
     #plt.show()	        
     plt.savefig(outfile)
@@ -124,6 +124,25 @@ def dendrogram_fgdist_1(arglist):
     #ddata = dendrogram(linkage_matrix)
     xt = cp.aas01
     ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
+    #ddata = _augmented_dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
+    #plt.show()	        
+    plt.savefig(outfile)
+    cp._info('save to %s' % outfile)
+
+
+def dendrogram_emboss_sm(arglist):
+    if len(arglist) < 1:
+	    cp._err('Usage: python utils_vis_sm.py dendrogram_emboss_sm b62.sm.dat')
+    sys.setrecursionlimit(10000)
+
+    datafile = arglist[0]
+    outfile = '%s.dendrogram.png' % datafile
+    x = np.loadtxt(datafile, delimiter=' ')
+
+    linkage_matrix = linkage(x, "single", metric='correlation')
+    plt.figure(figsize=(24, 15))
+    xt = cp.aa201 # emboss sm order
+    ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1, link_color_func=lambda x: "k")
     #ddata = _augmented_dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1)
     #plt.show()	        
     plt.savefig(outfile)

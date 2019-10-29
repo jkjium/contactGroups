@@ -618,6 +618,65 @@ def blast2cve(arglist):
 				fout.write(outstr)
 		cp._info('save %s' % outfile)
 
+# save as blast2cve but specify gapopen and gapextend
+# combine all .out file into coverage vs EPQ format
+def blast2cvep(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_testcase.py blast2cve stubfile sm gapopen gapextend')
+
+	stubfile = arglist[0]
+	sm = arglist[1]
+	g0 = int(arglist[2])
+	g1 = int(arglist[3])
+
+	# load all the fa names
+	stublist = []
+	with open(stubfile) as fp:
+		# naming code: 	dbname.index.hid.fa
+		#		 		astralS20.00000.a-1-1.fa
+		for faname in fp:
+			faname = faname.strip()
+			if len(faname)==0:
+				continue
+			stublist.append(faname)
+
+	gaplist = [(g0,g1)]
+
+	#for g in cp.gapb80:
+	for g in gaplist:
+		outlist = []
+		for faname in stublist:
+			hid = faname.split('.')[2]
+			# load content from .out file
+			outname = '%s.%s.%d-%d.out' % (faname, sm, g[0], g[1])
+			with open(outname) as fd:
+				# d2bkma_ a-1-1,6e-99
+				for line in fd:
+					line = line.strip()
+					if len(line) == 0:
+						continue	
+					sarr = line.split(',')
+					title = sarr[0]
+					outhid = title.split(' ')[1]
+					tpfp = 1 if hid == outhid else 0
+					evalue = float(sarr[1])
+					# save tuple	0		1		2	3
+					outlist.append((faname,title,evalue,tpfp))
+		# sort by evalue
+		outlist_sort = sorted(outlist, key=itemgetter(2))
+		# save CVE file
+		tp=fp=0
+		outfile = '%s.%s.%d-%d.cve' % (stubfile, sm, g[0], g[1])
+		with open(outfile, 'w') as fout:
+			for r in outlist_sort:
+				if r[3] == 1:
+					tp+=1
+				else:
+					fp+=1
+				outstr = '%s %s %.8f %d %d %d\n' % (r[0], r[1], r[2], r[3], tp, fp)
+				fout.write(outstr)
+		cp._info('save %s' % outfile)
+
 
 # output cve points in csv format
 # output .tick 
@@ -704,6 +763,7 @@ def main():
 		'blastcathbystub': blastcathbystub,
 		'blasttpfptuple': blasttpfptuple,
 		'blast2cve': blast2cve,
+		'blast2cvep': blast2cvep,
 		'tpfpbygap': tpfpbygap,
 		'cvepoint': cvepoint,
 		'pairseq':	pairseq
