@@ -151,12 +151,12 @@ def dendrogram_emboss_sm(arglist):
 # generate histogram from data.list
 # input: one column (float number) data
 def hist(arglist):
-    if len(arglist) <1:
-        cp._err('Usage: python utils_vis_sm.py histogram data.list')
+    if len(arglist) <2:
+        cp._err('Usage: python utils_vis_sm.py histogram data.list bin')
     datafile = arglist[0]
+    n_bins = int(arglist[1])
     x = np.loadtxt(datafile)
     n = x.shape[0]
-    n_bins = 50
     print n
     fig, axs = plt.subplots(tight_layout=True)
     axs.hist(x, bins=n_bins)
