@@ -6,6 +6,43 @@ from collections import defaultdict
 import numpy as np
 import commp as cp
 
+def alterbfactor(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage:python utils_protein2.py alterbfactor pdbfile newbfactor.vec outfile ca_bf_or_not{1|0}')
+	pdbfile = arglist[0]
+	nbfile = arglist[1]
+	outfile = arglist[2]
+	cabfflag = int(arglist[3])
+
+	nb = np.loadtxt(nbfile)
+	p = protein(pdbfile)
+	fout=open(outfile, 'w')
+
+	if cabfflag == 1: # output allatom pdb
+		if len(p.ca)!=len(nb):
+			cp._err('length does not match. %d atoms, %d new bfactor values' % (len(p.ca), len(nb)))\
+		# alter bfactor for all ca atoms
+		for i in xrange(0, len(p.ca)):
+			a=p.ca[i]
+			a.tempFactor=nb[i]
+		# same all atom pdb
+		for a in p.atoms:
+			if 'CA' not in a.name:
+				a.tempFactor=0
+			fout.write(a.writeAtom())
+	else:
+		if len(p.atoms)!=len(nb):
+			cp._err('length does not match. %d atoms, %d new bfactor values' % (len(p.atoms), len(nb)))
+		# alter bfactor
+		for i in xrange(0, len(p.atoms)):
+			a= p.atoms[i]
+			a.tempFactor = nb[i]
+			fout.write(a.writeAtom())		
+
+	fout.close()
+	cp._info('save new pdb to %s' % outfile)
+
+
 def cgfreq(arglist):
 	if len(arglist) < 2:
 		cp._err('Usage: python utils_protein2.py cgfreq cglistfile outfile.cgf')
@@ -235,6 +272,26 @@ def writeseqfa(arglist):
 	p = protein(pdbfile, chain=chainid)
 	fout = open(outfile, 'w')
 	fout.write('>%s\n%s\n' % (head, p.seq.lower()))
+	fout.close()
+	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
+
+def writeseq(arglist):
+	if len(arglist) == 2:
+		chainid = arglist[1]
+		outfile = '%s.%s.seq' % (arglist[0], chainid)
+		head = '%s.%s' % (arglist[0], chainid)
+	elif len(arglist) == 1:
+		chainid = 'all'
+		outfile = '%s.seq' % arglist[0]
+		head = arglist[0]
+	else:
+		cp._err('Usage: python utils_protein.py writeseqfa 1t3r.pdb {A}')
+
+	pdbfile = arglist[0]
+
+	p = protein(pdbfile, chain=chainid)
+	fout = open(outfile, 'w')
+	fout.write('%s\n' % (p.seq.lower()))
 	fout.close()
 	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
 
