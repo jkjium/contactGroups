@@ -6,6 +6,7 @@ import time
 import sys
 import commp as cp
 from operator import itemgetter
+from protein import protein
 
 '''
 $1:  file name
@@ -134,6 +135,176 @@ class alignflat(object):
 	def dump(self):
 		for f in self.flatArray:
 			f.dump()
+
+# visualize aligned segments on structures
+# identifier: B62 or Pfam or SeqStruct
+def aln2color(arglist):
+	if len(arglist) < 8:
+		cp._err('Usage:python utils_testcase.py aln2color A.aln.pdb B.aln.pdb A.msa.seq B.msa.seq A.msa2pdb.map B.msa2pdb.map identifier outfile')
+
+	alnpdbfileA = arglist[0]
+	alnpdbfileB = arglist[1]
+	msaseqfileA = arglist[2]
+	msaseqfileB = arglist[3]
+	mapfileA = arglist[4]
+	mapfileB = arglist[5]
+	identifier = arglist[6]
+	outfile = arglist[7]
+
+	pml = []
+
+	pdbnameA = alnpdbfileA[:-4]
+	pdbnameB = alnpdbfileB[:-4]
+	name = '%s.%s' % (pdbnameA, pdbnameB)
+	pml.append('load %s' % alnpdbfileA)
+	pml.append('load %s' % alnpdbfileB)
+	pml.append('color gray90')
+	pml.append('cartoon atutomatic')
+	pml.append('as cartoon')
+
+	# load pdbs
+	pdbA = protein(alnpdbfileA)
+	pdbB = protein(alnpdbfileB)
+
+	# load msa seq
+	msaseqA = cp.loadlines(msaseqfileA)[0]
+	msaseqB = cp.loadlines(msaseqfileB)[0]
+	if len(msaseqA)!=len(msaseqB):
+		cp._err('unmatched sequences:\n%s\n%s' % (msaseqA, msaseqB))
+
+	# load maps
+	mapA = {}
+	for line in cp.loadlines(mapfileA):
+		sarr = line.split(' ')
+		k = int(sarr[0])
+		v = int(sarr[1])
+		mapA[k] = v
+
+	mapB = {}
+	for line in cp.loadlines(mapfileB):
+		sarr = line.split(' ')
+		k = int(sarr[0])
+		v = int(sarr[1])
+		mapB[k] = v
+
+	# extract aligned segments from msa.seqs as a list of list
+	#alnpos = [i for i in xrange(0, len(msaseqA)) if ((msaseqA[i] not in cp.gaps) and (msaseqB[i] not in cp.gaps))]
+	alnposlist = []
+	start=0
+	forward=0
+	for i in xrange(0, len(msaseqA)):
+		if (msaseqA[i] not in cp.gaps) and (msaseqB[i] not in cp.gaps):
+			forward=i
+		else:
+			if forward > start:
+				alnposlist.append([k for k in xrange(start+1, forward+1)])
+			start = i
+
+	# exceptions in pdb file
+	# anchor ca or gmc beads
+	if len(pdbA.ca) == len(pdbA.resDict) and len(pdbB.ca) == len(pdbB.resDict):
+		beadsA = pdbA.ca
+		beadsB = pdbB.ca
+	else:
+		beadsA = pdbA.atomsbygmcenter()
+		beadsB = pdbB.atomsbygmcenter()
+
+	for k in xrange(0, len(alnposlist)):
+		pAresi=[]
+		pBresi=[]
+		color = int(1.0 * k * len(cp.colormap8) / len(alnposlist))
+		# for the kth aligned segment
+		for s in alnposlist[k]:
+			if (s in mapA) and (s in mapB):
+				# from aligned msai get pdbi
+				pdbiA = mapA[s] 
+				pdbiB = mapB[s]
+				# get atom
+				atomA = beadsA[pdbiA]
+				atomB = beadsB[pdbiB]
+				pAresi.append(str(atomA.resSeq))
+				pBresi.append(str(atomB.resSeq))
+
+		pml.append('color kc%d, %s and resi %s' % (color, pdbnameA, '+'.join(pAresi)))
+		pml.append('color kc%d, %s and resi %s' % (color, pdbnameB, '+'.join(pBresi)))
+
+	pml.append('zoom')
+	pml.append('save %s.%s.pse' % (name, identifier))
+	pml.append('save %s.%s.png' % (name, identifier))
+	pml.append('delete all')
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(pml)))
+	cp._info('save to %s' % outfile)
+
+
+
+# created for p53 rmsd_comparison
+# calculate pdb rmsd for a sequence alignment
+# aim to check whether sequence alignment agrees with the structure alignment
+def aln2rmsd(arglist):
+	if len(arglist)< 6:
+		cp._err('Usage:python utils_testcase.py aln2rmsd A.aln.pdb B.aln.pdb A.msa.seq B.msa.seq A.msa2pdb.map B.msa2pdb.map')
+
+	alnpdbfileA = arglist[0]
+	alnpdbfileB = arglist[1]
+	msaseqfileA = arglist[2]
+	msaseqfileB = arglist[3]
+	mapfileA = arglist[4]
+	mapfileB = arglist[5]
+	name = '%s %s' % (msaseqfileA, msaseqfileB)
+	# load pdbs
+	pdbA = protein(alnpdbfileA)
+	pdbB = protein(alnpdbfileB)
+
+	# load msa seq
+	msaseqA = cp.loadlines(msaseqfileA)[0]
+	msaseqB = cp.loadlines(msaseqfileB)[0]
+	if len(msaseqA)!=len(msaseqB):
+		cp._err('unmatched sequences:\n%s\n%s' % (msaseqA, msaseqB))
+
+	# load maps
+	mapA = {}
+	for line in cp.loadlines(mapfileA):
+		sarr = line.split(' ')
+		k = int(sarr[0])
+		v = int(sarr[1])
+		mapA[k] = v
+
+	mapB = {}
+	for line in cp.loadlines(mapfileB):
+		sarr = line.split(' ')
+		k = int(sarr[0])
+		v = int(sarr[1])
+		mapB[k] = v
+
+	# extract aligned segments from msa.seqs
+	alnpos = [i for i in xrange(0, len(msaseqA)) if ((msaseqA[i] not in cp.gaps) and (msaseqB[i] not in cp.gaps))]
+
+	# exceptions in pdb file
+	# anchor ca or gmc beads
+	if len(pdbA.ca) == len(pdbA.resDict) and len(pdbB.ca) == len(pdbB.resDict):
+		beadsA = pdbA.ca
+		beadsB = pdbB.ca
+	else:
+		beadsA = pdbA.atomsbygmcenter()
+		beadsB = pdbB.atomsbygmcenter()
+
+	v=[]
+	w=[]
+	for i in alnpos:
+		if (i in mapA) and (i in mapB):
+			# from aligned msai get pdbi
+			pdbiA = mapA[i] 
+			pdbiB = mapB[i]
+			# get atom
+			atomA = beadsA[pdbiA]
+			atomB = beadsB[pdbiB]
+			v.append((atomA.x, atomA.y, atomA.z))
+			w.append((atomB.x, atomB.y, atomB.z))
+
+	print '%s %.4f %d' % (name, cp.rmsd(v,w), len(v))
+
 
 # return number of tp and fp for one blast cath output
 def cathtpfp(blastoutfile):
@@ -757,6 +928,8 @@ def pairseq(arglist):
 # main routine
 def main():
 	dispatch = {
+		'aln2color': aln2color,
+		'aln2rmsd': aln2rmsd,
 		'printpair':printpair,
 		'testpool':testpool,
 		'blastcolbystub': blastcolbystub,

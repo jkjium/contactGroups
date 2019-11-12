@@ -5,6 +5,7 @@ import collections
 from utils_pfamscan import utils_pfamscan as ups
 from utils_embossalign import embossalign as ea
 from protein import protein
+from utils_testcase import palign
 
 import utils_embossalign as uea
 import commp as cp
@@ -352,6 +353,61 @@ def dca2msa(arglist):
 			fout.write('%d %d %s\n' % (seq2msa[int(sarr[0])-resi_start], seq2msa[int(sarr[2])-resi_start], line))
 	fout.close()
 	cp._info('save to %s' % outfile)
+
+# msa2pdb: resolve pdb seq and Pfam MSA pdb seq mapping problem (for the same protein described in pdb structure)
+# 1. full pdb sequence is longer than pfam domain
+# 2. domain sequence in pdb and in the MSA are different
+# use local alignment to get correct alignment
+# for p53/rmsd_comparison
+# input: msa.seq(gaps are allowed), pdb.seq, pdb_msa.water.align
+# output: msa_pdb.map (given msai output pdbi)
+def msa2pdb(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage:python utils_resimap.py msa2pdb msa.seq pdb.seq msa_pdb.align.flat outfile')
+	msaseqfile = arglist[0]
+	pdbseqfile = arglist[1]
+	flatfile = arglist[2]
+	outfile = arglist[3]
+
+	msaseq = cp.loadlines(msaseqfile)[0]
+	#print 'msa sequence:'
+	#print msaseq
+	pdbseq = cp.loadlines(pdbseqfile)[0]
+	#print 'pdb sequence:'
+	#print pdbseq
+	flatstr = cp.loadlines(flatfile)[0]
+	#print 'flat content:'
+	#print flatstr
+	pa =  palign(flatstr)
+	#pa.dump()
+	alnstr_msa = pa.seqA
+	#print 'msa aln seq:'
+	#print alnstr_msa
+	alnstr_pdb = pa.seqB
+	#print 'pdb aln seq:'
+	#print alnstr_pdb
+	apos = pa.alnpos()
+	#print apos
+
+	# given aligned msa index, output msai
+	map_msa2aln = cp.posmap_subseq(alnstr_msa, msaseq)
+	#print map_msa2aln
+	#print msaseq[520], alnstr_msa[177]
+	# given aligned pdb index, output pdbi
+	map_aln2pdb = cp.posmap_subseq(alnstr_pdb, pdbseq)
+	#print map_aln2pdb
+	#print alnstr_pdb[163], pdbseq[157]
+
+	# combine result into a map, msai to pdbi
+	#map_msa2pdb = dict((map_msa2aln[i], map_aln2pdb[i]) for i in apos)
+	map_msa2pdb = [(map_msa2aln[i], map_aln2pdb[i]) for i in apos]
+	#print map_msa2pdb
+	#print msaseq[224], pdbseq[]
+
+	with open(outfile, 'w') as fout:
+		fout.write('\n'.join(['%d %d' % (i[0], i[1]) for i in map_msa2pdb]))
+	cp._info('save msa2pdb map to %s' % outfile)
+
 
 
 # append resi in front of the result from mp_ce_sdii (weight)
