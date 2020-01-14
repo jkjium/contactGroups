@@ -658,7 +658,7 @@ def hamming_similarity(arglist):
 # python utils_pfammsa.py msareduce t.txt aa 0.2 -1 // save columns have < 20% of gaps
 def msareduce(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: $ python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.7 -1') 
+		cp._err('Usage: $ python utils_pfammsa.py msareduce PF00000.txt aa,ssp 0.05 -1') 
 
 	msafile = arglist[0]
 	scoretags = arglist[1].split(',')

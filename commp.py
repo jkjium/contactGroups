@@ -322,6 +322,7 @@ aascore = {
 }
 
 # print repr(dict((cp.aascore['aa'][k], k) for k in cp.aascore['aa'] if cp.aascore['aa'][k]!=0))
+# reverse dictionary of aascore
 scoreaa = {
 	'aa' : { 
 			0: '.', 1: 'A', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'I', 9: 'K', 10: 'L', 11: 'M', 12: 'N', 
@@ -465,6 +466,7 @@ def freq(word):
 	# 2.7+
 	# return letters = collections.Counter('google')
 	letters = collections.defaultdict(int)
+	key_order_list = []
 	for letter in word:
 		letters[letter] += 1
 	return letters
@@ -539,6 +541,10 @@ def hamming_similarity(s1,s2):
 # 1, 1, 1, 1, 1, 3, 3, 3,15,15 : 1.000
 # 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
 # 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
+# max_d: cutoff distance, where to cut horizontaliy on a dendrogram
+#					           idx1       idx2        dist       # of elements
+# linkage matrix Z elements: [ 14.     ,  79.     ,   0.05914,   2.     ]
+# All indices idx >= len(X) actually refer to the cluster formed in Z[idx - len(X)]
 def hamming_weight(x, max_d):
 	linkage_matrix = linkage(x, "single", metric='hamming')
 	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
