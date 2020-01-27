@@ -709,9 +709,28 @@ def posmap_subseq(s1, s2):
 		retmaplist = [(v, k) for (k, v) in idx_set]
 	else:
 		retmaplist = idx_set
+	#retmap = dict((k,v) for (k,v) in retmaplist)
+	return retmaplist
+
+# update from posmap_subseq
+# used in proc_psicov2msai.py
+# return a dict instead of a list of tuples
+def posmap_subseq_d(s1, s2):
+	s1=s1.upper()
+	s2=s2.upper()
+	ps1 = s1.translate(None, ''.join(gaps))
+	ps2 = s2.translate(None, ''.join(gaps))
+	#print 'ps1:\n%s\n' % ps1
+	#print 'ps2:\n%s\n' % ps2
+
+	reverse, idx_set = (False, subseq_align(s1, s2, ps1.find(ps2))) if len(ps1) >= len(ps2) else (True, subseq_align(s2, s1, ps2.find(ps1)))
+
+	if reverse == True:
+		retmaplist = [(v, k) for (k, v) in idx_set]
+	else:
+		retmaplist = idx_set
 	retmap = dict((k,v) for (k,v) in retmaplist)
 	return retmap
-
 
 
 # pairwise substitution

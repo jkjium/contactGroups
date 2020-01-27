@@ -54,8 +54,10 @@ def cecolumn(arglist):
 			if len(line) == 0:
 				continue
 			sarr = line.split(' ')
-			k = ('%s %s' % (sarr[0], sarr[1])) if sarr[0] < sarr[1] else ('%s %s' % (sarr[1], sarr[0]))
+			#k = ('%s %s' % (sarr[0], sarr[1])) if sarr[0] < sarr[1] else ('%s %s' % (sarr[1], sarr[0]))
+			k = ('%s %s' % (sarr[0], sarr[1])) if int(sarr[0]) < int(sarr[1]) else ('%s %s' % (sarr[1], sarr[0]))
 			v = float(sarr[cecol])
+			#print k, v
 			cedict[k] = v
 
 	# use method to normalize ce values
@@ -63,7 +65,7 @@ def cecolumn(arglist):
 		normdict = cp.rankstd(cedict)
 	else:
 		normdict = cedict
-
+	print normdict['81 100']
 	# extract ce for mapped tuples
 	resimap = []
 	with open(mapfile) as fp:
@@ -78,8 +80,9 @@ def cecolumn(arglist):
 	fp = open(outfile,'w')
 	for n in xrange(0, len(resimap)):
 		for m in xrange(n+1, len(resimap)):
-			k = '%s %s' % (resimap[n] ,resimap[m])
-			outstr = ('%.8f\n' % normdict[k]) if k in normdict else '-191\n'
+			k = '%d %d' % (resimap[n] ,resimap[m])
+			#outstr = ('%.8f\n' % normdict[k]) if k in normdict else '-191\n'
+			outstr = ('%s %.8f %.8f\n' % (k, cedict[k], normdict[k])) if k in normdict else ('%s -191 -191\n' % (k))
 			#print k,outstr,
 			fp.write(outstr)
 	fp.close()
