@@ -54,10 +54,8 @@ def cecolumn(arglist):
 			if len(line) == 0:
 				continue
 			sarr = line.split(' ')
-			#k = ('%s %s' % (sarr[0], sarr[1])) if sarr[0] < sarr[1] else ('%s %s' % (sarr[1], sarr[0]))
 			k = ('%s %s' % (sarr[0], sarr[1])) if int(sarr[0]) < int(sarr[1]) else ('%s %s' % (sarr[1], sarr[0]))
 			v = float(sarr[cecol])
-			#print k, v
 			cedict[k] = v
 
 	# use method to normalize ce values
@@ -65,7 +63,7 @@ def cecolumn(arglist):
 		normdict = cp.rankstd(cedict)
 	else:
 		normdict = cedict
-	print normdict['81 100']
+
 	# extract ce for mapped tuples
 	resimap = []
 	with open(mapfile) as fp:
@@ -80,10 +78,58 @@ def cecolumn(arglist):
 	fp = open(outfile,'w')
 	for n in xrange(0, len(resimap)):
 		for m in xrange(n+1, len(resimap)):
-			k = '%d %d' % (resimap[n] ,resimap[m])
-			#outstr = ('%.8f\n' % normdict[k]) if k in normdict else '-191\n'
-			outstr = ('%s %.8f %.8f\n' % (k, cedict[k], normdict[k])) if k in normdict else ('%s -191 -191\n' % (k))
+			k = '%s %s' % (resimap[n] ,resimap[m])
+			outstr = ('%.8f\n' % normdict[k]) if k in normdict else '-191\n'
 			#print k,outstr,
+			fp.write(outstr)
+	fp.close()
+	cp._info('save ce to %s' % outfile)
+
+
+# 20190123 for extracting unskewed dca,mi(p) values and zscores with paired resi order
+# fixed unexpected -191 case. str(80 > 100) == true
+# extract multiple columns 
+def cecolumns(arglist):
+	if len(arglist)<4:
+		cp._err('Usage: python utils_flat.py cecolumns resimapfile cefile c1,c2,c3 outfile')
+
+	mapfile = arglist[0]
+	cefile = arglist[1]
+	cecol = [int(c) for c in arglist[2].split(',')]
+	outfile = arglist[3]
+
+	# load ce values
+	cedict = {}
+	with open(cefile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			# convert to integer before make comparison
+			k = ('%s %s' % (sarr[0], sarr[1])) if int(sarr[0]) < int(sarr[1]) else ('%s %s' % (sarr[1], sarr[0]))
+			v = ' '.join([sarr[x] for x in cecol])
+			cedict[k] = v
+
+	# no operations here
+	normdict = cedict
+	# extract ce for mapped tuples
+	resimap = []
+	with open(mapfile) as fp:
+		for line in fp:
+			line = line.strip()
+			if len(line) == 0:
+				continue
+			sarr = line.split(' ')
+			#ri rn pi  pn
+			#113 L 170 I
+			resimap.append(int(sarr[2]))
+
+	fp = open(outfile,'w')
+	for n in xrange(0, len(resimap)):
+		for m in xrange(n+1, len(resimap)):
+			k = '%s %s' % (resimap[n] ,resimap[m])
+			outstr = ('%s %s\n' % (k,normdict[k])) if k in normdict else ('%s %s\n' % (k,' '.join(['-191']*len(cecol))))
 			fp.write(outstr)
 	fp.close()
 	cp._info('save ce to %s' % outfile)
@@ -251,6 +297,7 @@ def main():
 	dispatch = {
 		'flaten':flaten,
 		'cecolumn':cecolumn,
+		'cecolumns':cecolumns,
 		'scolsingle':scolsingle,
 		'scolinter': scolinter,
 		'scolunion': scolunion
