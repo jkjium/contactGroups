@@ -129,10 +129,12 @@ def cecolumns(arglist):
 	for n in xrange(0, len(resimap)):
 		for m in xrange(n+1, len(resimap)):
 			k = '%s %s' % (resimap[n] ,resimap[m])
-			outstr = ('%s %s\n' % (k,normdict[k])) if k in normdict else ('%s %s\n' % (k,' '.join(['-191']*len(cecol))))
+			#outstr = ('%s %s\n' % (k,normdict[k])) if k in normdict else ('%s %s\n' % (k,' '.join(['-191']*len(cecol))))
+			outstr = ('%s\n' % (normdict[k])) if k in normdict else ('%s\n' % (' '.join(['-191']*len(cecol))))
+			print k
 			fp.write(outstr)
 	fp.close()
-	cp._info('save ce to %s' % outfile)
+	#cp._info('save ce to %s' % outfile)
 
 
 # generate flat stub file
