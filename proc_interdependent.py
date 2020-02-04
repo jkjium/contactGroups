@@ -138,13 +138,6 @@ def unskew_dca_merge(arglist):
     cp._info('save to %s' % outfile)
 
 
-
-
-
-
-
-
-
 # read MSA.fa
 # input target header (human P53)
 # output the number of alphabet(amino acid) difference with the input sequence

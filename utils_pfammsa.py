@@ -414,11 +414,11 @@ def cmlocate2(arglist):
 
 
 
-# calculate entropy of all columns in score file
+# calculate entropy of specific columns, space separated line
 # input: score file, rcol file (pos indices)
 def entropyfromfile(arglist):
 	if len(arglist) < 4:
-		cp._err('Usage: python utils_pfammsa.py entropyall msa.score rcolfile column_set_file outfile')
+		cp._err('Usage: python utils_pfammsa.py entropyfromfile msa.score rcolfile column_set_file outfile')
 
 	scorefile = arglist[0]
 	rcolfile = arglist[1]
@@ -429,7 +429,7 @@ def entropyfromfile(arglist):
 	# reverse index
 	colidx_dict = dict((int(rcols[i]), i) for i in xrange(len(rcols)))
 
-	print colidx_dict
+	#print colidx_dict
 
 	cols = []
 	score = np.loadtxt(scorefile, delimiter=',')
@@ -440,18 +440,19 @@ def entropyfromfile(arglist):
 			if len(line)==0:
 				continue
 			sarr = line.split(' ')
-			cols.append([colidx_dict[int(i)] for i in sarr])
+			cols.append([colidx_dict[int(i)] for i in sarr if int(i) in colidx_dict])
 	print cols
-	H = ['%s %.4f' % (' '.join(['%d' % rcols[k] for k in i]), corr.entropy(score[:,i].T)) for i in cols]
+	print corr.entropy(score[:,cols[0]].T)
+	#H = ['%s %.4f' % (' '.join(['%d' % rcols[k] for k in i]), corr.entropy(score[:,i].T)) for i in cols]
 	#H = ['%s %.4f' % (cols[i[0]], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
 	'''
 	#print score[:,0] # not working!!
 	#print score[:,[0]] # must in this format!!
 	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
-	'''
 	with open(outfile, 'w') as fout:
 		fout.write('\n'.join(H))
 	cp._info('save to %s' % outfile)
+	'''
 
 
 
