@@ -140,6 +140,50 @@ def resi2msa(arglist):
 	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
 
 
+# generate an (aligned)MSA sequence from the resimapfile
+# input: resimapfile, output_seq_header, template_MSA_seq(FASTA), outputfile
+# output: the generated MSA sequence in FASTA format
+def createmsaseq(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_resimap.py createmsaseq 6v5d_0.pdb-A-PF00240.map header PF00240_MSA.fa outfile')
+
+	mapfile = arglist[0]
+	outheader = arglist[1]
+	msafile = arglist[2]
+	outfile = arglist[3]
+
+	# load resimap
+	# ri rn msai msan
+	# 3 V 39 I
+	# msai2resn[39] = 'V'
+	msai2resn = {}
+	for line in cp.loadlines(mapfile):
+		sarr = line.split(' ')
+		msai2resn[int(sarr[2])] = sarr[1]
+
+	#print len(msai2resn)
+	#print msai2resn
+
+	# read template MSA seq
+	templatehead, templateseq = cp.fasta_iter(msafile).next()
+
+	outseq = [] 
+	for i in xrange(0, len(templateseq)):
+		if i in msai2resn:
+			outseq.append(msai2resn[i])
+		else:
+			outseq.append('.')
+
+	outfa = '>%s\n%s\n' % (outheader, ''.join(outseq))
+	with open(outfile, 'w') as fout:
+		fout.write(outfa)
+
+	#print '>%s\n%s\n' % (templatehead, templateseq)
+	#print outfa
+	cp._info('save to %s' % (outfile))
+
+
+
 # append resi to tsvfile according the column id in tsvfile
 def appendresi(arglist):
 	if len(arglist) < 4:
@@ -321,19 +365,35 @@ def resi2col(arglist):
 # for cecolumn, cflat
 # $ python utils_resimap.py dca2msa PF00098_full.txt PF00098_full.txt.dca PF00098_full.rdca
 def dca2msa(arglist):
-	if len(arglist) < 3:
-		cp._err('Usage: python utils_resimap.py dca2msa msafile dcafile outfile')
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_resimap.py dca2msa msafile seqheader dcafile outfile')
 
 	msafile = arglist[0]
-	dcafile = arglist[1]
-	outfile = arglist[2]
+	msahead = arglist[1]
+	dcafile = arglist[2]
+	outfile = arglist[3]
 
-	# get the first entry
+	# get the specified (msahead) entry
+	seq = ''
+	msa = ''
+	resi_start = -1
+	for h, s in cp.fasta_iter(msafile):
+		if msahead == h:
+			msa = s
+			seq = s.translate(None, ''.join(cp.gaps))
+			resi=h.split('/')[1]
+			resi_start = int(resi.split('-')[0])
+
+	if resi_start == -1:
+		cp._err('%s not found' % msahead)
+
+	'''
 	head, msa = cp.fasta_iter(msafile).next()
 	seq = msa.translate(None, ''.join(cp.gaps))
 	#print '%s\n%s\n%s' % (head, msa, seq)
 	resi=head.split('/')[1]
 	resi_start = int(resi.split('-')[0])
+	'''
 
 	# seq2msa = dict((k+resi_start,v) for k,v in cp.posmap_subseq(seq, msa))
 	seq2msa = dict((k,v) for k,v in cp.posmap_subseq(seq, msa))
