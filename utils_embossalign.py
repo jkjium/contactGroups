@@ -223,31 +223,47 @@ def getflat(title, alignstr):
 	return ' '.join(out)
 
 def findsimilar(arglist):
-	if len(arglist)!= 4:
+	if len(arglist)!= 2:
 		print 'Usage: python utils_embossalign.py findsimilar target_seq_file MSAfile'
 		return
 
-	targetfile = arglist[2]
-	msafile = arglist[3]
+	targetfile = arglist[0]
+	msafile = arglist[1]
 
 	target = ''
-	with open(targetfile) as fp:
-		target = fp.readline().strip()
+	#with open(targetfile) as fp:
+	#	target = fp.readline().strip()
+	for h, s in cp.fasta_iter(targetfile):
+		target = s.translate(None, ''.join(cp.gaps)).lower()
+	if target == '':
+		cp._err('error in targetfile: %s\n%s' % (targetfile, cp.loadlines(targetfile)))
 
 	print 'target: %s' % target
 
 	ealist = []
 	msadict = {}
+	count=0
+	pid=0.0
+	mea = type('embossalign', (object,), {})()
 	for s in cp.fasta_iter(msafile):
 		# remove gaps
 		msadict[s[0]] = s[1]
-		msaseq = s[1].translate(None, ''.join(cp.gaps))
+		msaseq = s[1].translate(None, ''.join(cp.gaps)).lower()
 		alignflat = getflat('%s::%s' % (targetfile, '.'.join(s[0].split())), align_exec(target, msaseq))
 		ea = embossalign(alignflat)
 		#ea.dump()
-		ealist.append(ea)
-	ealist.sort(key=lambda x: x.pid, reverse=True)
-	ealist[0].dump()
+		if ea.pid > pid:
+			pid = ea.pid
+			mea = ea
+		if ea.pid == 100.0:
+			ea.dump()
+			break
+		#ealist.append(ea)
+		count+=1
+		print '%d %.2f %.2f %s' % (count, mea.pid, ea.pid, ea.name)
+	mea.dump()
+	#ealist.sort(key=lambda x: x.pid, reverse=True)
+	#ealist[0].dump()
 
 
 def help(d):
@@ -318,7 +334,7 @@ def main():
 		print 'Invalid cmd %s' % cmd
 		return
 
-	dispatch[sys.argv[1]](sys.argv)
+	dispatch[sys.argv[1]](sys.argv[2:])
 
 if __name__ == '__main__':
 	main()
