@@ -468,6 +468,41 @@ def msa2pdb(arglist):
 		fout.write('\n'.join(['%d %d' % (i[0], i[1]) for i in map_msa2pdb]))
 	cp._info('save msa2pdb map to %s' % outfile)
 
+# given a column of msai output the resi
+# input infile, msai_index, mapfile, outfile
+# print mapped resi
+def msa2rescol(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_resimap.py msa2rescol PF00418.rdca 0,1 2mz7_0.pdb-A-PF00418.map')
+	infile = arglist[0]
+	idx = [int(i) for i in arglist[1].split(',')]
+	mapfile = arglist[2]
+
+	# 2mz7_0.pdb-A-PF00418.map
+	# res n msa n
+	# 275 V 14 V
+	resimap = {}
+	for line in cp.loadlines(mapfile):
+		sarr= line.split(' ')
+		# given msai output resi
+		resimap[sarr[2]] = sarr[0]
+
+	# load msai using infile and idx
+	#==> PF00418.rdca
+	#14 15 587 V 588 Q 0.30887 0.2327
+	outresi = []
+	for line in cp.loadlines(infile):
+		sarr = line.split(' ')
+		reslist = []
+		for i in idx:
+			if sarr[i] in resimap:
+				reslist.append('%s' % resimap[sarr[i]])
+			else:
+				reslist.append('-191')
+		print ' '.join(reslist)
+
+
+
 
 
 # append resi in front of the result from mp_ce_sdii (weight)
