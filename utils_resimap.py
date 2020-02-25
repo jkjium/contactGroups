@@ -184,7 +184,16 @@ def appendseq2msa(arglist):
 	outfile = '%s-%s.fa' % (seqfafile, pfamid)
 	with open(outfile, 'w') as fout:
 		fout.write(outfa.upper())
-	cp._info('save to %s' % (outfile))
+	cp._info('save msa to %s' % (outfile))
+
+	outfile = '%s-%s.map' % (seqfafile, pfamid)
+	klist = msapos2seqpos.keys()
+	klist.sort()
+	# format: resi resn msai msan
+	outstr = '\n'.join(['%d %s %d %s' % (msapos2seqpos[k], seq[msapos2seqpos[k]], k, msaseq[k]) for k in klist])
+	with open(outfile, 'w') as fout:
+		fout.write(outstr.upper())
+	cp._info('save map to %s' % outfile)
 
 
 # generate an (aligned)MSA sequence from the resimapfile

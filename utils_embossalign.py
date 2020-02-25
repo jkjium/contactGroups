@@ -258,12 +258,49 @@ def findsimilar(arglist):
 		if ea.pid == 100.0:
 			ea.dump()
 			break
-		#ealist.append(ea)
 		count+=1
 		print '%d %.2f %.2f %s' % (count, mea.pid, ea.pid, ea.name)
 	mea.dump()
-	#ealist.sort(key=lambda x: x.pid, reverse=True)
-	#ealist[0].dump()
+
+# updated version of findsimilar
+# output the most similar sequence in a file
+def outsimilar(arglist):
+	if len(arglist)!= 3:
+		cp._err('Usage: python utils_embossalign.py findsimilar target_seq_file MSAfile outfile')
+
+	targetfile = arglist[0]
+	msafile = arglist[1]
+	outfile = arglist[2]
+
+	target = ''
+	for h, s in cp.fasta_iter(targetfile):
+		target = s.translate(None, ''.join(cp.gaps)).lower()
+	if target == '':
+		cp._err('error in targetfile: %s\n%s' % (targetfile, cp.loadlines(targetfile)))
+
+	ealist = []
+	msadict = {}
+	pid=0.0
+	mea = type('embossalign', (object,), {})()
+	for s in cp.fasta_iter(msafile):
+		# remove gaps
+		msadict[s[0]] = s[1]
+		msaseq = s[1].translate(None, ''.join(cp.gaps)).lower()
+		alignflat = getflat('%s::%s' % (targetfile, '.'.join(s[0].split())), align_exec(target, msaseq))
+		ea = embossalign(alignflat)
+
+		if ea.pid > pid:
+			pid = ea.pid
+			mea = ea
+		if ea.pid > 99.0:
+			mea = ea
+			break
+	#title:      2LXC_A.pdb.fa::E7KHZ8_YEASA/70-151
+	outstr = '%s %s %.2f' % (targetfile, mea.name.split('::')[1], mea.pid)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % outstr)
+	cp._info('save to %s' %  outfile)
+
 
 
 def help(d):
@@ -323,6 +360,7 @@ def test(arglist):
 def main():
 	dispatch = {
 		'findsimilar': findsimilar,
+		'outsimilar': outsimilar,
 		'test':test
 	}
 
