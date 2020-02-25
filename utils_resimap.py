@@ -140,6 +140,53 @@ def resi2msa(arglist):
 	pdbResi2MSA(arglist[0], arglist[1], arglist[2], arglist[3], arglist[4], arglist[5], arglist[6])
 
 
+# given a sequence generate Pfam MSA alignment
+# output: .fa file that aligns to the existing MSA
+# seq.fa
+# seq.fa.json : pfamscan seq.fa > seq.fa.json
+# PF00000_MSA(seq).fa : python utils_embossalign.py findsimilar seq.fa PF00000_full.txt  > seq-PF00000.report &
+#                       python utils_pfammsa.py getsinglemsa PF00000_full.txt A0A1S3GL90_DIPOR/587-617 PF00000
+# PF00000_seq.fa.json: pfamscan PF00000_seq.fa > PF00000_seq.fa.json
+def appendseq2msa(arglist):
+	if len(arglist) < 5:
+		cp._info('Usage: python utils_resimap.py appendseq2msa seq.fa seq.fa.json PF00000_MSA.fa PF00000_seq.fa.json pfamid')
+
+	seqfafile = arglist[0]
+	seqjsonfile = arglist[1]
+	msafafile = arglist[2]
+	msajsonfile = arglist[3]
+	pfamid = arglist[4]
+
+	# load sequences
+	seq = cp.fasta_iter(seqfafile).next()[1]
+	msahead, msaseq = cp.fasta_iter(msafafile).next()
+
+	# load pfamscan json object
+	seqjson = ups(seqjsonfile).getMatchpfs(pfamid)
+	if seqjson == False:
+		cp._err('%s not found in %s' % (pfamid, seqjsonfile))
+	msajson = ups(msajsonfile).getMatchpfs(pfamid)
+	if msajson == False:
+		cp._err('%s not found in %s' % (pfamid, msajsonfile))
+
+	# get map between pdb pos and msa pos
+	# v is msapos, k is seqpos
+	# different from resi2msa
+	msapos2seqpos = dict((v,k) for k,v in map_hmm2hmm(seq, seqjson, msaseq, msajson))
+	outseq = [] 
+	for i in xrange(0, len(msaseq)):
+		if i in msapos2seqpos:
+			outseq.append(seq[msapos2seqpos[i]])
+		else:
+			outseq.append('.')
+
+	outfa = '>%s\n%s\n' % (seqfafile, ''.join(outseq))
+	outfile = '%s-%s.fa' % (seqfafile, pfamid)
+	with open(outfile, 'w') as fout:
+		fout.write(outfa.upper())
+	cp._info('save to %s' % (outfile))
+
+
 # generate an (aligned)MSA sequence from the resimapfile
 # input: resimapfile, output_seq_header, template_MSA_seq(FASTA), outputfile
 # output: the generated MSA sequence in FASTA format
