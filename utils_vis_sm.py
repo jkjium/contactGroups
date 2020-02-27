@@ -148,11 +148,67 @@ def dendrogram_emboss_sm(arglist):
     plt.savefig(outfile)
     cp._info('save to %s' % outfile)
 
+# plot side-by-side barplot from the data in a two-column file
+# total_num: total row number
+# group_num: how many barplots to split
+def bar_sbs(arglist):
+    if len(arglist) < 4:
+        cp._err('Usage: python utils_vis_sm.py bar_sbs data.2.vec total_num group_num xtickfile')
+    datafile = arglist[0]
+    totalnum = int(arglist[1])
+    spnum = int(arglist[2])
+    n_groups=itv= (totalnum / spnum) +1
+
+    print n_groups
+
+    # x-tick
+    xt = cp.loadlines(arglist[3])
+    #xt = ['%d' % i for i in range(1,92)]
+
+    data = np.loadtxt(datafile, delimiter=' ')
+    d1 = data[:,0]
+    d2 = data[:,1]
+
+    fig, ax = plt.subplots(spnum, figsize=(12,8), sharey=True)
+    bar_width = 0.25
+    opacity = 1.0
+    for i in range(0, spnum):
+            index = np.arange(n_groups if (i+1)*itv <totalnum else (totalnum - i*itv))
+            sxt = xt[i*itv:((i+1)*itv if (i+1)*itv <totalnum else totalnum)]
+
+            ax[i].bar(index, d1[i*itv:((i+1)*itv if (i+1)*itv < totalnum else totalnum)], bar_width,
+                            alpha=opacity,
+                            color='#75a8b9',
+                            label='Ordered region')
+
+            ax[i].bar(index + bar_width, d2[i*itv:((i+1)*itv if (i+1)*itv < totalnum else totalnum)], bar_width,
+                            alpha=opacity,
+                            color='#8d5543',
+                            label='Disordered region')
+            '''
+            ax[i].bar(index + 2*bar_width, scsc23a[i*itv:((i+1)*itv if (i+1)*itv <210 else 210)], bar_width,
+                            alpha=opacity,
+                            color='#f3db81',
+                            label='SCSC2')
+            '''
+            plt.sca(ax[i])
+            plt.xticks(index + bar_width / 2, sxt, rotation='vertical')
+
+            # plt.xlabel('xxx')
+            plt.ylabel('Normalized correlation level')
+            plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+   # fig.savefig(outname)
+
+
 # generate histogram from data.list
 # input: one column (float number) data
 def hist(arglist):
     if len(arglist) <2:
-        cp._err('Usage: python utils_vis_sm.py histogram data.list bin')
+        cp._err('Usage: python utils_vis_sm.py hist data.list bin')
     datafile = arglist[0]
     n_bins = int(arglist[1])
     x = np.loadtxt(datafile)
