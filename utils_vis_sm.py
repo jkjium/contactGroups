@@ -235,8 +235,9 @@ def hist_sbs(arglist):
     fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
     axs[0].hist(x, bins=n_bins)
     axs[1].hist(y, bins=n_bins)
-
     plt.show()
+    #fig.savefig('out.png')
+    #cp._info('save to out.png')
 
 if __name__ == '__main__':
         cp.dispatch(__name__)

@@ -2,6 +2,40 @@ import commp as cp
 import numpy as np
 from scipy.stats import skew
 
+# general procedure for unskewing the ce distribution
+# for pair, triplet, .....
+# the last column is treated as the ce values
+# rest of the columns compose of the key
+# for example: 1 2 3 5.0 key: '1 2 3', value: 5.0
+def unskew_zscore(arglist):
+    if len(arglist) < 1:
+        cp._err('Usage: python utils_interdependent.py unskew_zscore PF00003_full.txt.ce')
+    cefile = arglist[0]
+
+    keylist = []
+    celist = []
+    for line in cp.loadlines(cefile):
+        sarr = line.split(' ')
+        keylist.append('%s' % (' '.join(sarr[0:len(sarr)-1])))
+        celist.append(float(sarr[len(sarr)-1]))
+    oldskew = skew(celist)
+    # take cubic root
+    trans_ce = [x ** ( 1. / 3 ) for x in celist]
+    newskew = skew(trans_ce)
+
+    # calculate zscore
+    nce = np.array(trans_ce)
+    m = nce.mean()
+    s = nce.std()
+    zscore = [(x - m)/s for x in nce]
+
+    outfile = '%s.trans.zscore' % (cefile)
+    with open(outfile, 'w') as fout:
+        for i in xrange(0, len(keylist)):
+            fout.write('%s %.6f %.6f %.6f\n' % (keylist[i], celist[i], trans_ce[i], zscore[i]))
+    print '%s %.6f %.6f %.6f %.6f' % (outfile, oldskew, newskew, m, s)
+
+
 '''
 for interdependent substitution project
 based on the result of pfam31.0 2247 .cflat
