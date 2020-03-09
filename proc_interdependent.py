@@ -2,6 +2,31 @@ import commp as cp
 import numpy as np
 from scipy.stats import skew
 
+# read file contains focused residues
+# flag with len(id contained in focuslist), intra_: len(check_column)==len(id in focuslist)
+def focusce(arglist):
+    if len(arglist) < 4:
+        cp._err('Usage: python pro_interdependent.py focusce cefile(.cflat) check_columns(0,1) focusvecfile(resi.vec) outfile')
+    cefile = arglist[0]
+    clist  = [int(i) for i in arglist[1].split(',')]
+    # read from a .vec file
+    focuslist = cp.loadlines(arglist[2])
+    outfile = arglist[3]
+
+    fout = open(outfile, 'w')
+    for line in cp.loadlines(cefile):
+        sarr = line.split(' ')
+        count=0
+        for i in clist:
+            if sarr[i] in focuslist:
+                count+=1
+        fout.write('%d %s\n' % (count, line))
+    fout.close()
+    cp._info('save to %s' % outfile)
+
+
+
+
 # general procedure for unskewing the ce distribution
 # for pair, triplet, .....
 # the last column is treated as the ce values
