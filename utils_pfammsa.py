@@ -19,11 +19,12 @@ class pfammsa(object):
 	data structure of pfam MSA
 
 	"""
-	def __init__(self, msafile, opt='full'):
+	def __init__(self, msafile, opt='ambaa'):
 		self.msalist = []
 		count = 0
 
 		if opt=='ambaa':
+			# convert all abnormal characters into '.'
 			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
 			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq.translate(trans)))

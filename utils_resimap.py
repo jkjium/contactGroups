@@ -347,6 +347,47 @@ def cg2msai_sdii(arglist):
 		fout.write('%s\n' % '\n'.join(outstr))
 	cp._info('save %d records to %s' % (len(outstr), outfile))	
 
+# read index from .vec (single column) file
+# map loaded indices according to flag: resi2msai
+# save to a .vec file 
+def mapvec(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_resimap.py mapvec resi2msai|msai2resi mapfile col.vec outfile')
+	flag = arglist[0]
+	mapfile = arglist[1]
+	vecfile = arglist[2]
+	outfile = arglist[3]
+
+	# 31 K 56 R
+	mlist = []
+	for line in cp.loadlines(mapfile):
+		sarr = line.split(' ')
+		mlist.append((sarr[0], sarr[2]))
+
+	mdict = {}
+	if flag == 'resi2msai':
+		# given resi output mesi
+		for m in mlist:
+			mdict[m[0]] = m[1]
+	elif flag == 'msai2resi':
+		# given msai output resi
+		for m in mlist:
+			mdict[m[1]] = m[0]
+	else:
+		cp._err('Wrong flag : %s' % flag)
+	
+	outlist=[]
+	for line in cp.loadlines(vecfile):
+		if line in mdict:
+			outlist.append(mdict[line])
+		else:
+			outlist.append('-191')
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outlist)))
+
+	cp._info('save to %s' % outfile)
+
+
 
 # column (group) to resi
 # convert column (group) into resi
