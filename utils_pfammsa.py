@@ -799,6 +799,32 @@ def scoreweight(arglist):
 	cp._info('save weight to %s' % outfile)
 
 
+# for the hybrid procedure
+# use msareduce to cleaning the data
+# then use evfold to calculate dca
+# input: 
+# .scorefile from msa reduce
+# aa: amino acid dictionary name
+# titleprefix: title prefix for the converted seq
+# outfile
+def score2msa(arglist):
+	if len(arglist)< 4:
+		cp._err('Usage: python utils_pfammsa.py score2msa scorefile aa titleprefix outfile')
+
+	scorefile = arglist[0]
+	dicttype = arglist[1]
+	titleprefix = arglist[2]
+	outfile = arglist[3]
+
+	score = np.loadtxt(scorefile, delimiter=',')
+	fout = open(outfile, 'w')
+	for i in xrange(0, score.shape[0]):
+		title = '%s_%d/0-%d' % (titleprefix, i, score.shape[1]-1)
+		msaseq = [cp.scoreaa[dicttype][a] for a in score[i]]
+		fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
+	cp._info('save to %s' % outfile)
+
+
 # split fasta file into separate .fa file
 # filename: prefix.00001.fa
 def splitfa(arglist):
@@ -1446,6 +1472,7 @@ def main():
 		'psicovaln': psicovaln,
 		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,
+		'score2msa':score2msa, # for cad.ppi.2
 		'splitfa': splitfa,
 		'splithidfa': splithidfa,
 		'splitheadfa': splitheadfa,

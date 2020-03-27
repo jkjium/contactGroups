@@ -9,6 +9,7 @@ from utils_testcase import palign
 
 import utils_embossalign as uea
 import commp as cp
+import numpy as np
 
 class pfamscan(object):
 	def __init__(self):
@@ -510,6 +511,36 @@ def dca2msa(arglist):
 			fout.write('%d %d %s\n' % (seq2msa[int(sarr[0])-resi_start], seq2msa[int(sarr[2])-resi_start], line))
 	fout.close()
 	cp._info('save to %s' % outfile)
+
+# after dca2msa => .rdca
+# for the hybrid procedure
+# read .rcol from msareduce
+# map column id to .rdca file
+def dcamsa2rcol(arglist):
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_resimap.py dca2msabyrcol .rdcafile .rcolfile .cdcaoutfile')
+
+	rdcafile = arglist[0]
+	rcollist = [int(i) for i in np.loadtxt(arglist[1], delimiter=',')]
+	outfile = arglist[2]
+	
+	fout = open(outfile, 'w')
+	# line: 0 51 0 N 5 P 0.073385 0.000022
+	for line in cp.loadlines(rdcafile):
+		sarr = line.split(' ')
+
+		idx1 = int(sarr[0])
+		idx2 = int(sarr[1])
+
+		col1 = rcollist[idx1]
+		col2 = rcollist[idx2]
+
+		fout.write('%d %d %s\n' % (col1, col2, line))
+
+	fout.close()
+	cp._info('save to %s' % outfile)
+	
+
 
 # msa2pdb: resolve pdb seq and Pfam MSA pdb seq mapping problem (for the same protein described in pdb structure)
 # 1. full pdb sequence is longer than pfam domain
