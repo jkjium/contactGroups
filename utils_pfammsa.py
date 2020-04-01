@@ -818,10 +818,18 @@ def score2msa(arglist):
 
 	score = np.loadtxt(scorefile, delimiter=',')
 	fout = open(outfile, 'w')
-	for i in xrange(0, score.shape[0]):
-		title = '%s_%d/0-%d' % (titleprefix, i, score.shape[1]-1)
-		msaseq = [cp.scoreaa[dicttype][a] for a in score[i]]
+	if len(score.shape) == 2:
+		nrow = score.shape[0]
+		ncol = score.shape[1]
+		for i in xrange(0, nrow):
+			title = '%s_%d/0-%d' % (titleprefix, i, ncol-1)
+			msaseq = [cp.scoreaa[dicttype][a] for a in score[i]]
+			fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
+	else:
+		title = '%s_0/0-%d' % ( titleprefix, len(score)-1)
+		msaseq = [cp.scoreaa[dicttype][a] for a in score]
 		fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
+	fout.close()
 	cp._info('save to %s' % outfile)
 
 

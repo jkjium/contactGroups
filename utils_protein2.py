@@ -109,7 +109,7 @@ def neighborsflatline(arglist):
 
 def writechain(arglist):
 	if len(arglist) < 3:
-		cp._err('Usage: python utils_protein2.py writechain pdbfile chainID')
+		cp._err('Usage: python utils_protein2.py writechain pdbfile chainID outfile')
 	pdbfile = arglist[0]
 	c = arglist[1]
 	outfile = arglist[2]
@@ -271,7 +271,7 @@ def writeseqfa(arglist):
 
 	p = protein(pdbfile, chain=chainid)
 	fout = open(outfile, 'w')
-	fout.write('>%s\n%s\n' % (head, p.seq.lower()))
+	fout.write('>%s/0-%d\n%s\n' % (head, len(p.seq), p.seq.lower()))
 	fout.close()
 	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
 
