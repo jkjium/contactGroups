@@ -113,6 +113,9 @@ def tupledist(arglist):
 # ['2', '3', 'A', 'C', '0.3333']
 # ['2', '3', 'C', 'F', '0.5000']
 # output: .qij
+# aa accumulative_frequency normalized(to 1)_freuency(probability)
+# AA 0.13891112, 0.069449
+# AC 0.43060278, 0.215280
 def tupleqij(arglist):
 	if(len(arglist) < 2):
 		cp._err('Usage: python tupleqij tuplefile outfile')
@@ -144,27 +147,36 @@ def tupleqij(arglist):
 		# the first column
 		k = aafreq1.keys()
 		k.sort()
+		# off-diagonal terms
 		for i in xrange(0, len(k)):
 			for j in xrange(i+1, len(k)):
 				qij['%s%s' % (k[i], k[j])]+=aafreq1[k[i]]*aafreq1[k[j]]
+		# diagonal terms
+		for i in xrange(0, len(k)):
+			qij['%s%s' % (k[i],k[i])]+=(aafreq1[k[i]]*aafreq1[k[i]] / 2.0)
 		'''
 		print 'qij of aafreq1:'
 		print qij
 		print '-----------------------'
 		'''
 		# the second column
+		# off-diagonal terms
 		k = aafreq2.keys()
 		k.sort()
 		for i in xrange(0, len(k)):
 			for j in xrange(i+1, len(k)):
 				qij['%s%s' % (k[i], k[j])]+=aafreq2[k[i]]*aafreq2[k[j]]
+		# off-diagonal terms
+		for i in xrange(0, len(k)):
+			qij['%s%s' % (k[i],k[i])]+=(aafreq2[k[i]]*aafreq2[k[i]] / 2.0)
 		'''
 		print 'qij of aafreq1 and 2:'
 		print qij
 		print '-----------------------'
 		'''
+	total = sum(qij.values())
 	with open(outfile, 'w') as fout:
-		fout.write('%s\n' % ('\n'.join([('%s %.8f' % (k, qij[k])) for k in qij])))
+		fout.write('%s\n' % ('\n'.join([('%s %.8f, %8f' % (k, qij[k], qij[k]/total)) for k in qij])))
 	cp._info('save to %s' % outfile)
 
 

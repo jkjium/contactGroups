@@ -669,6 +669,7 @@ def msareduce(arglist):
 
 	pfm = pfammsa(msafile)
 	#pfm.dump()
+	# idx_rc = [i for i in xrange(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff] # allow at most "gapcutoff" % of gap existing in the column
 	scores, idx_rc = pfm.msareduce(scoretags, gapcutoff, weightcutoff)
 
 	# output column
