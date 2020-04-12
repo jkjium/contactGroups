@@ -29,6 +29,7 @@ def bgdists(arglist):
 	print nrow, ncol
 	print eij
 	'''
+	eij.pop(0, None)
 	total = sum(eij.values())
 	with open(outfile , 'w') as fout:
 		fout.write('%s\n' % ('\n'.join(['%s %.8f' % (cp.scoreaa['aa'][k], eij[k]/total) for k in eij])))
@@ -102,7 +103,9 @@ def tupledist(arglist):
 			#k = ' '.join(['%d %s' % (i, cp.scoreaa['aa'][i]) for i in t])
 			k = ' '.join(['%s' % (cp.scoreaa['aa'][i]) for i in t])
 			fout.write('%s %s %.4f\n' % (' '.join([str(i) for i in cols]), k, wfreq[t]))
+	fout.close()
 	cp._info('save to %s' % outfile)
+
 
 # calculate qij for current family 
 # prepared for the matrix derivation
@@ -174,9 +177,10 @@ def tupleqij(arglist):
 		print qij
 		print '-----------------------'
 		'''
-	total = sum(qij.values())
+	#total = sum(qij.values())
 	with open(outfile, 'w') as fout:
-		fout.write('%s\n' % ('\n'.join([('%s %.8f, %8f' % (k, qij[k], qij[k]/total)) for k in qij])))
+		#fout.write('%s\n' % ('\n'.join([('%s %.8f, %8f' % (k, qij[k], qij[k]/total)) for k in qij])))
+		fout.write('%s\n' % ('\n'.join([('%s %.8f' % (k, qij[k])) for k in qij])))
 	cp._info('save to %s' % outfile)
 
 
