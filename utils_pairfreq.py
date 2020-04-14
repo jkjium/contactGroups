@@ -32,7 +32,8 @@ def bgdists(arglist):
 	eij.pop(0, None)
 	total = sum(eij.values())
 	with open(outfile , 'w') as fout:
-		fout.write('%s\n' % ('\n'.join(['%s %.8f' % (cp.scoreaa['aa'][k], eij[k]/total) for k in eij])))
+		#fout.write('%s\n' % ('\n'.join(['bg %s %.8f' % (cp.scoreaa['aa'][k], eij[k]/total) for k in eij])))
+		fout.write('%s\n' % ('\n'.join(['bg %s %.8f' % (k, eij[cp.aascore['aa'][k]]/total) for k in cp.aat01])))
 	cp._info('save to %s' % outfile)
 
 
@@ -148,6 +149,7 @@ def tupleqij(arglist):
 		print '-----------------------'
 		'''
 		# the first column
+		aafreq1.pop('.', None)
 		k = aafreq1.keys()
 		k.sort()
 		# off-diagonal terms
@@ -164,6 +166,7 @@ def tupleqij(arglist):
 		'''
 		# the second column
 		# off-diagonal terms
+		aafreq2.pop('.', None)
 		k = aafreq2.keys()
 		k.sort()
 		for i in xrange(0, len(k)):
@@ -177,12 +180,76 @@ def tupleqij(arglist):
 		print qij
 		print '-----------------------'
 		'''
-	#total = sum(qij.values())
+	aakey = ['%s%s' % (cp.aas01[i],cp.aas01[j]) for i in xrange(0, len(cp.aas01)) for j in xrange(i, len(cp.aas01))]
+	total = sum(qij.values())
+	if total == 0:
+		cp._err('%s zero total' % tuplefile)
 	with open(outfile, 'w') as fout:
-		#fout.write('%s\n' % ('\n'.join([('%s %.8f, %8f' % (k, qij[k], qij[k]/total)) for k in qij])))
-		fout.write('%s\n' % ('\n'.join([('%s %.8f' % (k, qij[k])) for k in qij])))
+		fout.write('%s\n' % ('\n'.join([('fg %s %.8f' % (k, qij[k]/total)) for k in aakey])))
+		#fout.write('%s\n' % ('\n'.join([('fg %s %.8f' % (k, qij[k]/total)) for k in qij])))
+		#fout.write('%s\n' % ('\n'.join([('%s %.8f' % (k, qij[k])) for k in qij])))
 	cp._info('save to %s' % outfile)
 
+
+
+
+# combine single frequency and substitution frequency into sm
+def wfreq2sm(arglist):
+		if len(arglist) < 2:
+			cp._err('Usage: python utils_pairfreq.py wfreq2sm combine.wfreq outsmfile')
+
+		wfreqfile = arglist[0] # file contains denominator (background)
+		outprefix = arglist[1]
+
+		qij = collections.defaultdict(float)
+		eij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						t = sarr[0] # frequency name {bg, fg}
+						k = sarr[1] # amino acid name {a, aa}
+						f = float(sarr[2]) # weighed frequency value
+						# bg M 3511.29 
+						# fg AC 0.45
+						if t == 'bg':
+								eij[k]+=f
+						elif t == 'fg':
+								qij[k]+=f
+
+		# convert accumulative frequency into probability
+		# background probability
+		total_e = sum(eij.values())
+		for k in eij:
+				eij[k]=eij[k]/total_e
+		# substitution probability
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		# calculate log-odds ratio
+		sm = collections.defaultdict(int)
+		aakey = ['%s%s' % (cp.aas01[i],cp.aas01[j]) for i in xrange(0, len(cp.aas01)) for j in xrange(i, len(cp.aas01))]
+		for k in aakey:
+			A = k[0]
+			B = k[1]
+			if A==B:
+				sm[A+B] = int(round(2*math.log(qij[A+B]/(eij[A]*eij[B]),2)))
+			else:
+				sm[A+B] = int(round(2*math.log(qij[A+B]/(2*eij[A]*eij[B]),2)))
+			sm[B+A] = sm[A+B]
+		cp._info('sm: %s min: %d, max: %d' % (outprefix, min(sm.values()), max(sm.values())))
+
+		# output emboss format sm
+		#embossfile = outprefix + '.emboss.sm'
+		embossfile = outprefix
+		npemboss = np.array([[sm[A+B] for B in cp.smaa2] for A in cp.smaa2])
+		cp.b62edge[:npemboss.shape[0], :npemboss.shape[1]] = npemboss
+		with open(embossfile, 'w') as fp:
+			fp.write(cp.smstr(cp.b62edge, cp.smaa1))
+		cp._info('save sm to %s' % embossfile)
 
 
 def single_210x400(arglist):

@@ -147,8 +147,11 @@ def diff(arglist):
 	outcore = sm1.core - sm2.core
 
 	#np.savetxt(outfile, outcore, fmt='%d')
+	'''
 	with open(outfile, 'w') as fout:
 		fout.write(outemboss(outcore))
+	'''
+	outembossfromcore(outcore, outfile)
 	cp._info('write diff matrix %s' % (outfile))
 
 
@@ -343,8 +346,11 @@ def transform(arglist):
 	(p,n,ps,ns)= sm.stat()
 	cp._info('p %d n %d ps %d ns %d min: %d max %d' % (p,n,ps,ns,sm.lowest(), sm.highest()))
 
+	'''
 	with open(outsm, 'w') as fout:
-		fout.write(outemboss(sm.core))
+		fout.write(outembossfromcore(sm.core))
+	'''
+	outembossfromcore(sm.core, outsm)
 	cp._info('save sm to %s, min: %d, max: %d' % (outsm, np.min(sm.core), np.max(sm.core)))
 
 
