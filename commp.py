@@ -379,7 +379,7 @@ def _fatal():
 
 def _warning():
 	return False
-
+# exit causes problem in mprun
 def _err(msg, errcallback=_fatal):
 	curframe = inspect.currentframe()
 	calframe = inspect.getouterframes(curframe, 1)

@@ -95,6 +95,11 @@ def tupledist(arglist):
 	weight = np.loadtxt(weightfile) # weight is required
 	# scoreaa['aa']
 	fout = open(outfile, 'w')
+	'''
+	collines = cp.loadlines(colfile)
+	if len(collines) == 0:
+		cp._err('%s is empty' % colfile)
+	'''
 	for line in cp.loadlines(colfile):
 		#cols = [int(c) for c in line.split(' ')]
 		sarr = line.split(' ')
@@ -182,13 +187,13 @@ def tupleqij(arglist):
 		'''
 	aakey = ['%s%s' % (cp.aas01[i],cp.aas01[j]) for i in xrange(0, len(cp.aas01)) for j in xrange(i, len(cp.aas01))]
 	total = sum(qij.values())
-	if total == 0:
-		cp._err('%s zero total' % tuplefile)
-	with open(outfile, 'w') as fout:
-		fout.write('%s\n' % ('\n'.join([('fg %s %.8f' % (k, qij[k]/total)) for k in aakey])))
-		#fout.write('%s\n' % ('\n'.join([('fg %s %.8f' % (k, qij[k]/total)) for k in qij])))
-		#fout.write('%s\n' % ('\n'.join([('%s %.8f' % (k, qij[k])) for k in qij])))
-	cp._info('save to %s' % outfile)
+	if total != 0:
+		#cp._err('%s zero total' % tuplefile)
+		with open(outfile, 'w') as fout:
+			fout.write('%s\n' % ('\n'.join([('fg %s %.8f' % (k, qij[k]/total)) for k in aakey])))
+		cp._info('save to %s' % outfile)
+	else:
+		cp._info('%s zero total' % tuplefile)
 
 
 
