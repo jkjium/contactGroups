@@ -101,7 +101,12 @@ class utils_pfamscan(object):
 	def __init__(self, jsonfile):
 		self.name = jsonfile
 		with open(jsonfile) as fp:
-			self.pslist = [pfamscan(js) for js in json.loads(fp.read())] # empty line does not matter
+			jscontent = fp.read()
+			if len(jscontent) <= len('[{"model_length'): # .json: '[]'
+				self.pslist = []
+			else:
+				#self.pslist = [pfamscan(js) for js in json.loads(fp.read())] # empty line does not matter
+				self.pslist = [pfamscan(js) for js in json.loads(jscontent)] # empty line does not matter
 
 	def dump(self):
 		for ps in self.pslist:
@@ -131,6 +136,8 @@ class utils_pfamscan(object):
 		ps = self.getMatchpfs(pfamid)
 		return ps.alnseq.upper().translate(None, ''.join(cp.gaps))
 
+################### procedures #####################
+
 # print how man (which) pfam the current sequence hits
 def psreport(arglist):
 	if len(arglist) < 1:
@@ -156,6 +163,28 @@ def haspfam(arglist):
 		print '%s %s 1' % (jsonfile, pfamid)
 	else:
 		print '%s %s 0' % (jsonfile, pfamid)
+
+# for caths20_wo_pfam 
+# input pfamscan result, cathS20-0000.fa.json 
+# output: cathS20-0000.fa.json.pfamid.out
+# output: filename pfamid(s), two columns flat file
+# 		cathS20-0000.fa PF00000,PF00002
+# 
+def outpfam(arglist):
+	if len(arglist)<2:
+		cp._err('Usage: python utils_pfamscan.py outpfam cathS20-0000.fa.json outfile')
+	psfile = arglist[0]
+	outfile = arglist[1]
+
+	ups = utils_pfamscan(psfile)
+	if len(ups.pslist)!=0:
+		pfamliststr = ','.join([ps.pfamid for ps in ups.pslist])
+	else:
+		pfamliststr = 'na'
+	with open(outfile, 'w') as fout:
+		fout.write('%s %s\n' % (psfile, pfamliststr))
+	cp._info('save to %s : %s' % (outfile, pfamliststr))
+
 
 
 
@@ -184,6 +213,10 @@ def test(arglist):
 	#print 'file %s saved.' % outfile
 
 # main routine
+if __name__ == '__main__':
+	cp.dispatch(__name__)
+
+'''
 def main():
 	if len(sys.argv)<2:
 		cp._err('Usage: python utils_pfammsa.py cmd pdbfile [args ...]')
@@ -201,3 +234,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+'''
