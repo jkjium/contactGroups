@@ -255,6 +255,22 @@ def writecontact(arglist):
 	cp._info('save cg file: %s' % outcgfile)
 
 
+# for protsub
+# write all chain sequence into one outfile
+def writefafile(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_protein2.py writefafile pdbfile outfile')
+	pdbfile = arglist[0]
+	outfile = arglist[1]
+
+	p = protein(pdbfile, chain='all')
+	fout = open(outfile, 'w')
+	fout.write('>%s/0-%d\n%s\n' % (outfile, len(p.seq), p.seq.lower()))
+	fout.close()
+	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
+
+
+
 def writeseqfa(arglist):
 	if len(arglist) == 2:
 		chainid = arglist[1]

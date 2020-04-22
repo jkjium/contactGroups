@@ -205,6 +205,9 @@ def wfreq2sm(arglist):
 
 		wfreqfile = arglist[0] # file contains denominator (background)
 		outprefix = arglist[1]
+		s = 2.0
+		if len(arglist) == 3:
+			s = float(argv[2])
 
 		qij = collections.defaultdict(float)
 		eij = collections.defaultdict(float)
@@ -241,11 +244,11 @@ def wfreq2sm(arglist):
 			A = k[0]
 			B = k[1]
 			if A==B:
-				sm[A+B] = int(round(2*math.log(qij[A+B]/(eij[A]*eij[B]),2)))
+				sm[A+B] = int(round(s*math.log(qij[A+B]/(eij[A]*eij[B]),2)))
 			else:
-				sm[A+B] = int(round(2*math.log(qij[A+B]/(2*eij[A]*eij[B]),2)))
+				sm[A+B] = int(round(s*math.log(qij[A+B]/(2*eij[A]*eij[B]),2)))
 			sm[B+A] = sm[A+B]
-		cp._info('sm: %s min: %d, max: %d' % (outprefix, min(sm.values()), max(sm.values())))
+		cp._info('sm: %s min: %d, max: %d in 1/%.2f bits unit' % (outprefix, min(sm.values()), max(sm.values()), s))
 
 		# output emboss format sm
 		#embossfile = outprefix + '.emboss.sm'
