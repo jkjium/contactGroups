@@ -207,7 +207,7 @@ def wfreq2sm(arglist):
 		outprefix = arglist[1]
 		s = 2.0
 		if len(arglist) == 3:
-			s = float(argv[2])
+			s = float(arglist[2])
 
 		qij = collections.defaultdict(float)
 		eij = collections.defaultdict(float)
