@@ -24,7 +24,7 @@ def main():
 		print g
 	# $ blastp -query t.fa -db $ASTRALS40 -outfmt "10 stitle evalue" -evalue 0.0001 -matrix BLOSUM62 -gapopen 9 -gapextend 2 -out t.out
 	count=0
-	fout = open('batch_blast.sh','w')
+	fout = open(('batch_blast_%s.sh' % sm),'w')
 	with open(stubfile) as fp:
 		for line in fp:
 			line = line.strip()
