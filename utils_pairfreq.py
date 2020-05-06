@@ -201,7 +201,7 @@ def tupleqij(arglist):
 # combine single frequency and substitution frequency into sm
 def wfreq2sm(arglist):
 		if len(arglist) < 2:
-			cp._err('Usage: python utils_pairfreq.py wfreq2sm combine.wfreq outsmfile')
+			cp._err('Usage: python utils_pairfreq.py wfreq2sm combine.wfreq outsmfile {bits unit}')
 
 		wfreqfile = arglist[0] # file contains denominator (background)
 		outprefix = arglist[1]
@@ -258,6 +258,63 @@ def wfreq2sm(arglist):
 		with open(embossfile, 'w') as fp:
 			fp.write(cp.smstr(cp.b62edge, cp.smaa1))
 		cp._info('save sm to %s' % embossfile)
+
+
+# combine single frequency and substitution frequency into float sm core
+# next step is to assemble edges and gap penalty scores
+def wfreq2smcore(arglist):
+		if len(arglist) < 2:
+			cp._err('Usage: python utils_pairfreq.py wfreq2sm combine.wfreq outsmcorefile')
+
+		wfreqfile = arglist[0] # file contains denominator (background)
+		outfile = arglist[1]
+
+		qij = collections.defaultdict(float)
+		eij = collections.defaultdict(float)
+		with open(wfreqfile) as fp:
+				for line in fp:
+						line = line.strip()
+						if len(line)==0:
+								continue
+						sarr = line.split(' ')
+						t = sarr[0] # frequency name {bg, fg}
+						k = sarr[1] # amino acid name {a, aa}
+						f = float(sarr[2]) # weighed frequency value
+						# bg M 3511.29 
+						# fg AC 0.45
+						if t == 'bg':
+								eij[k]+=f
+						elif t == 'fg':
+								qij[k]+=f
+
+		# convert accumulative frequency into probability
+		# background probability
+		total_e = sum(eij.values())
+		for k in eij:
+				eij[k]=eij[k]/total_e
+		# substitution probability
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		# calculate log-odds ratio
+		sm = collections.defaultdict(int)
+		aakey = ['%s%s' % (cp.aas01[i],cp.aas01[j]) for i in xrange(0, len(cp.aas01)) for j in xrange(i, len(cp.aas01))]
+		for k in aakey:
+			A = k[0]
+			B = k[1]
+			if A==B:
+				#sm[A+B] = int(round(s*math.log(qij[A+B]/(eij[A]*eij[B]),2)))
+				sm[A+B] = math.log(qij[A+B]/(eij[A]*eij[B]),2)
+			else:
+				#sm[A+B] = int(round(s*math.log(qij[A+B]/(2*eij[A]*eij[B]),2)))
+				sm[A+B] = math.log(qij[A+B]/(2*eij[A]*eij[B]),2)
+			sm[B+A] = sm[A+B]
+		cp._info('smcore: %s min: %d, max: %d' % (outfile, min(sm.values()), max(sm.values())))
+
+		npsmcore = np.array([[sm[A+B] for B in cp.smaa2] for A in cp.smaa2])
+		np.savetxt(outfile, npsmcore, fmt='%.4f', delimiter=',')
+
 
 
 def single_210x400(arglist):

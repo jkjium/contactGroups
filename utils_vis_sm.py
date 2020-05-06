@@ -239,5 +239,72 @@ def hist_sbs(arglist):
     #fig.savefig('out.png')
     #cp._info('save to out.png')
 
+
+# generate simple signal plot (using plot) from two-column (space separted columns) file
+# column 1: x-tick
+# column 2: values
+# originally for visualizing sliding window results of IDP project
+def signalplot(arglist):
+    if len(arglist) < 2:
+        cp._err('Usage: python utils_vis_sm.py singalplot infile')
+
+    infile = arglist[0] 
+    outfile = arglist[1]
+
+    valuelist= []
+    ticklist = []
+    for line in cp.loadlines(infile):
+        sarr = line.split(' ')
+        ticklist.append(int(sarr[0]))
+        valuelist.append(float(sarr[1]))
+
+    print '%d records loaded.' % (len(valuelist))
+
+    fig, ax = plt.subplots(figsize=(14,3),tight_layout=True)
+    ax.plot(ticklist, valuelist, label="score")
+    #ax.plot(valuelist, label="score")
+    ax.grid(True)
+    ax.legend()
+    plt.axvline(31, linestyle='--', c='r')
+    plt.xticks(rotation='vertical', fontname = "monospace")
+
+    #plt.show()
+    plt.savefig(outfile)
+
+
+# batch generate plots for disordered protein
+def signalplotws(arglist):
+    if len(arglist) < 2:
+        cp._err('Usage: python utils_vis_sm.py singalplot_ws infile outfile')
+
+    infile = arglist[0] 
+    sarr = infile.split('-')
+    dstart = int(sarr[4])
+    dend = int(sarr[5])
+    outfile = arglist[1]
+
+    valuelist= []
+    ticklist = []
+    for line in cp.loadlines(infile):
+        sarr = line.split(' ')
+        ticklist.append(int(sarr[0]))
+        valuelist.append(float(sarr[1]))
+
+    #print '%d records loaded.' % (len(valuelist))
+
+    fig, ax = plt.subplots(figsize=(14,3),tight_layout=True)
+    ax.plot(ticklist, valuelist, label="score")
+    ax.grid(True)
+    ax.legend()
+    print outfile, dstart, dend
+    plt.axvline(dstart, linestyle='--', c='r')
+    plt.axvline(dend, linestyle='--', c='r')
+
+    plt.xticks(rotation='vertical', fontname = "monospace")
+
+    plt.show()
+    #plt.savefig(outfile)
+
+
 if __name__ == '__main__':
         cp.dispatch(__name__)
