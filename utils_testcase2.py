@@ -1,3 +1,8 @@
+'''
+should stop using this script.
+combined with utils_testcase.py
+'''
+
 import sys
 import subprocess as sp 
 import numpy as np

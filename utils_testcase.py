@@ -1,3 +1,8 @@
+'''
+combined version.
+utils_testcase2.py is discarded
+'''
+
 import sys
 import subprocess as sp 
 import numpy as np
@@ -630,6 +635,23 @@ def printpair(arglist):
 	ap.dump()
 
 
+# split .fa file into single sequence fasta file
+# save header
+# save file name prefix.00000.fa
+def splitfa(arglist):
+	if len(arglist)!=2:
+		cp._err('Usage: utils_testcase.py splitfa s_protein_single.fa outprefix')
+	fafile = arglist[0]
+	outprefix = arglist[1]
+
+	count = 0
+	for header, seq in cp.fasta_iter(fafile):
+		with open('%s%05d.fa' % (outprefix, count), 'w') as fout:
+			fout.write('>%s\n%s\n' % ( header, seq))
+		count+=1
+	cp._info('save %d .fa sequences' % count)
+
+
 def testpool(arglist):
 	if len(arglist)< 5:
 		cp._err('Usage: python utils_testcase.py testpool 20p.test.pool needle B62 10.0 0.5')
@@ -899,6 +921,22 @@ def cvepoint(arglist):
 	print ('%d %s %d' % (len(cveticks), outfile, auc))
 
 
+# read seq.stub
+# generate n x (n-1) / 2 pairs of names
+# for next step "pairseq" to generate p.xxx.xxx.seq
+def pairall2all(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase.py pairall2all seq.stub outname.pool')
+	stubfile = arglist[0]
+	outpoolfile = arglist[1]
+	namelist = cp.loadlines(stubfile)
+	outstr = ['p.%s.%s.seq' % (namelist[i], namelist[j]) for i in xrange(0,len(namelist)) for j in xrange(i+1, len(namelist))]
+	with open(outpoolfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outstr)))
+	cp._info('save to %s' % outpoolfile)
+
+
+
 # generate paired sequence file: p.xxxx.xxxx.seq
 # 	pairlistfile format:
 #	1hk5A03 1udA00
@@ -922,29 +960,74 @@ def pairseq(arglist):
 		fout.write('%s %s\n' % (s1,s2))
 	cp._info('save %s' % outfile)
 
+# generate batch_blast.sh
+def batchblastgen(arglist):
+	if len(arglist) < 5:
+		cp._err('Usage: python utils_testcase2.py batchblastgen dbname stubfile smname format evalue')
+	dbname = arglist[0]
+	stubfile = arglist[1]
+	sm = arglist[2]
+	fmt = arglist[3]
+	evalue = arglist[4]
+
+	count = 0
+	fout = open('batch_blast.sh', 'w')
+	querylist = cp.loadlines(stubfile)	
+	for seq in querylist:
+		for g in cp.gapb62:
+			fout.write('blastp -query %s -db $%s -outfmt "%s" -evalue %s -matrix BLOSUM62 -gapopen %d -gapextend %d -out %s.%s.%d-%d.out\n' % (seq, dbname, fmt, evalue, g[0], g[1], seq, sm, g[0], g[1]))
+			count+=1
+	fout.close()
+	cp._info('batch_blast.sh sm: %s len: %d' % (sm, count))
+
+# used in casp target homolog
+# re-format .out file into .outflat file
+# output: .outflat [target xxxx all --sx-x--x- xxxx B ---dsd---s-s- b62 10-1 1e-4]
+# combine .outflat then cut pdb by alignments
+# H0953.fa.mc26.sm.9-2.out:
+# 	6f45_D,0.0,1,249,MAVQG,1,249,MAVQG
+def blastflat_casptarget(arglist):
+	if len(arglist) < 2:
+		cp._err('Usage: python utils_testcase2.py blastflat_casptarget .tsvfile .outfile')
+	tsvfile = arglist[0]
+	outfile = arglist[1]
+
+	targetlist = cp.loadlines(tsvfile)
+	targetdict = {}
+	for target in targetlist:
+		sarr = target.split(' ')
+		# given target output pdb name
+		targetdict[sarr[0]] = sarr[1]
+
+	pdbset = set() # remove all the repeat pdb names xxxx_A,B,C,D
+	sarr = outfile.split('.')
+	targetname = sarr[0]
+	sm = sarr[2]
+	gap = sarr[4]
+	outlist = cp.loadlines(outfile)
+
+	outfile = outfile + '.outflat'
+	fout = open(outfile, 'w')
+	for out in outlist:
+		sarr = out.split(',')
+		uarr = sarr[0].split('_') # 6f45_D
+		pdbname = uarr[0]
+		if pdbname in pdbset:
+			continue
+		pdbset.add(pdbname)
+		chain = uarr[1]
+		evalue = sarr[1]
+		qseq = sarr[4]
+		sseq = sarr[7]
+		outstr = '%s %s all %s %s %s %s %s %s %s\n' % (targetname, targetdict[targetname], qseq, pdbname, chain, sseq, sm, gap, evalue)
+		fout.write(outstr)
+	fout.close()
+	cp._info('save to %s' % outfile)
+
+
 
 
 ##################################################################
 # main routine
-def main():
-	dispatch = {
-		'aln2color': aln2color,
-		'aln2rmsd': aln2rmsd,
-		'printpair':printpair,
-		'testpool':testpool,
-		'blastcolbystub': blastcolbystub,
-		'blastcathbystub': blastcathbystub,
-		'blasttpfptuple': blasttpfptuple,
-		'blast2cve': blast2cve,
-		'blast2cvep': blast2cvep,
-		'tpfpbygap': tpfpbygap,
-		'cvepoint': cvepoint,
-		'pairseq':	pairseq
-	}
-	if sys.argv[1] in dispatch:
-		dispatch[sys.argv[1]](sys.argv[2:])
-	else:
-		cp._err('invalid cmd: %s' % sys.argv[1])
-
 if __name__ == '__main__':
-	main()
+	cp.dispatch(__name__)
