@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 from scipy.cluster.hierarchy import linkage
+from scipy.spatial.distance import squareform
 
 def barplot_fgdist(arglist):
     if len(arglist) < 1:
@@ -147,6 +148,37 @@ def dendrogram_emboss_sm(arglist):
     #plt.show()	        
     plt.savefig(outfile)
     cp._info('save to %s' % outfile)
+
+
+
+def dendrogram_mat(arglist):
+    if len(arglist) < 3:
+        cp._err('Usage: python utils_vis_sm.py dendrogram_mat matfile tickfile outfile')
+    matfile = arglist[0]
+    tickfile = arglist[1]
+    outfile = arglist[2]
+
+    mat = np.loadtxt(matfile, delimiter= ' ')
+    xt = cp.loadlines(tickfile)
+
+    dists = squareform(mat)
+    #linkage_matrix = linkage(dists, "single")
+    linkage_matrix = linkage(dists, "complete")
+    #plt.figure(figsize=(25, 28))
+    plt.figure(figsize=(15, 15))
+    ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1, link_color_func=lambda x: "k")
+    plt.tight_layout()
+    plt.savefig(outfile)
+    #plt.show()
+
+    '''
+    dists = squareform(mat)
+    linkage_matrix = linkage(dists, "single")
+    dendrogram(linkage_matrix, labels=["0", "1", "2"])
+    plt.title("test")
+    plt.show()
+    '''
+
 
 # plot side-by-side barplot from the data in a two-column file
 # total_num: total row number

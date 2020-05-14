@@ -661,7 +661,7 @@ def testpool(arglist):
 	matrix = arglist[2]
 	gapopen = arglist[3]
 	gapextend = arglist[4]
-	outfile = '%s.alnflat' % poolfile
+	outfile = '%s_%s_%s_%s_%s_.alnflat' % (poolfile, cmd, matrix, gapopen, gapextend)
 
 	# loop pool
 	identity = 0
@@ -919,6 +919,48 @@ def cvepoint(arglist):
 		fp.write('%s' % ''.join(['%.8f,%.8f,%.8f\n' % (cve[0], cve[1], cve[2]) for cve in cveticks]))
 	#cp._info('%d %s %d' % (len(cveticks), outfile, auc))
 	print ('%d %s %d' % (len(cveticks), outfile, auc))
+
+
+# convert key-value dist file into numpy squre form txt
+# dist file must be in the correct order 
+def dist2npsquare(arglist):
+	if len(arglist)< 3:
+		cp._err('Usage:python utils_testcase.py dist2npsquare distfile dimension outfile')
+
+	infile = arglist[0]
+	d = int(arglist[1])
+	outfile = arglist[2]
+	
+	lines = cp.loadlines(infile)
+	squarestr = []
+	count = 0
+	outdict = {}
+	for i in xrange(0, d):
+		strline = []
+		for j in xrange(i, d):
+			if i==j:
+				value = '%.4f' % (0.0)
+			else:
+				sarr = lines[count].split(' ')
+				value = '%.4f' % float(sarr[1])
+				#print i, j, lines[count]
+				count+=1
+			outdict['%d %d' % (i,j)] = value
+			outdict['%d %d' % (j,i)] = value
+		#print '-------------------'
+		squarestr.append(' '.join(strline))
+	
+	outstr = []
+	for i in xrange(0, d):
+		strline = []
+		for j in xrange(0, d):
+			strline.append(outdict['%d %d' % (i,j)])
+		outstr.append('%s' % ' '.join(strline))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outstr)))
+	cp._info('save to %s' % outfile)
+
 
 
 # read seq.stub
