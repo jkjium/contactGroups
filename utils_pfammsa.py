@@ -174,6 +174,35 @@ def aafreqscol(arglist):
 		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
 
+# make a copy of the original msa
+# alter header to sequence index {000001,00002}
+# save header to sequence index map file
+def alterheader(args):
+	if len(args)!=4:
+		cp._err('Usage: python utils_pfammsa.py alterheader infile.fa length newheaderprefix outprefix')
+
+	infile = args[0]
+	seqlen = int(args[1])
+	newheaderprefix = args[2]
+	outprefix = args[3]
+
+	outfafile = '%s_retitle.fa' % (outprefix)
+	outmapfile = '%s.header.map' % (outprefix)
+	faout = open(outfafile,'w')
+	mapout = open(outmapfile,'w')
+
+	count = 0
+	for header, seq in cp.fasta_iter(infile):
+		newheader = '%s_%d/0-%d' % (newheaderprefix,count,seqlen)
+		mapout.write('%s %s\n' % (header, newheader))
+		faout.write('>%s\n%s\n' % (newheader, seq))
+		count+=1
+
+	faout.close()
+	mapout.close()
+
+	cp._info('save fa to %s' % outfafile) 
+	cp._info('save map to %s' % outmapfile)
 
 # for input CE(coevolution) tuple, pair or triplets
 # locate the columns in pfammsa, replace to kidera factor values
@@ -1462,6 +1491,7 @@ def main():
 		'test':test,
 		'aafreq': aafreq, # get Amino Acid frequency of a pfam MSA
 		'aafreqscol': aafreqscol,
+		'alterheader': alterheader,
 		'cekidera': cekidera,
 		'columnsmsa': columnsmsa,
 		'columnselect': columnselect,
