@@ -36,6 +36,9 @@ aa201 = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I',
 # AA alphabet sorted by singlet name
 aas01 = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 
 		'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+# append gap '.' into the list
+aas02 = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 
+		'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y', '.']
 
 # AA alphabet sorted by type
 aat01 = ['A','I','L','V','M','F','W','G','P','C','N','Q','S','T','Y','D','E','R','H','K']
@@ -548,7 +551,7 @@ def hamming_similarity(s1,s2):
 # 1, 1, 1, 1, 1, 3, 3, 3,15,15 : 1.000
 # 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
 # 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
-# max_d: cutoff distance, where to cut horizontaliy on a dendrogram
+# max_d: cutoff distance, upper limit of the maximum ditance of two elemetns in the same cluster
 #					           idx1       idx2        dist       # of elements
 # linkage matrix Z elements: [ 14.     ,  79.     ,   0.05914,   2.     ]
 # All indices idx >= len(X) actually refer to the cluster formed in Z[idx - len(X)]																   

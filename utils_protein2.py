@@ -97,7 +97,7 @@ def neighborsflatline(arglist):
 	n=[]
 	# [('A', '161'),('A','161'), ('A','256'), ...]
 	for r in reslist:
-		n+=p.contactbyallatom(r[0], int(r[1]), 4.0)
+		n+=p.contactbyallatom(r[0], int(r[1]), cutoff)
 	# remove redundancy
 	neighbors = list(set(n))
 	neighbors.sort()
@@ -120,6 +120,25 @@ def writechain(arglist):
 		for a in p.atoms:
 			fout.write(a.writeAtom())
 	cp._info('save %s chain %s to %s' % (pdbfile, c, outfile))
+
+
+# input .pdb file
+# output: a flat file, recording the minimum distance among all atoms of the current pair of residues
+# A123 A124 5.356
+def writeresdists(args):
+	# residistbyallatom
+	assert len(args) == 2
+	infile = args[0]
+	outfile = args[1]
+
+	p = protein(infile)
+	# [(rA, rB, dist), (.), ..]
+	# A < B
+	dtuplelist = p.residistbyallatom()
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(['%s %s %.4f' % (t[0], t[1], t[2]) for t in dtuplelist ]))) 
+	cp._info('save to %s' % outfile)
+
 
 
 def ncgfreq(arglist):

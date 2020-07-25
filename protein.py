@@ -200,6 +200,31 @@ class protein(object):
                         neighbors.append('%s%d' % (a.chainID, a.resSeq))
         return neighbors
 
+    # output all pairwise residue distance
+    # distance evalued by any atom
+    # the minimum distance is recorded in the result
+    # output format:  a list of triplet tuples
+    # [(resiA, resiB, minDist), ( .. ) ... ]
+    def residistbyallatom(self):
+        retlist = []
+        # keys in resAtomsDict: 'A100', ...
+        rlist = self.resAtomsDict.keys()
+        for i in xrange(0, len(rlist)):
+            for j in xrange(i+1, len(rlist)):
+                # get asymmetrical keys
+                r1 = rlist[i]
+                r2 = rlist[j]
+                # calculate minimum distance among all atoms
+                mindist = min([np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z))) for a in self.resAtomsDict[r1] for b in self.resAtomsDict[r2]])
+                # extract resi number
+                resi1 = int(r1[1:])
+                resi2 = int(r2[1:])
+                # make sure residue with smaller ID is in front in the output
+                if resi1 < resi2:
+                    retlist.append((r1, r2, mindist))
+                else:
+                    retlist.append((r2, r1, mindist))
+        return retlist
 
 
 
