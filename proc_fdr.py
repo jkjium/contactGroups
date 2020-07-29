@@ -37,9 +37,10 @@ def msa2vectors(args):
 		return [scheme[k] if k==ch else 1 for k in scheme]
 	'''
 
-	assert len(args) == 2
+	assert len(args) == 3, 'Usage: python proc_fdr.py msa2vectors score_reversed_fa_file .rcol output_prefix'
 	infile = args[0]
-	outprefix = args[1]
+	cols = ['%d' % col for col in np.loadtxt(args[1],delimiter=',')]
+	outprefix = args[2]
 
 	pfm = pfammsa(infile) # default opt='ambaa' converts all abnormal alphabets into gap '.'
 	for c in xrange(0, pfm.msalen):
@@ -65,7 +66,7 @@ def msa2vectors(args):
 
 		#print aatrack
 		#print output_npcmatrix
-		outfile = '%s%d.csv' % (outprefix, c+1)
+		outfile = '%s%s.csv' % (outprefix, cols[c])
 		np.savetxt(outfile, output_npcmatrix, fmt='%d', delimiter=',')
 
 	cp._info('save %d .csv files' % pfm.msalen)

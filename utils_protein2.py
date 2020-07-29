@@ -136,7 +136,7 @@ def writeresdists(args):
 	# A < B
 	dtuplelist = p.residistbyallatom()
 	with open(outfile, 'w') as fout:
-		fout.write('%s\n' % ('\n'.join(['%s %s %.4f' % (t[0], t[1], t[2]) for t in dtuplelist ]))) 
+		fout.write('%s\n' % ('\n'.join(['%s %s %s %s %.4f' % (t[0][0], t[0][1:], t[1][0], t[1][1:], t[2]) for t in dtuplelist ]))) 
 	cp._info('save to %s' % outfile)
 
 

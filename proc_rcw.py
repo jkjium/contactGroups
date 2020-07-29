@@ -9,6 +9,7 @@ id1 id2 mi apc mip
 7 9 0.10794275 0.08943567 0.01850708
 7 10 0.07998329 0.09719031 -0.01720702
 '''
+# only need the first three columns {id1 id2 mi}
 # internal function
 # updated from proc_mip2.py::mi2dict(sdii)
 def _mi2dict(cefile):

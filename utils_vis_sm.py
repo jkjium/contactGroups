@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
+from sklearn import metrics
+
+colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#1c225c']
 
 def barplot_fgdist(arglist):
     if len(arglist) < 1:
@@ -337,6 +340,31 @@ def signalplotws(arglist):
     plt.show()
     #plt.savefig(outfile)
 
+# plot roc curves 
+# infile: true/false score1 score2 ...
+def roc(args):
+    assert len(args) == 2, 'Usage: python utils_vis_sm.py roc roc_score_file legend,legend2,..'
+    infile = args[0]
+    legends = [s for s in args[1].split(',')]
+    print(legends)
+
+    data = np.loadtxt(infile)
+    p = data.shape[1] # get how many scores
+
+    y = data[:,0]
+    curves = [metrics.roc_curve(y, data[:,i], pos_label=1) for i in xrange(1,p)]
+
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], 'k--')
+    for k in xrange(0, len(curves)):
+        c = curves[k]
+        plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
+
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC curve')
+    plt.legend(loc='best')
+    plt.show()
 
 if __name__ == '__main__':
         cp.dispatch(__name__)
