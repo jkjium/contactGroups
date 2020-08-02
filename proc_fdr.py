@@ -66,7 +66,7 @@ def msa2vectors(args):
 
 		#print aatrack
 		#print output_npcmatrix
-		outfile = '%s%s.csv' % (outprefix, cols[c])
+		outfile = '%s_%s.csv' % (outprefix, cols[c])
 		np.savetxt(outfile, output_npcmatrix, fmt='%d', delimiter=',')
 
 	cp._info('save %d .csv files' % pfm.msalen)

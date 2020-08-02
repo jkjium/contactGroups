@@ -7,7 +7,7 @@ from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 from sklearn import metrics
 
-colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#1c225c']
+colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#1c225c', '#60e6c1', '#d7295e', '#008ed0', '#747474']
 
 def barplot_fgdist(arglist):
     if len(arglist) < 1:
