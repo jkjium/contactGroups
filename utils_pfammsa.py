@@ -827,7 +827,8 @@ def scorebycols(args):
 	outfile = args[3]
 
 	# load columns
-	scols = [int(c) for c in cp.loadlines(colfile)]
+	# scols = [int(c) for c in cp.loadlines(colfile)]
+	scols = [int(c) for c in np.loadtxt(colfile,delimiter=',')]
 
 	# load msa
 	pfm = pfammsa(msafile)
