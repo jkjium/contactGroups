@@ -92,6 +92,12 @@ class pfammsa(object):
 
 		return scores_rc, idx_rc
 
+	# convert msa to score by given columns
+	def scorebycols(self, scoretag, scols):
+		npscore = np.array([[cp.aascore[scoretag][a] for a in s[1]] for s in self.msalist])
+		return npscore[:,scols]
+		
+
 	# calculate pair substitution for column i and column j
 	def pairsubstitution(self, i, j):
 		# frequency of the pairs from two column
@@ -811,7 +817,23 @@ def scol2resi(arglist):
 		resi.sort()
 		print '%s %s' % (mapfile, ' '.join([str(r) for r in resi]))
 
+# input: msa file, score tag, column file {single column list} outfilename
+# output: a .score file 
+def scorebycols(args):
+	assert len(args) == 4, 'Usage: python utils_pfammsa.py scorebycols PF00000.txt columnlist.scol aa out.score'
+	msafile = args[0]
+	colfile = args[1]
+	scoretag = args[2]
+	outfile = args[3]
 
+	# load columns
+	scols = [int(c) for c in cp.loadlines(colfile)]
+
+	# load msa
+	pfm = pfammsa(msafile)
+	npscore = pfm.scorebycols(scoretag, scols)
+	np.savetxt(outfile, npscore, fmt='%i', delimiter=',')
+	cp._info('save %d columns into score: %s' % (len(scols), outfile))
 
 
 # calculate and save sequence weight with similarity cutoff
@@ -1499,6 +1521,7 @@ def main():
 		'cmlocate2': cmlocate2,
 		'entropyall': entropyall,
 		'entropyfromfile': entropyfromfile,
+		'scorebycols': scorebycols,
 		'seqfa': seqfa,
 		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
