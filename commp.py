@@ -810,6 +810,16 @@ def loadlines(filename):
         lines = filter(None, (line.rstrip() for line in fp))
 	return lines
 
+# return pair tuple of (raw title and content)
+def readkblockstr(linesbuff, delimiter='>'):
+	raw_list = [list(x[1]) for x in groupby(linesbuff, lambda line: line[0] == delimiter)]
+	return [(raw_list[i][0][1:], raw_list[i+1]) for i in range(0, len(raw_list),2)]
+
+# convert content block into kblock format
+def kblockstr(title, content, delimiter='>'):
+	return '%s%s\n%s' % (delimiter, title, content)
+
+
 # given two lists of coordinates. {1,..,i,..., n} in [x,y,z] format
 # return RMSD
 # RMSD = sqrt( 1/n * \sum_i (|| v_i - w_i ||^2)   )
