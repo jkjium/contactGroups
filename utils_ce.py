@@ -102,11 +102,13 @@ def keymap(args):
 
     # load value dictionary
     value_dict = {}
-    for line in cp.loadlines(valuefile):
+    values = cp.loadlines(valuefile)
+    for line in values:
         sarr = line.split(' ')
         key = ' '.join([sarr[i] for i in vkclist])
         value = ' '.join([sarr[j] for j in xrange(0,len(sarr)) if j not in vkclist])
         value_dict[key] = value
+    num_v = len(values[0].split(' '))
 
     # stub key list
     stub_key_list = []
@@ -116,9 +118,9 @@ def keymap(args):
         stub_key_list.append(key)
 
     if patch_value == 'no_patch': # output min(value_key_list, mapped(stub_key_list)) 
-        outlist = ['%s %s' % (k, value_dict[k]) for k in stub_key_list if k in value_dict]
+        outlist = ['%s %s' % (k, value_dict[k]) for k in stub_key_list if k in value_dict] # only output available value, igore non-existing key
     else:
-        outlist = ['%s %s' % (k, value_dict[k]) if k in value_dict else '%s %s' % (k, patch_value) for k in stub_key_list]
+        outlist = ['%s %s' % (k, value_dict[k]) if k in value_dict else '%s %s' % (k, ' '.join([patch_value]*(num_v-len(skclist)))  ) for k in stub_key_list]
     
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
@@ -252,6 +254,68 @@ def adjustment(args):
         flatstr = '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])
         fout.write('%s\n' % flatstr)
     cp._info('save {rcw rcw_ce rcw2 rcw_ce2 ...} to %s' % outfile)
+
+
+# generate ccmatrix for downstream analysis {EC analysis}
+# input:
+# index_colids: columns that gives tuple id, {resi or msai}, works for pair and triplets ..
+# value_colid: the one column that contains ce value
+# outprefix: two output files are generated, ccmat in np.loadtxt() format and the IDs {resi or msai} to label the matrix
+# example:
+# 
+# kjia@kjia-PC ~/workspace/src 2020-08-24 17:05:01
+# $ python utils_ce.py cflat2ccmat t.cflat 2,3 6 t.out
+# 2020-08-24 17:05:13|41238|0|INFO|save to t.out {.ccmat, .ccmat.tick}
+# t.cflat:
+# -191 -191 459 460 H A 0.400267 19.225526 0.736970 7.552786 0.459538 0.013046 0.771686 0.181111
+# -191 -191 459 461 H E 0.165445 7.425152 0.548973 4.681673 0.263010 -0.889776 0.640704 -0.789504
+# -191 -191 460 461 A E 0.336884 16.040377 0.695814 6.924250 0.320346 -0.626382 0.684237 -0.466913
+# t.out.ccmat:
+# 0.0000 0.4003 0.1654
+# 0.4003 0.0000 0.3369
+# 0.1654 0.3369 0.0000
+# t.out.ccmat.tick:
+# 459
+# 460
+# 461
+def cflat2ccmat(args):
+    assert len(args) == 4, 'Usage: python utils_ce2ccmat .cflatfile index.cols{0,1} cevalue.col{13} outprefix {.cecol, .ccmat}'
+    cflatfile = args[0]
+    index_colids = [int(i) for i in args[1].split(',')]
+    value_colid = int(args[2])
+    outprefix = args[3]
+
+    lines = cp.loadlines(cflatfile)
+
+    # get index set
+    ids=set()
+    for line in lines:
+        sarr = line.split()
+        ids.update([int(sarr[i]) for i in index_colids])
+    idlist=list(ids)
+    idlist.sort()
+
+    # get key: ids - value: target ce dictionary
+    def _func_getkvpair(sarr, index_collids, value_colid):
+        k = ' '.join([sarr[i] for i in index_colids])
+        v = float(sarr[value_colid])
+        return k,v
+    cedict = dict(_func_getkvpair(line.split(), index_colids, value_colid) for line in lines)
+
+    # fill in ccmat
+    ccmat = np.zeros((len(idlist), len(idlist)))
+    for i in range(len(idlist)):
+        for j in range(i+1, len(idlist)):
+            ccmat[i,j] = ccmat[j,i] = cedict['%d %d' % (idlist[i], idlist[j])]
+
+    # output files
+    outccmatfile = '%s.ccmat' % outprefix
+    np.savetxt(outccmatfile, ccmat, fmt='%.4f')
+    outtickfile = '%s.ccmat.tick' % outprefix
+    np.savetxt(outtickfile, np.array(idlist), fmt='%i')
+
+    cp._info('save to %s{.ccmat, .ccmat.tick}' % outprefix)
+
 
 
 if __name__=='__main__':

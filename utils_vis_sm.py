@@ -2,12 +2,15 @@ import sys
 import commp as cp
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as clr
 from scipy.cluster.hierarchy import dendrogram
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 from sklearn import metrics
 
-colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#1c225c', '#60e6c1', '#d7295e', '#008ed0', '#747474']
+colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', 
+'#60e6c1', '#d7295e', '#008ed0', '#747474']
+#1c225c
 
 def barplot_fgdist(arglist):
     if len(arglist) < 1:
@@ -365,6 +368,198 @@ def roc(args):
     plt.title('ROC curve')
     plt.legend(loc='best')
     plt.show()
+
+def _gridheatmap(data, row_labels, col_labels, ax=None,
+            cbar_kw={}, cbarlabel="", **kwargs):
+    """
+    Create a heatmap from a numpy array and two lists of labels.
+
+    Arguments:
+        data       : A 2D numpy array of shape (N,M)
+        row_labels : A list or array of length N with the labels
+                     for the rows
+        col_labels : A list or array of length M with the labels
+                     for the columns
+    Optional arguments:
+        ax         : A matplotlib.axes.Axes instance to which the heatmap
+                     is plotted. If not provided, use current axes or
+                     create a new one.
+        cbar_kw    : A dictionary with arguments to
+                     :meth:`matplotlib.Figure.colorbar`.
+        cbarlabel  : The label for the colorbar
+    All other arguments are directly passed on to the imshow call.
+    """
+
+    if not ax:
+        ax = plt.gca()
+
+    # Plot the heatmap
+    im = ax.imshow(data, **kwargs)
+
+    # Create colorbar
+    cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
+    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(data.shape[1]))
+    ax.set_yticks(np.arange(data.shape[0]))
+    # ... and label them with the respective list entries.
+    ax.set_xticklabels(col_labels)
+    ax.set_yticklabels(row_labels)
+
+
+    # Let the horizontal axes labeling appear on top.
+    ax.tick_params(top=True, bottom=False,
+                   labeltop=True, labelbottom=False)
+
+    # Rotate the tick labels and set their alignment.
+    #plt.setp(ax.get_xticklabels(), rotation=-30, ha="right", rotation_mode="anchor")
+
+    # Turn spines off and create white grid.
+    for edge, spine in ax.spines.items():
+        spine.set_visible(False)
+
+    ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
+    ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
+    ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+    return im, cbar
+
+def _grid_annotate_heatmap(im, data=None, valfmt="{x:.2f}",
+                     textcolors=["black", "white"],
+                     threshold=None, **textkw):
+    """
+    A function to annotate a heatmap.
+
+    Arguments:
+        im         : The AxesImage to be labeled.
+    Optional arguments:
+        data       : Data used to annotate. If None, the image's data is used.
+        valfmt     : The format of the annotations inside the heatmap.
+                     This should either use the string format method, e.g.
+                     "$ {x:.2f}", or be a :class:`matplotlib.ticker.Formatter`.
+        textcolors : A list or array of two color specifications. The first is
+                     used for values below a threshold, the second for those
+                     above.
+        threshold  : Value in data units according to which the colors from
+                     textcolors are applied. If None (the default) uses the
+                     middle of the colormap as separation.
+
+    Further arguments are passed on to the created text labels.
+    """
+
+    if not isinstance(data, (list, np.ndarray)):
+        data = im.get_array()
+
+    # Normalize the threshold to the images color range.
+    if threshold is not None:
+        threshold = im.norm(threshold)
+    else:
+        threshold = im.norm(data.max())/2.
+
+    # Set default alignment to center, but allow it to be
+    # overwritten by textkw.
+    kw = dict(horizontalalignment="center",
+              verticalalignment="center")
+    kw.update(textkw)
+
+    # Get the formatter in case a string is supplied
+    if isinstance(valfmt, str):
+        valfmt = matplotlib.ticker.StrMethodFormatter(valfmt)
+
+    # Loop over the data and create a `Text` for each "pixel".
+    # Change the text's color depending on the data.
+    texts = []
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            kw.update(color=textcolors[im.norm(data[i, j]) > threshold])
+            text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
+            texts.append(text)
+
+    return texts
+
+# heatmap procedure
+# colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474']
+def heatmap(args):
+    assert len(args) == 3, 'Usage: python utils_vis_sm.py heatmap data_npmat.txt xtick.vec ytick.vec'
+
+    data = np.loadtxt(args[0])
+    assert len(data.shape) != 1, 'Error, data has only one row/column'
+        
+    xticktext = cp.loadlines(args[1]) if args[1]!='na' else np.arange(data.shape[1])
+    yticktext = cp.loadlines(args[2]) if args[2]!='na' else np.arange(data.shape[0])
+
+    fig, ax = plt.subplots(1,1, figsize=(10,10))
+
+    # customized continuous color bar
+    mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
+    im = ax.imshow(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
+    #im = ax.pcolormesh(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
+
+    # inversed rdbu
+    #im = ax.imshow(data, cmap='RdBu_r', vmin=-1.0, vmax=1.0)
+
+    # dirty way but simple way to align the colobar with the plot
+    # You can correct for the case where image is too wide using this trick: im_ratio = data.shape[0]/data.shape[1] \
+    # plt.colorbar(im,fraction=0.046*im_ratio, pad=0.04) where data is your image
+    #cbar = ax.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    # another way to align colorbar with plot, but the plot will no longer be square
+    #ax.set_aspect('auto')
+    #cbar = ax.figure.colorbar(im, ax=ax)
+
+    # most accurate way to align the colorbar with plot
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = ax.figure.colorbar(im, cax=cax)
+
+    cbar.ax.set_ylabel('colorbar', rotation=-90, va="bottom")
+
+    # show every 10 count of ticks
+    ax.set_xticks(np.arange(1, data.shape[1]+1,10))
+    ax.set_yticks(np.arange(1, data.shape[0]+1,10)) 
+    # ... and label them with the respective list entries.
+    ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)])
+    ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
+    #ax.set_yticklabels(yticktext) 
+
+    # Let the horizontal axes labeling appear on top.
+    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)    
+
+    plt.xticks(rotation=90)
+
+    fig.tight_layout()
+    plt.show()                        
+
+
+def colorpalette(args):
+    cs = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474']
+    # start showing colorbar
+    #cs = ['#266674','#ffffff','#a93a28']
+
+    # plot psudodata
+    csdata = np.array([range(len(cs))])
+    fig, ax = plt.subplots(figsize=(8,5))
+    #plt.gca().set_visible(False) # hide it
+    plt.gca().get_yaxis().set_visible(False)
+
+    ax.set_xticks(np.arange(0, csdata.shape[1]+1))
+    ax.set_yticks(np.arange(0, csdata.shape[0]+1)) 
+    # ... and label them with the respective list entries.
+    ax.set_xticklabels(cs)
+    #ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
+
+    mycmap = clr.LinearSegmentedColormap.from_list('mybar', cs, N=256)
+
+    im = ax.imshow(psudodata, cmap=mycmap)
+    cbar = ax.figure.colorbar(im, ticks=[range(len(cs))], orientation="horizontal")
+    cbar.ax.set_xticklabels(cs, rotation=-90)
+
+    plt.show()
+    #plt.savefig("colorbar.pdf")    
+
 
 if __name__ == '__main__':
         cp.dispatch(__name__)

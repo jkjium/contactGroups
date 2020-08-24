@@ -720,6 +720,34 @@ def msareduce(arglist):
 		cp._info('save %d rows in %s' % (len(scores[t]), outscorefile))
 
 
+# reduce a pfammsa by resimap columns
+# input: msafile mapfile outputprefix
+# output: reduced msa, reduced score, 
+def msareduce_withmap(args):
+	assert len(args) == 4, 'Usage: python utils_pfammsa.py msareduce_withmap msafile mapfile scoretag{aa} outprefix'
+	msafile = args[0]
+	mapfile = args[1]
+	scoretag = args[2]
+	outprefix = args[3]
+
+	# load resimap columns
+	# 212 A 3051 E
+	_func_getmsai = lambda x: int(x[2])
+	cols = [_func_getmsai(line.split()) for line in cp.loadlines(mapfile)]
+
+	# msa2score
+	pfm = pfammsa(msafile)
+	scoremat = pfm.scorebycols(scoretag, cols)
+
+	# output
+	np.savetxt(outprefix+'.scoremat', scoremat, delimiter=',', fmt='%i')
+	with open(outprefix+'.rcol', 'w') as fout:
+		fout.write('%s\n' % (','.join(map(lambda x: '%d' % x, cols))))
+	cp._info('save to %s {.scoremat, .rcol}' % outprefix)
+
+
+
+
 # calculate the pair substitution for one PFam MSA
 # input: PF00000.txt, PF00000.txt.selected.col
 # output: tsv file with quad subsitution count
@@ -1531,6 +1559,7 @@ def main():
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,
+		'msareduce_withmap': msareduce_withmap,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
 		'scol2resi': scol2resi,

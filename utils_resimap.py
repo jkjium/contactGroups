@@ -193,7 +193,7 @@ def appendseq2msa(arglist):
 	# format: resi resn msai msan
 	outstr = '\n'.join(['%d %s %d %s' % (msapos2seqpos[k], seq[msapos2seqpos[k]], k, msaseq[k]) for k in klist])
 	with open(outfile, 'w') as fout:
-		fout.write(outstr.upper())
+		fout.write('%s\n' % outstr.upper())
 	cp._info('save map to %s' % outfile)
 
 
