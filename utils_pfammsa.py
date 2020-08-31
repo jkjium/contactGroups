@@ -1499,6 +1499,57 @@ def wfreqcsfgdist_1(arglist):
 			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
 		cp._info('save %s foreground distribution to %s' % (cs, outfile))
 
+# combine two msa according to the species information
+# only works for full.txt for now
+# _fullmsa_species needs to be separated
+# 
+def combinemsa(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py combinemsa msa1.fa msa2.fa outprefix'
+	msafile1 = args[0] 
+	msafile2 = args[1] 
+	outprefix = args[2]
+
+	_fullmsa_species = lambda s: s.split('/')[0]
+	# get uniq species types
+	pfm1 = pfammsa(msafile1)
+	pfm1headerset =set([_fullmsa_species(s[0]) for s in pfm1.msalist])
+	pfm2 = pfammsa(msafile2)
+	pfm2headerset =set([_fullmsa_species(s[0]) for s in pfm2.msalist])
+
+	# take intersection
+	commonheaderset = pfm1headerset.intersection(pfm2headerset)
+	# print 'commheaderset: %s' % repr(commonheaderset)
+
+	# get sequences with common headers
+	pfm1dict=dict((k,[]) for k in commonheaderset)
+	for s in pfm1.msalist:
+		k = s[0].split('/')[0]
+		if k in commonheaderset:
+			pfm1dict[k].append(s)
+	# print '%d headers in pfm1dict' % len(pfm1dict)
+	
+	# get sequences with common headers
+	pfm2dict=dict((k,[]) for k in commonheaderset)
+	for s in pfm2.msalist:
+		k = s[0].split('/')[0]
+		if k in commonheaderset:
+			pfm2dict[k].append(s)
+	# print '%d headers in pfm2dict' % len(pfm2dict)
+
+	outlist = []
+	for k in commonheaderset:
+		for s1 in pfm1dict[k]:
+			for s2 in pfm2dict[k]:
+				newseq = '%s%s' % (s1[1], s2[1])
+				newheader = '%s_%s/1-%d' % (s1[0].replace('/','_'), s2[0].replace('/','_'), len(newseq))
+				outlist.append((newheader, newseq))
+
+	outfile = '%s_%d_combine.fa' % (outprefix, pfm1.msalen)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(['>%s\n%s' % (s[0], s[1].upper()) for s in outlist])))
+	cp._info('output %d sequences of %d species to final MSA: %s' % (len(outlist), len(commonheaderset), outfile))
+
+
 
 # testing routine
 def test(arglist):
@@ -1546,6 +1597,7 @@ def main():
 		'cekidera': cekidera,
 		'columnsmsa': columnsmsa,
 		'columnselect': columnselect,
+		'combinemsa': combinemsa,
 		'chargepair_bcp': chargepair_bcp,
 		'cmlocate2': cmlocate2,
 		'entropyall': entropyall,
