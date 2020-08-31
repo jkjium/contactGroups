@@ -85,11 +85,11 @@ def alphabetfreq(args):
         fout.write('%s\n' % '\n'.join(outlist))
     cp._info('save counts to %s' % outfile)
 
-# general key mapping function
+# general key mapping function, value filtered by stub with mapping the corresponding columns in two files
 # given a stub file and columns {0,2,3} that compose of a key {space separated key}
 # given columns {0,3,4} in the value file that map the key
 # get all the values of line[key]
-# option: patch -191 if value is less than stub
+# option: patch -191 if value is less than stub, default: 'no_patch'
 def keymap(args):
     assert len(args) == 6, 'Usage: python utils_ce.py keymap valuefile valuefile_key_columns {0,2,3} stubfile stubfile_key_columns {0,1,4} patch_value outfile'
 

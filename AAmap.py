@@ -6,6 +6,8 @@ class AAmap(object):# -*- coding: utf-8 -*-
         self.AAA2A={}
         self.AAA2A['ARG']='R'
         self.AAA2A['HIS']='H'
+        self.AAA2A['HSD']='H'
+        self.AAA2A['HSE']='H'
         self.AAA2A['LYS']='K'
         self.AAA2A['ASP']='D'
         self.AAA2A['GLU']='E'

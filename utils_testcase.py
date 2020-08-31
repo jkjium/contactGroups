@@ -91,6 +91,7 @@ class palign(object):
 
 
 	# dump object to stdout
+	# should put into __repr__
 	def dump(self):
 		print '\n-----------------------------'
 		print 'name: %s' % self.name

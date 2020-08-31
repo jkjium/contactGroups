@@ -14,7 +14,9 @@ def alterbfactor(arglist):
 	outfile = arglist[2]
 	cabfflag = int(arglist[3])
 
-	nb = np.loadtxt(nbfile)
+	rb = np.loadtxt(nbfile)
+	nb = (rb - rb.min()) / (rb.max() - rb.min())
+
 	p = protein(pdbfile)
 	fout=open(outfile, 'w')
 
@@ -41,6 +43,64 @@ def alterbfactor(arglist):
 
 	fout.close()
 	cp._info('save new pdb to %s' % outfile)
+
+# alter b factor according to the given resi
+def alterbresi(args):
+	assert len(args) == 4, 'Usage: python utils_protein2.py alterbresi pdbfile newbfactor.vec resifile.tick outfile'
+	pdbfile = args[0]
+	nbfile = args[1]
+	resifile = args[2]
+	outfile = args[3]
+
+	rb = np.loadtxt(nbfile)
+	nb = (rb - rb.min()) / (rb.max() - rb.min()) # normalize to 0 - 1
+
+	resilist = cp.loadlines(resifile)
+	assert len(resilist) == len(nb)
+
+	nbdict = dict((int(resilist[i]), nb[i]) for i in range(len(resilist)))
+
+	p = protein(pdbfile)
+	fout=open(outfile, 'w')
+
+	# alter bfactor for all ca atoms
+	for i in xrange(0, len(p.ca)):
+		a=p.ca[i]
+		a.tempFactor=nbdict[a.resSeq] if a.resSeq in nbdict else 0
+	# same all atom pdb
+	for a in p.atoms:
+		if 'CA' not in a.name:
+			a.tempFactor=0
+		fout.write(a.writeAtom())
+	fout.close()
+	cp._info('save new pdb to %s' % outfile)
+
+
+# replace resSeq from oldresi to new resi
+# nresifile a single column data contains the new resi
+# oresifile gives which old resi to be replaced
+def alterresseq(args):
+	assert len(args) == 4, 'Usage: python utils_protein2.py alterresseq pdbfile newresi.vec oldresi.vec(tick) outpdbfile'
+	pdbfile = args[0]
+	nresifile =args[1]
+	oresifile =args[2]
+	outfile = args[3]
+
+	nresi = np.loadtxt(nresifile)
+	oresi = np.loadtxt(oresifile)
+	assert len(nresi) == len(oresi), 'Error, length mismatch: nresi: %d, oresi: %d' % (len(nresi), len(oresi))
+
+	nrdict = dict((int(oresi[i]), int(nresi[i])) for i in range(len(nresi)))
+	count=0
+	p = protein(pdbfile)
+	with open(outfile, 'w') as fout:
+		for a in p.atoms:
+			if a.resSeq in nrdict:
+				a.resSeq = nrdict[a.resSeq] 
+				if 'CA' in a.name:
+					count+=1
+			fout.write(a.writeAtom())
+	cp._info('save new resi to %d residues in new pdb file %s' % (count, outfile))
 
 
 def cgfreq(arglist):

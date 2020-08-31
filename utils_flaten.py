@@ -19,7 +19,8 @@ def zscoredist(arglist):
         sarr = line.split(' ')
         rawlist.append(float(sarr[idx]))
     oldskew = skew(rawlist)
-    translist = [x ** ( 1. / 3 ) for x in rawlist]
+    #translist = [x ** ( 1. / 3 ) for x in rawlist]
+    translist = [cp.root(x,3) for x in rawlist]
     newskew = skew(translist)
 
 
