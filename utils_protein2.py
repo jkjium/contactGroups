@@ -76,6 +76,34 @@ def alterbresi(args):
 	cp._info('save new pdb to %s' % outfile)
 
 
+
+# alter b factor according to the given (resi, b) .vec2 file
+# b factor normalization should be done by upper stream processing
+def alterbresi2(args):
+	assert len(args) == 3, 'Usage: python utils_protein2.py alterbresi2 pdbfile resi_nb.vec2 outpdbfile'
+	pdbfile = args[0]
+	nbfile = args[1]
+	outfile = args[2]
+
+	resi_b = lambda x: (int(x[0]), float(x[1]))
+	nbdict = dict(resi_b(line.split()) for line in cp.loadlines(nbfile))
+
+	p = protein(pdbfile)
+	fout=open(outfile, 'w')
+
+	# alter bfactor for all ca atoms
+	for i in xrange(0, len(p.ca)):
+		a=p.ca[i]
+		a.tempFactor=nbdict[a.resSeq] if a.resSeq in nbdict else 0
+	# same all atom pdb
+	for a in p.atoms:
+		if 'CA' not in a.name:
+			a.tempFactor=0
+		fout.write(a.writeAtom())
+	fout.close()
+	cp._info('save new pdb to %s' % outfile)	
+
+
 # replace resSeq from oldresi to new resi
 # nresifile a single column data contains the new resi
 # oresifile gives which old resi to be replaced
@@ -132,6 +160,27 @@ def cgfreq(arglist):
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % (' '.join(['%.4f' % (f) for f in cgf])))
 	cp._info('save to %s' % outfile)
+
+
+# output reisdue contact pairs for two input pdbs
+# input: pdb1 pdb2
+# output: pdb1 {chain resi resn} pdb2 {chain resi resn} mindist_of_all_atoms
+def pdbcontact(args):
+	assert len(args)==3, 'Usage: python utils_protein2.py pdbcontact pdbfile1 pdbfile2 outfile'
+	p1 = protein(args[0])
+	p2 = protein(args[1])
+	outfile = args[2]
+	outlist = []
+	for r1 in p1.resAtomsDict:
+		for r2 in p2.resAtomsDict:
+			res1atom = p1.resAtomsDict[r1][0]
+			res2atom = p2.resAtomsDict[r2][0]
+			mindist = min([np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z))) for a in p1.resAtomsDict[r1] for b in p2.resAtomsDict[r2]])
+			outstr = '%s %d %s %s %d %s %.4f' % (res1atom.chainID, res1atom.resSeq, cp.aa2a[res1atom.resName], res2atom.chainID, res2atom.resSeq, cp.aa2a[res2atom.resName], mindist)
+			outlist.append(outstr)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save contacts to %s' % outfile)
 
 
 # input: pdb file, target residue IDs, cutoff distance

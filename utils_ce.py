@@ -42,6 +42,26 @@ def topce_outlierfilter(args):
     cp._info('%s: cutoff: %.4f #ofIPV: %d/%d' % (outfile, cutoff, len(outlist), len(celines)))
 
 
+# append shadow zscores to cefile
+def zscore_outlierfilter(args):
+    assert len(args) == 3, 'Usage: python utils_ce.py zscore_outlierfilter cefile cecolumn_index outfile'
+    cefile = args[0]
+    col = int(args[1])
+    outfile = args[2]
+
+    celines = cp.loadlines(cefile)
+    celist = [float(list(line.split())[col]) for line in celines]
+
+    cutoff, adj_m, adj_s = _outlierfilter(celist, 0) # cutoff is not used here
+    cp._info('adj_m: %.8f, adj_s: %.8f' % (adj_m, adj_s))
+    outlist = ['%s %.8f' % (celines[i], (celist[i]-adj_m)/adj_s) for i in xrange(0, len(celist))]
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save to %s' % outfile)
+
+
+
 # caculate the count of unique alphabets for given columns
 # input: 
 #   a csv file; 

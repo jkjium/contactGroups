@@ -54,7 +54,7 @@ class protein(object):
             if 'END' in line[0:6]:
                 break
             if line[17:20].strip() not in aamap.AAA2A:
-                cp._info('skipped: non-AA residue name: %s' % line[17:20])
+                cp._info('skipped: non-AA residue name: \n%s' % line)
                 continue
             if self.chain != 'all':
                 if (self.chain != line[21]):

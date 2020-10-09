@@ -681,6 +681,59 @@ def getsinglemsa(arglist):
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
 
 
+# input single head
+# get all msa that have at least cutoff similarities with the input 
+def getsinglemsacluster(args):
+	assert len(args) == 6, 'Usage: python utils_pfammsa.py getsinglemsacluster msafile mapfile head scoretag{aa} similarity_cutoff{0.7} outprefix'
+
+	msafile = args[0]
+	mapfile = args[1]
+	target_head = args[2]
+	scoretag = args[3]
+	similarity_cutoff = float(args[4]) 
+	outprefix = args[5]
+
+	# load resimap columns
+	# 212 A 3051 E
+	_func_getmsai = lambda x: int(x[2])
+	cols = [_func_getmsai(line.split()) for line in cp.loadlines(mapfile)]
+
+	# load msa and get scorebycols 
+	# msa2score
+	pfm = pfammsa(msafile)
+	scoremat = pfm.scorebycols(scoretag, cols)
+
+	# return a list of len(rows of x), clusters[i] = 'cluster ID which i belongs' 
+	msaclusters = cp.hamming_cluster(scoremat, 1-similarity_cutoff)
+
+	# locate counting index of the target sequence
+	target_index = -1
+	for i in range(pfm.msanum):
+		if target_head == pfm.msalist[i][0]:
+			target_index = i
+			break
+	assert target_index != -1, 'target_index: %d | target_head : %s does not exist in %s' % (target_inidex, target_head, msafile)
+	cp._info('target head: %s msalist id %d : %s' % (target_head, target_index, pfm.msalist[target_index][0]))
+
+	# scan through msaclusters to find the all the members of the target cluster 
+	target_cluster_id = msaclusters[target_index]
+	cluster_member_ids = [i for i in range(len(msaclusters)) if msaclusters[i]==target_cluster_id]
+	cp._info('%d members found in target cluster: %d' % (len(cluster_member_ids), target_cluster_id))
+	cluster_msalist = [pfm.msalist[i] for i in cluster_member_ids]
+
+	# output target cluster msa
+	outmsafile = '%s_%.2f_cluster.fa' % (outprefix, similarity_cutoff)
+	with open(outmsafile, 'w') as fout:
+		fout.write('\n'.join(['>%s\n%s' % (s[0], s[1]) for s in cluster_msalist]))
+	cp._info('save target cluster msa to %s' % outmsafile)
+
+	# output target cluster score
+	outscorefile = '%s_%.2f_cluster.scoremat' % (outprefix, similarity_cutoff)
+	np.savetxt(outscorefile, scoremat[cluster_member_ids,:])
+	cp._info('save target cluster score to %s' % outscorefile)
+
+
+
 # temp put it here
 def hamming_similarity(arglist):
 	if len(arglist) < 2:
@@ -746,6 +799,35 @@ def msareduce_withmap(args):
 	cp._info('save to %s {.scoremat, .rcol}' % outprefix)
 
 
+# list all target pairt -> 20 x 20 possible pairsubstitution
+def tuplesubfreq(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py pairsubfreq PF00000.txt pair.stub outfile'
+	msafile = args[0]
+	tuplestubfile = args[1]
+	outfile = args[2]
+
+	pfm = pfammsa(msafile)
+	msalistlist = [list(s[1]) for s in pfm.msalist]
+	npmsa = np.array(msalistlist, dtype=np.object)
+	print(npmsa)
+
+	vlist = [[0,2]]
+	# zip columns into a single symbol
+	cdata = np.array([map(''.join, zip(*npmsa[:,s].T)) if len(s) != 1 else npmsa[:,s[0]].T for s in vlist])
+	print(cdata)
+
+	states = np.unique(cdata, return_counts=True)
+	print(states)
+	print(states[0])
+	print(states[1])
+
+
+	sortedfreq = sorted([(states[0][i], states[1][i]) for i in range(len(states[0]))], key=lambda v: v[1], reverse=True)
+	print(sortedfreq)
+
+	# a = cp.aat01
+	# d = [a] * 3
+	# list(itertools.product(*d))
 
 
 # calculate the pair substitution for one PFam MSA
@@ -1609,6 +1691,7 @@ def main():
 		'freqlookupscol': freqlookupscol,
 		'getcolumns': getcolumns, # get columns from MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
+		'getsinglemsacluster': getsinglemsacluster, 
 		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,
 		'msareduce_withmap': msareduce_withmap,
@@ -1620,6 +1703,7 @@ def main():
 		'splitfa': splitfa,
 		'splithidfa': splithidfa,
 		'splitheadfa': splitheadfa,
+		'tuplesubfreq': tuplesubfreq,
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,
 		'wfreqcs':wfreqcs,

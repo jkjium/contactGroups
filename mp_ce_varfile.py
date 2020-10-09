@@ -91,9 +91,9 @@ def listener(total, outfile, q):
 			cp._info('%d processes done.' % count)
 		else:
 			tcount+=1
-			if tcount%100 == 0:
+			if tcount%1000 == 0:
 				timeUsed = int(time.time() - tstart)
-				cp._info('%d/%d in %d seconds, %f hours left.' % (tcount, total, timeUsed, 1.0*total*timeUsed/(tcount*3600)))
+				cp._info('%d/%d in %d seconds, %f hours left.' % (tcount, total, timeUsed, 1.0*(total-tcount)*timeUsed/(tcount*3600)))
 			fout.write('%s' % (m))
 			fout.flush()
 		if tcount == total:

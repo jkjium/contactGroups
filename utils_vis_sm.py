@@ -60,9 +60,11 @@ def barplot_bgdist(arglist):
     infile = arglist[0]
     outfile = arglist[1]
 
-    data = np.loadtxt(infile,delimiter=' ')
+    #data = np.loadtxt(infile,delimiter=' ')
+    data = np.loadtxt(infile)
     n = len(data)
-    fix, ax = plt.subplots()
+    #fix, ax = plt.subplots()
+    fig, ax = plt.subplots(1,1, figsize=(10,4))
     index = np.arange(n)
 
     bar_width = 0.3
@@ -76,15 +78,17 @@ def barplot_bgdist(arglist):
     #plt.ylabel('')
     #plt.title('Marginal ubstritution scores comparison')
     plt.ylim(0,0.2)
-    xlabels = cp.aat01
-    plt.xticks(index + bar_width / 2, xlabels)
+    #xlabels = cp.aat01
+    xlabels = ['%d' % i for i in index]
+    plt.xticks(index + bar_width / 2, xlabels, rotation=90)
+    #ax.set_xticklabels(xlabels, rotation=-90)
 
     plt.legend()
 
     plt.tight_layout()
-    #plt.show()
-    plt.savefig(outfile)
-    cp._info('save to %s' % outfile)
+    plt.show()
+    #plt.savefig(outfile)
+    #cp._info('save to %s' % outfile)
 
 def _augmented_dendrogram(*args, **kwargs):
     ddata=dendrogram(*args, **kwargs)
@@ -520,9 +524,13 @@ def heatmap(args):
     # show every 10 count of ticks
     ax.set_xticks(np.arange(1, data.shape[1]+1,10))
     ax.set_yticks(np.arange(1, data.shape[0]+1,10)) 
+    #ax.set_xticks(np.arange(1, data.shape[1]+1))
+    #ax.set_yticks(np.arange(1, data.shape[0]+1)) 
     # ... and label them with the respective list entries.
     ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)])
     ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
+    #ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1])])
+    #ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0])])
     #ax.set_yticklabels(yticktext) 
 
     # Let the horizontal axes labeling appear on top.

@@ -561,6 +561,14 @@ def hamming_weight(x, max_d):
 	normdict = freq(clusters)
 	return [(1.0/normdict[k]) for k in clusters]
 
+# return a list of len(rows of x), clusters[i] = 'cluster ID which i belongs'
+def hamming_cluster(x, max_d):
+	linkage_matrix = linkage(x, "single", metric='hamming')
+	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
+	return clusters
+
+
+
 
 # jaccard distance for two sets
 def jaccard(a, b):
@@ -803,6 +811,13 @@ def rankstd(d):
 # take nth root
 def root(v, n):
 	return v**(1./n) if 0<=v else -(-v)**(1./n)
+
+# load all lines except for the empty lines
+def loadlinesu(filename, ecode=None):
+    import io
+    with io.open(filename, encoding=ecode) as fp:
+        lines = filter(None, (line.rstrip() for line in fp))
+	return lines
 
 # load all lines except for the empty lines
 def loadlines(filename):
