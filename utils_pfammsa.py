@@ -680,6 +680,33 @@ def getsinglemsa(arglist):
 
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
 
+def getbatchmsa(arglist):
+	assert len(arglist) == 3, 'Usage: python utils_pfammsa.py getbatchmsa PF00000.txt header.list outprefix'
+
+	msafile = arglist[0]
+	headerfile = arglist[1]
+	outprefix = arglist[2]
+
+	headerset = set(cp.loadlines(headerfile))
+	cp._info('%d headers loaded' % len(headerset))
+
+	outmsalist = []
+	outseqlist = []
+	pfm = pfammsa(msafile)
+	for h,s in pfm.msalist:
+		if h in headerset:
+			outmsalist.append('>%s\n%s' % (h,s))
+			outseqlist.append('>%s\n%s' % (h,s.translate(None, ''.join(cp.gaps))))
+
+	outmsafile = outprefix+'_msa.fa'
+	with open(outmsafile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outmsalist)))
+
+	outseqfile = outprefix+'_seq.fa'
+	with open(outseqfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outseqlist)))
+	cp._info('write %d seq to %s_{msa,seq}.fa' % (len(outmsalist), outprefix))
+
 
 # input single head
 # get all msa that have at least cutoff similarities with the input 
@@ -1691,6 +1718,7 @@ def main():
 		'freqlookupscol': freqlookupscol,
 		'getcolumns': getcolumns, # get columns from MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
+		'getbatchmsa': getbatchmsa,
 		'getsinglemsacluster': getsinglemsacluster, 
 		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,

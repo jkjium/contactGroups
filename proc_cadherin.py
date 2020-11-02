@@ -94,13 +94,14 @@ def vec32mat(args):
 
 # split sequences (without fasta header) into separate fa files
 def split(args):
-    fasfile = args[0]
+    seqfile = args[0]
     count = 0
-    for line in cp.loadlines(fasfile):
+    for line in cp.loadlines(seqfile):
         head = '3q2v65_%04d' % (count)
         outfile = head+'.fa'
+        seq = line.translate(None, ''.join(cp.abaa))
         with open(outfile, 'w') as fout:
-            fout.write('>%s\n%s\n' % (head, line))
+            fout.write('>%s\n%s\n' % (head, seq))
         count+=1
     cp._info('%d fa files saved.' % count)
 
@@ -126,9 +127,117 @@ def alnflatresi(args):
                     #print('%s.' % p.seqB[i])
                     #print('%d %s.' % (i, p.seqA[i]))
                 idx+=1
-        outstr=' '.join(outstrlist)
+        outstr=''.join(outstrlist)
         #print("\n")
         print(outstr)
+
+
+# input.anlflat: output from utils_testcase.py testpool
+# /home/kjia/workspace/others/sayane/hydrophobic/stage/3q2v65.pool_needle_EBLOSUM62_10.0_0.5_.alnflat
+# output space separated MSA of sequence variations. '.' means identical with the target sequence
+def alnflatsubtable(args):
+    assert len(args) == 2, 'Usage: python proc_cadherin.py alnflatresi input.anlflat{output from testpool} outfile'
+    alnfile = args[0]
+    outfile = args[1]
+    # palign
+    from utils_testcase import palign
+    fout = open(outfile, 'w')
+    minchange = 10000
+    for line in cp.loadlines(alnfile):
+        p = palign(line)
+        count=0
+        outstrlistA = []
+        outstrlistB = []
+        p.seqA = p.seqA.upper()
+        p.seqB = p.seqB.upper()
+        for i in range(len(p.seqA)):
+            if p.seqA[i] != '-':
+                outstrlistA.append(p.seqA[i])
+                if p.seqB[i]==p.seqA[i] or p.seqB[i] == '-':
+                    outstrlistB.append('.')
+                else:
+                    outstrlistB.append(p.seqB[i])
+                    count+=1
+        if count<minchange:
+            minchange=count
+        # output of the current palign
+        outstrlistA.append('%d %s' % (count, p.name))
+        outstrlistB.append('%d %s' % (count, p.name))
+        outstrA=' '.join(outstrlistA)
+        outstrB=' '.join(outstrlistB)
+        print(outstrA)
+        print(outstrB)
+        print("\n")
+        fout.write('%s\n' % outstrB)
+    fout.close()
+    cp._info('save substitution table to %s' % outfile)
+    cp._info('target sequence:\n%s %d' % (' '.join(outstrlistA[:-1]), minchange))
+
+
+# input.anlflat: output from utils_testcase.py testpool. seqA is the target sequence
+# resilist: 0-based index number of target residues
+# /home/kjia/workspace/others/sayane/hydrophobic/stage/3q2v65.pool_needle_EBLOSUM62_10.0_0.5_.alnflat
+def alnflat2msa(args):
+    assert len(args) == 2, 'Usage: python proc_cadherin.py alnflatresi input.anlflat{output from testpool} outfile'
+    alnfile = args[0]
+    outfile = args[1]
+    # palign
+    from utils_testcase import palign
+    fout = open(outfile, 'w')
+    finaloutlist = []
+    for line in cp.loadlines(alnfile):
+        p = palign(line)
+        outstrlistA = []
+        outstrlistB = []
+        p.seqA = p.seqA.upper()
+        p.seqB = p.seqB.upper()
+        for i in range(len(p.seqA)):
+            if p.seqA[i] != '-':
+                outstrlistA.append(p.seqA[i])
+                if p.seqB[i] == '-':
+                    outstrlistB.append('.')
+                else:
+                    outstrlistB.append(p.seqB[i])
+        # output of the current palign
+        outstrA=''.join(outstrlistA)
+        outstrB=''.join(outstrlistB)
+        finaloutlist.append(outstrB)
+
+    fout.write('%s\n' % outstrA)
+    fout.write('%s\n' % '\n'.join(finaloutlist))
+    fout.close()
+    cp._info('save msa  to %s' % outfile)
+    cp._info('target sequence:\n%s' % outstrA)
+
+
+# read input from alnflat2subtable
+# line[0-98] : sequence variations, corresponding to resi 3-100
+# output scores for each position, the larger the easier to variate
+def subtable2bfactor(args):
+    assert len(args) == 2, 'Usage: python proc_cadherin.py subtable2bfactor 3q2v65.subtable 3q2v65.subtable.bf.vec'
+    subtablefile = args[0]
+    outfile = args[1]
+
+    from collections import defaultdict
+    subscoredict = defaultdict(float)
+
+    # subtable records from resi 3 - 100
+    subtablelist = cp.loadlines(subtablefile)
+    # print(subscoredict[99])
+    for line in subtablelist:
+        sarr = line.split()
+        #print(sarr[98])
+        for i in range(98): # 0 - 98
+            # sarr[98] is the number of different aa , represents the distance
+            if sarr[i]!='.':
+                subscoredict[i+3]+=float(sarr[98])
+    # automatically padding from 1 - 100 (resi of 3q2v_ec1)
+    outlist = ['%.2f' % (subscoredict[i]/len(subtablelist)) for i in range(1,100+1)]
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save to %s' % outfile)
+
+    
 
 if __name__=='__main__':
     cp.dispatch(__name__)
