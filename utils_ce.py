@@ -111,7 +111,7 @@ def alphabetfreq(args):
 # get all the values of line[key]
 # option: patch -191 if value is less than stub, default: 'no_patch'
 def keymap(args):
-    assert len(args) == 6, 'Usage: python utils_ce.py keymap valuefile valuefile_key_columns {0,2,3} stubfile stubfile_key_columns {0,1,4} patch_value outfile'
+    assert len(args) == 6, 'Usage: python utils_ce.py keymap valuefile valuefile_key_columns {0,2,3} stubfile stubfile_key_columns {0,1,4} patch_value{no_patch} outfile'
 
     valuefile = args[0]
     vkclist = [int(i) for i in args[1].split(',')]
@@ -146,6 +146,42 @@ def keymap(args):
         fout.write('%s\n' % '\n'.join(outlist))
 
     cp._info('save %d/%d records in %s' % (len(outlist), len(stub_key_list), outfile))
+
+# append all columns from keyvaluefile to targetfile according to key mapping
+# no patch options, merge whatever matches
+def keymerge(args):
+    assert len(args) == 5, 'Usage: python utils_ce.py keymerge targetfile targetfile_key_columns {0,2,3} keyvaluefile keyvaluefile_key_columns {0,1,4} outfile'
+
+    targetfile = args[0]
+    vkclist = [int(i) for i in args[1].split(',')]
+    stubfile = args[2]
+    skclist = [int(i) for i in args[3].split(',')]
+    outfile = args[4]
+
+    # load value dictionary
+    value_dict = {}
+    values = cp.loadlines(stubfile)
+    for line in values:
+        sarr = line.split(' ')
+        key = ' '.join([sarr[i] for i in vkclist])
+        value = ' '.join([sarr[j] for j in xrange(0,len(sarr)) if j not in vkclist]) # save values with key columns
+        value_dict[key] = value
+
+    # append key-value to target line 
+    # same order with the target file
+    outlist = []
+    for line in cp.loadlines(targetfile):
+        sarr = line.split(' ')
+        key = ' '.join([sarr[i] for i in skclist])
+        if key in value_dict:
+            outlist.append('%s %s' % (line, value_dict[key]))
+        else:
+            print('key: %s not found in %s' %(key, stubfile))
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save %d records to %s' % (len(outlist), outfile))
+
 
 def _ce2dict(celines, keyclist, ceclist):
     cedict={}

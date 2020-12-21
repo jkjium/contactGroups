@@ -459,6 +459,24 @@ def resi2col(arglist):
 		fout.write("%s\n" % ('\n'.join(outstr)))
 	cp._info('save to %s' % outfile)
 
+# map a single resi to msai
+# print output instead of write file
+def r2m1(args):
+	assert len(args) == 3, 'Usage: python utils_resimap.py rtom1 mapfile resi{2} patch_option{-191}'
+	mapfile = args[0]
+	k = args[1]
+	patch= args[2]
+
+	resmap={}
+	# resi resn msai msan
+	# 101 K 2 K
+	for line in cp.loadlines(mapfile):
+		sarr = line.split(' ')
+		resmap[sarr[0]] = line
+
+	col = resmap[k] if k in resmap else patch
+	print('%s %s' % (mapfile, col))
+
 # append msai to dca output
 # for cecolumn, cflat
 # $ python utils_resimap.py dca2msa PF00098_full.txt PF00098_full.txt.dca PF00098_full.rdca

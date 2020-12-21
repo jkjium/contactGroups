@@ -177,9 +177,10 @@ def dendrogram_mat(arglist):
     #plt.figure(figsize=(25, 28))
     plt.figure(figsize=(15, 15))
     ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1, link_color_func=lambda x: "k")
+    plt.xticks(fontsize=10)
     plt.tight_layout()
-    #plt.savefig(outfile)
-    plt.show()
+    plt.savefig(outfile)
+    #plt.show()
 
     '''
     dists = squareform(mat)
