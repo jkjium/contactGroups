@@ -98,7 +98,7 @@ class protein(object):
         for rlist in self.resAtoms:
             key = '%s%d' % (rlist[0].chainID, rlist[0].resSeq)
             if key in self.resAtomsDict:
-                cp._err('duplicate residue found: %s in %s' % (key, self.name)
+                cp._err('duplicate residue found: %s in %s' % (key, self.name))
             self.resAtomsDict[key] = rlist
 
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
