@@ -54,7 +54,7 @@ class protein(object):
             if 'END' in line[0:6]:
                 break
             if line[17:20].strip() not in aamap.AAA2A:
-                cp._info('skipped: non-AA residue name: \n%s' % line)
+                #cp._info('skipped: non-AA residue name: \n%s' % line)
                 continue
             if self.chain != 'all':
                 if (self.chain != line[21]):
@@ -199,6 +199,27 @@ class protein(object):
                     dist =  np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z)))
                     if dist <= cutoff and abs(a.resSeq-b.resSeq) > seqcutoff:
                         neighbors.append('%s%d' % (a.chainID, a.resSeq))
+        return neighbors
+
+    # return a redundant list of Chain+resi
+    # the redundancy is the contact affinity
+    def neighborsbyca(self, chain, resi, cutoff, seqcutoff=0.0):
+        key = '%s%d' % (chain, resi)
+        neighbors = []
+        # locate the target ca atom
+        targetid = -1
+        for i in range(len(self.ca)):
+            a = self.ca[i]
+            if a.resSeq == int(resi) and (a.chainID == chain):
+                targetid = i
+                break
+        if targetid == -1:
+            cp._err('target resi %d not found in %d' % (int(resi), self.pdbfile))
+        b = self.ca[targetid]
+        for a in self.ca:
+            dist =  np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z)))
+            if dist <= cutoff and abs(a.resSeq-b.resSeq) > seqcutoff:
+                neighbors.append('%s%d' % (a.chainID, a.resSeq))
         return neighbors
 
     # output all pairwise residue distance

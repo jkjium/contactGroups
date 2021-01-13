@@ -760,7 +760,6 @@ def getsinglemsacluster(args):
 	cp._info('save target cluster score to %s' % outscorefile)
 
 
-
 # temp put it here
 def hamming_similarity(arglist):
 	if len(arglist) < 2:
@@ -798,6 +797,33 @@ def msareduce(arglist):
 		outscorefile = '%s.%s.score' % (msafile, t)
 		np.savetxt(outscorefile, scores[t], fmt='%d', delimiter=',')
 		cp._info('save %d rows in %s' % (len(scores[t]), outscorefile))
+
+
+# for muscle input
+# remove all the aligning(gaps) information from an MSA
+def msa2rawseq(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py msa2rawseq msafile {1|0} outfile'
+	infile = args[0]
+	opt = args[1] # 0. keep original, 1. remove redundant sequence
+	outfile = args[2]
+
+	pfm = pfammsa(infile)
+	# msa[1].translate(None, ''.join(cp.gaps))
+	if opt == '1': # needs to remove redundancy
+		outseqs = {}
+		for s in pfm.msalist:
+			seq = s[1].translate(None, ''.join(cp.gaps)) # remove gaps
+			outseqs[seq] = s[0] #  use raw seq as keys to remove duplicated sequences
+		outlist = ['>%s\n%s' % (outseqs[k],k) for k in outseqs]
+	else:
+		outlist = []
+		for s in pfm.msalist:
+			seq = s[1].translate(None, ''.join(cp.gaps)) # remove gaps
+			outlist.append('>%s\n%s' % (s[0], seq))
+	
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save seqs to %s with nr opt %s' % (outfile, opt))
 
 
 # reduce a pfammsa by resimap columns
@@ -1720,6 +1746,7 @@ def main():
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'getbatchmsa': getbatchmsa,
 		'getsinglemsacluster': getsinglemsacluster, 
+		'msa2rawseq': msa2rawseq, # convert aligned MSA to fasta raw sequences
 		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,
 		'msareduce_withmap': msareduce_withmap,

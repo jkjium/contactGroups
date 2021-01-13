@@ -726,11 +726,58 @@ def triplet2resi(arglist):
 	cp._info('save %d records to %s' % (len(outstr), outfile))
 
 
+# input flatline resi
+# 282 117 118 125 126 127 128 134 278 279 280 281 283 284 285 286
+# 285 130 132 134 281 282 283 284 286 287 288 289
+# 286 127 130 282 283 284 285 287 288 289
+# output flatline msai
+def resi2msaiflat(args):
+	assert len(args) == 3, 'usage:python utils_resimap.py resi2msaiflat mapfile flatresifile outfile'
+	flatfile = args[0]
+	mapfile = args[1]
+	outfile = args[2]
 
+	resmap = {}
+	for line in cp.loadlines(mapfile):
+		sarr = line.split(' ')
+		resmap[sarr[0]] = sarr[2] # given resi output msai
 
+	outlist = []
+	for line in cp.loadlines(flatfile):
+		sarr = line.split(' ')
+		msailist = [resmap[r] for r in sarr if r in resmap]
+		outstr = ' '.join(msailist)
+		outlist.append(outstr)
 
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outlist)))
 
+	cp._info('save msai flatfile to %s' % outfile)
 
+# input two homo sequences A=pdbseq, B=MSA
+# if len(A) < len(B) then output map[A] = B
+# output resimap format .vec4 mapfile
+# resi resn msai msan
+def posmapvec4(args):
+	assert len(args) == 4, 'Usage: python utils_resimap.py posmapvec4 seq1.fa seq2.fa pdbfile outfile'
+	sfile1 = args[0]
+	sfile2 = args[1]
+	pdbfile = args[2]
+	outfile = args[3]
+
+	p = protein(pdbfile)
+
+	s1 = [s for s in cp.fasta_iter(sfile1)][0][1]
+	s2 = [s for s in cp.fasta_iter(sfile2)][0][1]
+
+	pdbpos2msapos = cp.posmap_subseq_d(s1,s2) 
+	resi2msai = [(p.resArray[i], pdbpos2msapos[i]) for i in xrange(0, len(p.resArray)) if i in pdbpos2msapos]
+	# 303: protein.py: resArray.append((a.chainID,aamap.getAAmap(a.resName),a.resSeq))
+	# k[2]: resSeq, k[1]: resName
+	outstr = '\n'.join(['%d %s %d %s' % (k[2], k[1], v, s2[v]) for (k,v) in resi2msai])
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % outstr)
+	cp._info('save mapfile to %s' % outfile)
 
 
 '''

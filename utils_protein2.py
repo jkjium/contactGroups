@@ -231,6 +231,45 @@ def writechain(arglist):
 	cp._info('save %s chain %s to %s' % (pdbfile, c, outfile))
 
 
+
+# input: pdb file, target residue IDs, cutoff distance
+# output: a flat file
+# format:
+# resi n1,n2,n3... neighborstring
+# atom.self.resSeq (int)
+# protein.contactbyallatom(self, chain, resi, cutoff, seqcutoff=0.0); return list: ['A161','A161', A256', ...]
+# example:
+# $ python utils_protein2.py neighborsflatline 1gzh_A.pdb A161,A255 4.0
+# A161 A255 FVRAMIVIYLTITRNF A109,A157,A158,A159,A160,A162,A173,A195,A234,A252,A253,A254,A256,A267,A268,A270
+def neighborsflatline2(arglist):
+	if len(arglist) < 4:
+		cp._err('Usage: python utils_protein2.py neighborsflatline pdbfile A2,B13 opt{all|ca} 4.0')
+
+	pdbfile = arglist[0]
+	p = protein(pdbfile)
+	reslist = [(s[0], s[1:]) for s in arglist[1].split(',')]
+	targetstr = arglist[1].replace(',',' ')
+	opt = arglist[2]
+	cutoff = float(arglist[3])
+
+	# get neighbor information
+	n=[]
+	# [('A', '161'),('A','161'), ('A','256'), ...]
+	for r in reslist:
+		if opt=='ca':
+			n+=p.neighborsbyca(r[0], int(r[1]), cutoff)
+		else:
+			n+=p.contactbyallatom(r[0], int(r[1]), cutoff)
+	# remove redundancy
+	neighbors = list(set(n))
+	neighbors.sort()
+	resstr = ','.join(neighbors)
+	# get local neighbors sequence
+	# p.resDict = 'B529': (132, 'V')
+	neighborseq = ''.join([p.resDict[resi][1] for resi in neighbors])
+	print '%s %s %s' % (targetstr, neighborseq, resstr)
+
+
 # input .pdb file
 # output: a flat file, recording the minimum distance among all atoms of the current pair of residues
 # A123 A124 5.356
