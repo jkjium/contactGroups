@@ -823,7 +823,7 @@ def msa2rawseq(args):
 	
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % '\n'.join(outlist))
-	cp._info('save seqs to %s with nr opt %s' % (outfile, opt))
+	cp._info('save seqs to %s with duplication removal opt %s' % (outfile, opt))
 
 
 # reduce a pfammsa by resimap columns
@@ -944,6 +944,47 @@ def psicovaln(arglist):
 			fp.write('%s\n' % s[1].replace('.', '-'))
 	cp._info('save to %s' % outfile)
 
+
+# sample an MSA by cluster information
+# hamming distance based clustering
+# distance cutoff < 1.0, 0.3 = 70% similarity
+# mapfile specify which columns are considered in the clustering procedure
+# output a .fa file
+def samplebyhamming(args):
+	assert len(args)==4, 'Usage:python utils_pfammsa.py samplebyhamming PF00000.txt mapfile 0.3 outfile'
+	msafile = args[0]
+	mapfile = args[1]
+	dist_cutoff = float(args[2]) # distance, not similarity, 0.3 = 70% similarity
+	outfile = args[3]
+
+	# load resimap columns
+	# 212 A 3051 E
+	_func_getmsai = lambda x: int(x[2])
+	cols = [_func_getmsai(line.split()) for line in cp.loadlines(mapfile)]
+
+	# msa2score
+	pfm = pfammsa(msafile)
+	scoretag = 'aa'
+	scoremat = pfm.scorebycols(scoretag, cols) # return an np.array
+
+	# cluster information
+	# return a list of clusters[i] with len = number of rows of x; clusters[i] = 'cluster ID which i belongs'
+	clusters = cp.hamming_cluster(scoremat, dist_cutoff)
+	cluster_dict = collections.defaultdict(list)
+	for i in range(len(clusters)):
+		cluster_dict[clusters[i]].append(i)
+	cp._info('In total %d clusters in %s with %f distance cutoff' % (len(cluster_dict), msafile, dist_cutoff))
+
+	# get one sequence from each cluster
+	outseqlist = []
+	for c in cluster_dict:
+		idx = cluster_dict[c][0]
+		s = pfm.msalist[idx]
+		outseqlist.append('>%s\n%s' % (s[0],s[1]))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outseqlist)))
+	cp._info('save %d seqs to %s' % (len(outseqlist), outfile))
 
 # print scol -> resi set
 def scol2resi(arglist):
@@ -1752,6 +1793,7 @@ def main():
 		'msareduce_withmap': msareduce_withmap,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
+		'samplebyhamming': samplebyhamming,
 		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,
 		'score2msa':score2msa, # for cad.ppi.2

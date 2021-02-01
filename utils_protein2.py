@@ -275,7 +275,7 @@ def neighborsflatline2(arglist):
 # A123 A124 5.356
 def writeresdists(args):
 	# residistbyallatom
-	assert len(args) == 2
+	assert len(args) == 2, 'Usage: python utils_protein2.py writeresdists pdbfile outfile'
 	infile = args[0]
 	outfile = args[1]
 

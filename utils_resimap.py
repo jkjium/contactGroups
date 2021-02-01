@@ -648,8 +648,34 @@ def msa2rescol(arglist):
 		print ' '.join(reslist)
 
 
+# one msai map to multiple residue IDs
+# expand all inputs with their combinations
+# remove duplications
+# input: msafile, each line contains a pair of msai
+def m2rexpand(args):
+	assert len(args) < 4, 'Usage: python utils_resimap.py m2rexpand msaifile mapfile outfile'
+	msaifile = args[0]
+	mapfile = args[1]
+	outfile = args[2]
 
+	# load mapfile
+	# dict[msai] = [resi1,resi2, ...]
+	m2rmap = collections.defaultdict(list)
+	for t in cp.loadtuples(mapfile):
+		m2rmap[t[2]].append(t[0])
 
+	# expand all combinations
+	outresipair = set()
+	for t in cp.loadtuples(msaifile):
+		m1list = [int(r) for r in m2rmap[t[0]]]
+		m2list = [int(r) for r in m2rmap[t[1]]]
+		for r1 in m1list:
+			for r2 in m2list:
+				outresipair.add('%d %d' % (r1, r2) if r1<=r2 else '%d %d' % (r2, r1))
+	# output 
+	with open(outfile, 'w') as fout:
+		fout.write('\n'.join(outresipair))
+	cp._info('save expanded resi pair to %s' % outfile)
 
 # append resi in front of the result from mp_ce_sdii (weight)
 def sdii2resi(arglist):

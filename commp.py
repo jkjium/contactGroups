@@ -825,6 +825,13 @@ def loadlines(filename):
         lines = filter(None, (line.rstrip() for line in fp))
 	return lines
 
+# load lines and break each line into tuples
+def loadtuples(filename, delimiter=' '):
+    with open(filename) as fp:
+        lines = filter(None, (line.rstrip() for line in fp))
+	return [line.split(delimiter) for line in lines]
+
+
 # return pair tuple of (raw title and content)
 def readkblockstr(linesbuff, delimiter='>'):
 	raw_list = [list(x[1]) for x in groupby(linesbuff, lambda line: line[0] == delimiter)]

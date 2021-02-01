@@ -25,7 +25,7 @@ def rcflat(arglist):
 			if len(line) == 0:
 				continue
 			sarr = line.split()
-			# VB1039
+			# LB30
 			key1 = '%s%s%s' % (sarr[4], sarr[1], sarr[2])
 			key2 = '%s%s%s' % (sarr[5], sarr[1], sarr[3])
 
@@ -38,6 +38,27 @@ def rcflat(arglist):
 		fout.write('%s\n' % '\n'.join(outlist))
 	cp._info('save rcflat %s' % outfile)
 
+# input resi columns
+# output surface accessible area % from NAccess
+# naccess key: = '%s%s%s' % (aamap.getAAmap(r.resn), r.chain, r.resi)
+def rv62rsa(args):
+	assert len(args) == 3, 'Usage: python utils_naccess.py res2rsa rsafile chain_resi_resn.vec6 outfile'
+
+	rsafile = args[0]
+	resifile = args[1]
+	outfile = args[2]
+
+	na = naccess(rsafile)
+	outlist = []
+	# t: 0.chain1 1.chain2 2.resi1 3.resi2 4.resn1 5.resn2
+	for t in cp.loadtuples(resifile):
+		k1 = '%s%s%s' % (t[4],t[0],t[2])
+		k2 = '%s%s%s' % (t[5],t[1],t[3])
+		outlist.append('%.2f %.2f' % (na.rsaDict[k1].AA_REL, na.rsaDict[k2].AA_REL))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save rsa vec2 to %s' % outfile)
 
 
 def foo(arglist):
