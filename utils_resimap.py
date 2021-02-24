@@ -671,7 +671,7 @@ def m2rexpand(args):
 		m2list = [int(r) for r in m2rmap[t[1]]]
 		for r1 in m1list:
 			for r2 in m2list:
-				outresipair.add('%d %d' % (r1, r2) if r1<=r2 else '%d %d' % (r2, r1))
+				outresipair.add('%d %d %s'  % (r1, r2, t[2]) if r1<=r2 else '%d %d %s' % (r2, r1, t[2]))
 	# output 
 	with open(outfile, 'w') as fout:
 		fout.write('\n'.join(outresipair))

@@ -852,6 +852,26 @@ def msareduce_withmap(args):
 	cp._info('save to %s {.scoremat, .rcol}' % outprefix)
 
 
+# calculate all column nongap rate
+# output out single column nongap rate
+def nongaprate(args):
+	assert len(args) == 1, 'Usage: python utils_pfammsa.py nongaprate msafile'
+	msafile = args[0]
+
+	pfm = pfammsa(msafile)
+	scoremat = pfm.scorebycols('bin', [i for i in range(pfm.msalen)] )
+	#summary = scoremat.mean(0) # columnwise mean
+	summary = scoremat.mean() # columnwise mean
+	print summary
+	'''
+	outlist = ['%.4f' % m for m in summary]
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save rate to %s' % outfile)
+	'''
+
+
+
 # list all target pairt -> 20 x 20 possible pairsubstitution
 def tuplesubfreq(args):
 	assert len(args) == 3, 'Usage: python utils_pfammsa.py pairsubfreq PF00000.txt pair.stub outfile'
@@ -1788,6 +1808,7 @@ def main():
 		'getbatchmsa': getbatchmsa,
 		'getsinglemsacluster': getsinglemsacluster, 
 		'msa2rawseq': msa2rawseq, # convert aligned MSA to fasta raw sequences
+		'nongaprate': nongaprate,
 		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,
 		'msareduce_withmap': msareduce_withmap,
