@@ -802,7 +802,7 @@ def msareduce(arglist):
 # for muscle input
 # remove all the aligning(gaps) information from an MSA
 def msa2rawseq(args):
-	assert len(args) == 3, 'Usage: python utils_pfammsa.py msa2rawseq msafile {1|0} outfile'
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py msa2rawseq msafile remove_redundancy_{1|0} outfile'
 	infile = args[0]
 	opt = args[1] # 0. keep original, 1. remove redundant sequence
 	outfile = args[2]

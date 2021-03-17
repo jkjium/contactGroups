@@ -652,6 +652,22 @@ def splitfa(arglist):
 		count+=1
 	cp._info('save %d .fa sequences' % count)
 
+# updated version of splitfa
+# remove non-standard alphabes
+# split .fa file into single sequence file in fasta format
+def splitfa2seq(args):
+	assert len(args) == 2, 'Usage: python utils_testcase.py splitfa2seq outprefix'
+	fafile = args[0]
+	outprefix = args[1]
+
+	count = 0
+	for header, s in cp.fasta_iter(fafile):
+		seq = s.translate(None, ''.join(cp.abaa))
+		with open('%s%05d.fa' % (outprefix, count), 'w') as fout:
+			fout.write('>%s\n%s\n' % (header, seq))
+		count+=1
+	cp._info('save %d .fa clean seqs' % count)
+
 
 def testpool(arglist):
 	if len(arglist)< 5:
@@ -688,6 +704,27 @@ def testpool(arglist):
 	print ret
 	return ret
 
+def testpooldump(args):
+	if len(arglist)< 5:
+		cp._err('Usage: python utils_testcase.py testpool 20p.test.pool needle B62 10.0 0.5')
+
+	poolfile = arglist[0]
+	cmd = arglist[1]
+	matrix = arglist[2]
+	gapopen = arglist[3]
+	gapextend = arglist[4]
+
+	# loop pool
+	identity = 0
+	similarity = 0
+	gaps = 0
+
+	fout = open(outfile, 'w')
+	with open(poolfile) as fp:
+		for line in fp:
+			name = line.strip()
+			ret = align_exec(name, cmd, matrix, gapopen, gapextend) # needle, B62, 10, 0.5
+			print(ret)
 
 # return number of tp and fp for one blast outfile
 # called in tpfpbygap()

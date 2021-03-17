@@ -1,4 +1,6 @@
+import sys
 import numpy as np
+import commp as cp
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -115,44 +117,19 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
 def main():
     # AA alphabet sorted by type
-    aat01 = ['A','I','L','V','M','F','W','G','P','C','N','Q','S','T','Y','D','E','R','H','K']
-
-    infile = 'pairlist.n1.entropy.txt'
-    hdict = {}
-    with open(infile) as fp:
-        for line in fp:
-            # AL 7.8948 0.7504
-            line = line.strip()
-            if len(line) == 0:
-                continue
-            sarr = line.split(' ')
-            rk = '%s%s' % (sarr[0][1], sarr[0][0])
-            hdict[sarr[0]] = float(sarr[2])
-            hdict[rk] = float(sarr[2])
-
-    table = []
-    for a in aat01:
-        table.append([hdict['%s%s' % (a,b)] for b in aat01])
-
-    harvest = np.array(table)
-
-    '''
-    harvest = np.array([[0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],
-                        [2.4, 0.0, 4.0, 1.0, 2.7, 0.0, 0.0],
-                        [1.1, 2.4, 0.8, 4.3, 1.9, 4.4, 0.0],
-                        [0.6, 0.0, 0.3, 0.0, 3.1, 0.0, 0.0],
-                        [0.7, 1.7, 0.6, 2.6, 2.2, 6.2, 0.0],
-                        [1.3, 1.2, 0.0, 0.0, 0.0, 3.2, 5.1],
-                        [0.1, 2.0, 0.0, 1.4, 0.0, 1.9, 6.3]])
-    '''
+    args = sys.argv[1:]
+    harvest = np.loadtxt(args[0])
+    aat01 = [t for t in cp.loadlines(args[1])]
+    outfile = args[0]+'.png'
 
     fig, ax = plt.subplots()
-
     im, cbar = heatmap(harvest, aat01, aat01, ax=ax,
-                       cmap="RdBu", cbarlabel="Entropy")
+                       cmap="RdBu", cbarlabel="distance")
     #texts = annotate_heatmap(im, valfmt="{x:.1f} t")
-
+    plt.xticks(rotation = 90)
     fig.tight_layout()
+    plt.savefig(outfile)
+    print('save to %s' % outfile)
     plt.show()    
 
 if __name__ == '__main__':
