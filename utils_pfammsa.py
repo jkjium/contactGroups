@@ -964,6 +964,20 @@ def psicovaln(arglist):
 			fp.write('%s\n' % s[1].replace('.', '-'))
 	cp._info('save to %s' % outfile)
 
+# format header for dca calculation
+def retitle(args):
+	assert len(args) == 2, 'Usage: python utils_pfammsa.py retile msafile.fa outfile'
+	msafile = args[0]
+	outfile = args[1]
+	pfm = pfammsa(msafile)
+	count = 0
+	titleprefix = 'seq'
+	with open(outfile, 'w') as fout:
+		for s in pfm.msalist:
+			title = '%s_%d/0-%d' % (titleprefix, count, pfm.msalen)
+			fout.write('>%s\n%s\n' % (title, ''.join(s[1])))
+			count+=1
+	cp._info('save retitle msa to %s' % outfile)
 
 # sample an MSA by cluster information
 # hamming distance based clustering
@@ -1814,6 +1828,7 @@ def main():
 		'msareduce_withmap': msareduce_withmap,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
+		'retitle': retitle, # format header for dca calculation
 		'samplebyhamming': samplebyhamming,
 		'scol2resi': scol2resi,
 		'scoreweight': scoreweight,

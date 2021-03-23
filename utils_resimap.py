@@ -382,7 +382,8 @@ def mapvec(arglist):
 		if line in mdict:
 			outlist.append(mdict[line])
 		else:
-			outlist.append('-191')
+			#outlist.append('-191')
+			outlist.append('na')
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % ('\n'.join(outlist)))
 
