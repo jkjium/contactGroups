@@ -374,6 +374,58 @@ def cflat2ccmat(args):
 
     cp._info('save to %s{.ccmat, .ccmat.tick}' % outprefix)
 
+def topsetsdii3(args):
+    assert len(args) == 4, 'Usage: python utils_ce.py topsetsdii3 sdii3.file msailist.file threshold outfile'
+    sdiifile = args[0]
+    msaifile = args[1]
+    th = float(args[2])
+    outfile = args[3]
+
+    # sdii3 file format c1-c3: index, c4: score
+    # [kjia@lhb-ps4 ~/workspace/cadherin/cad/sdii3/stage] 2021-03-24 02:01:00
+    # r1,r2,r3,sdii3_zscore
+    outlist = []
+    resilist = cp.loadlines(msaifile)
+    for line in cp.loadlines(sdiifile):
+        sarr = line.split(' ')
+        r1 = sarr[0]
+        r2 = sarr[1]
+        r3 = sarr[2]
+        sdii3 = float(sarr[3])
+        if(r1 in resilist) and (r2 in resilist) and (r3 in resilist) and (sdii3>=th):
+            outlist.append(line)
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save %d triplets in %s' % (len(outlist), outfile))
+
+def topsetsdii2(args):
+    assert len(args) == 4, 'Usage: python utils_ce.py topsetsdii2 dca.file msailist.file threshold outfile'
+    sdiifile = args[0]
+    msaifile = args[1]
+    th = float(args[2])
+    outfile = args[3]
+
+    # sdii3 file format c1-c3: index, c4: score
+    # [kjia@lhb-ps4 ~/workspace/cadherin/cad/sdii3/stage] 2021-03-24 02:01:00
+    # r1,r2,r3,sdii3_zscore
+    outlist = []
+    resilist = cp.loadlines(msaifile)
+    for line in cp.loadlines(sdiifile):
+        sarr = line.split(' ')
+        r1 = sarr[0]
+        r2 = sarr[1]
+        dca = float(sarr[2])
+        if(r1 in resilist) and (r2 in resilist) and (dca>=th):
+            outlist.append(line)
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save %d triplets in %s' % (len(outlist), outfile))
+
+
+
+
 
 
 if __name__=='__main__':
