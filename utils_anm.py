@@ -605,6 +605,9 @@ def anmanalysis(args):
     mode_correlation_list = np.array(list(map(int, args[4].split(',')))) # must be a list, even only one mode selected
 
     anm = _ANMbuilder(pdbfile, cutoff)
+    cc = anm.getCX()
+    # convert to symmetric matrix
+    contactmap = cc + cc.T
 
     np.savetxt(anm.proteinName + '_frequencies.txt', anm.e, fmt = '%.3f')
     np.savetxt(anm.proteinName + '_modes.txt', anm.v, fmt = '%.3f')

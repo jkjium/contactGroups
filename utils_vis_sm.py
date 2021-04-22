@@ -528,16 +528,16 @@ def heatmap(args):
     #ax.set_xticks(np.arange(1, data.shape[1]+1))
     #ax.set_yticks(np.arange(1, data.shape[0]+1)) 
     # ... and label them with the respective list entries.
-    ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)])
+    ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)], rotation=90)
     ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
     #ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1])])
     #ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0])])
     #ax.set_yticklabels(yticktext) 
 
     # Let the horizontal axes labeling appear on top.
-    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)    
 
-    plt.xticks(rotation=90)
+    #plt.xticks(rotation=90)
+    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)    
 
     fig.tight_layout()
     plt.show()                        

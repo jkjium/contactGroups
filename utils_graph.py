@@ -21,7 +21,10 @@ def eca_ccmat2adjmat(args):
     threshold = float(args[3]) # threshold cutoff to set correlation value to zero
     outprefix = args[4]
 
-    ccmat = np.abs(np.loadtxt(ccmatfile))
+    # for dynamic correlations
+    #ccmat = np.abs(np.loadtxt(ccmatfile))
+    ccmat = np.loadtxt(ccmatfile)
+
     #rccmat = np.loadtxt(ccmatfile)
     #ccmat = (rccmat - rccmat.min()/(rccmat.max() - rccmat.min()))
     
