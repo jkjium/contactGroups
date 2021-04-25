@@ -61,6 +61,36 @@ def eca_ccmat2adjmat(args):
     cp._info('save output to %s {.adjmat, .adjmat.e, .adjmat.v, .adjmat.ec}' % outprefix)
 
 
+# thresholding a correlation matrix into a adjacency matrix
+# ccmatfile: input correlation square matrix
+# thresholding: cutoff
+# abs: absolute flag: 1: take abs() to the input matrix, 0: ignore
+def ccmat2adjmat(args):
+    assert len(args) == 4, 'Usage: python utils_graph.py ccmat2adjmat ccmatfile thresholding abs={0,1} outadjmatfile'
+    ccmatfile = args[0]
+    threshold = float(args[1]) # threshold cutoff to set correlation value to zero
+    absflag = int(args[2])
+    outfile = args[3]
+
+    # remove negative values?
+    if absflag == 1:
+        ccmat = np.abs(np.loadtxt(ccmatfile))
+    else:
+        ccmat = np.loadtxt(ccmatfile)
+
+    # inf means no thresholding
+    if threshold != float('inf'):
+        cp._info('thresholding with %.4f cutoff' % threshold)
+        ccmat[ccmat < threshold] = 0.0
+        ccmat[ccmat >= threshold] = 1.0
+        #print ccmat
+
+    adjmat = ccmat
+    
+    np.savetxt(outfile, adjmat, fmt = '%.4f')
+    cp._info('save adjmat to %s' % outfile) 
+
+
 def foo(args):
     print(args)
     pass

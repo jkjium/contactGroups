@@ -357,6 +357,58 @@ def columnselect(arglist):
 	cp._info('save [%d] selected column(s) to %s' % (len(scollist), outscolfile))
 
 
+# concatinate two pfam full msa sequences by species name
+# input: two pfam full alignments
+# output: concantinated msa with header format: >id1_id2_species/1-len(msa)
+def concatinatemsa(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py concatinatemsa PF00001_full.txt PF00002_full.txt outfile'
+
+	# inline function for extracting species information
+	def _gettax(head):
+		# 3BP2_HUMAN/458-53
+		sa = header.split('/')
+		sa1 = sa[0].split('_')
+		return sa1[1] # HUMAN
+
+	msafileA = args[0]
+	msafileB = args[1]
+	outfile = args[2]
+
+	# separate msa into species
+	taxdictA = collections.defaultdict(list)
+	for header, seq in cp.fasta_iter(msafileA):
+		taxdictA[_gettax(header)].append((header.split('_')[0],seq))
+
+	taxdictB = collections.defaultdict(list)
+	for header, seq in cp.fasta_iter(msafileB):
+		taxdictB[_gettax(header)].append((header.split('_')[0],seq))
+
+	# find common speces list
+	taxA = set(taxdictA.keys())
+	taxB = set(taxdictB.keys())
+	commontax = taxA.intersection(taxB)
+	print commontax
+	cp._info('Found %d species in %s, %d speces in %s, common species: %d' % (len(taxA), msafileA, len(taxB), msafileB, len(commontax)))
+
+	# concatinate sequences
+	outlist = []
+	for t in commontax:
+		seqlistA = taxdictA[t]
+		seqlistB = taxdictB[t]
+		# use the smaller set as a template to concatinate sequences orderly
+		count =  len(seqlistA) if len(seqlistA)<len(seqlistB) else len(seqlistB)
+		for i in range(count):
+			outseq = '%s%s' % (seqlistA[i][1], seqlistB[i][1])
+			outheader = '%s_%s_%s/1-%d' % (seqlistA[i][0], seqlistB[i][0], t, len(outseq))
+			outlist.append('>%s\n%s' % (outheader, outseq))
+
+	# save output msa
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save concatinated MSA to %s' % outfile)
+
+
+
 # read bcp file 
 # find switched charge pairs
 # 20190328
@@ -1808,6 +1860,7 @@ def main():
 		'columnsmsa': columnsmsa,
 		'columnselect': columnselect,
 		'combinemsa': combinemsa,
+		'concatinatemsa': concatinatemsa, # concatinate msa sequences by species name
 		'chargepair_bcp': chargepair_bcp,
 		'cmlocate2': cmlocate2,
 		'entropyall': entropyall,

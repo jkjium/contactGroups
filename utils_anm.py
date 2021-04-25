@@ -611,7 +611,7 @@ def anmanalysis(args):
 
     np.savetxt(anm.proteinName + '_frequencies.txt', anm.e, fmt = '%.3f')
     np.savetxt(anm.proteinName + '_modes.txt', anm.v, fmt = '%.3f')
-    np.savetxt(anm.proteinName + '_contactMatrix.txt', anm.getCX(), fmt = '%d')
+    np.savetxt(anm.proteinName + '_contactMatrix.txt', contactmap, fmt = '%d')
     #np.savetxt(anm.proteinName + '_contactMatrix.txt', anm.getCX(), fmt = '%.3e') # for method='pf'
     np.savetxt(anm.proteinName + '_Hessian.txt', anm.getHess(), fmt = '%.3f')
     np.savetxt(anm.proteinName + '_MSF.txt', anm.getMSF(), fmt = '%.3f')

@@ -422,6 +422,56 @@ def writecontact(arglist):
 	cp._info('save cg file: %s' % outcgfile)
 
 
+# input: atom list
+# output: pdist between every two atoms
+# format: {(chainA, resiA), (chainB, resiB), dist}
+def _respdist(atomset):
+	pdistlist = []
+	for i in range(0, len(atomset)):
+		for j in range(i+1, len(atomset)):
+			a = atomset[i]
+			b = atomset[j]
+			chainA = a.chainID
+			chainB = b.chainID
+			rA = a.resSeq
+			rB = b.resSeq
+			dist =  np.linalg.norm(np.array((a.x, a.y, a.z))-np.array((b.x, b.y, b.z)))
+			pdistlist.append(('%s%d' % (chainA,rA), '%s%d' % (chainB, rB), dist))
+	return pdistlist
+
+
+# input protein instance, pdist evaluation method {sgc, tip, ca, all}
+# return {chain+res1,chain+res2,pdist}
+def _resdist_by_method(p, method):
+	cp._info('calculating pdist using %s atoms' % method)
+	if method =='sgc':
+		dtuplelist = _respdist(p.atomsbyscgmcenter())
+	elif method == 'tip':
+		dtuplelist = _respdist(p.atomsbytip())
+	elif method == 'ca':
+		dtuplelist = _respdist(p.ca)
+	else:
+		# [(chainA, rA, chainB, rB, dist), (.), ..]
+		dtuplelist = p.residistbyallatom()
+	print dtuplelist[0]
+	return dtuplelist
+
+# write cutoff contact by specific method
+# output: 1. method residue pdb file
+# 		  2. contact file	
+#def contactbycutoff(arglist):
+def writedistby(args):
+	assert len(args) == 3, 'Usage: python utils_protein2.py writedistby pdbfile method={tip, sgc, tip, all} outfile'
+	pdbfile = args[0]
+	method = args[1]
+	outfile = args[2]
+
+	dtuplelist = _resdist_by_method(protein(pdbfile), method)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(['%s %s %s %s %.4f' % (t[0][0], t[0][1:], t[1][0], t[1][1:], t[2]) for t in dtuplelist ])))
+	cp._info('save %d pdist to %s' % (len(dtuplelist),outfile))
+
+
 # for protsub
 # write all chain sequence into one outfile
 def writefafile(arglist):

@@ -176,7 +176,7 @@ class protein(object):
             # and save for output
             reta = copy.copy(al[0])
             if count == 0:
-                cp._info('err:incomplete residue: %s %d %s' % (self.pdbfile, reta.resSeq, reta.resName))
+                cp._info('err: residue: %s %d %s has no side chain' % (self.pdbfile, reta.resSeq, reta.resName))
                 continue
             reta.x = x/count
             reta.y = y/count

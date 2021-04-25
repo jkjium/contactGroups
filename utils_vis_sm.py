@@ -487,7 +487,8 @@ def _grid_annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 # heatmap procedure
 # colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474']
 def heatmap(args):
-    assert len(args) == 3, 'Usage: python utils_vis_sm.py heatmap data_npmat.txt xtick.vec ytick.vec'
+    if len(args) < 3:
+        cp._err('Usage: python utils_vis_sm.py heatmap data_npmat.txt xtick.vec ytick.vec range={-1,1}')
 
     data = np.loadtxt(args[0])
     assert len(data.shape) != 1, 'Error, data has only one row/column'
@@ -495,11 +496,17 @@ def heatmap(args):
     xticktext = cp.loadlines(args[1]) if args[1]!='na' else np.arange(data.shape[1])
     yticktext = cp.loadlines(args[2]) if args[2]!='na' else np.arange(data.shape[0])
 
+    minmax = [-1.0, 1.0]
+
+    if len(args) == 4:
+        minmax = [float(v) for v in args[3].split(',')]
+
     fig, ax = plt.subplots(1,1, figsize=(10,10))
 
     # customized continuous color bar
     mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
-    im = ax.imshow(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
+    im = ax.imshow(data, cmap=mycmap, vmin=minmax[0], vmax=minmax[1])
+    #im = ax.imshow(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
     #im = ax.pcolormesh(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
 
     # inversed rdbu
@@ -543,7 +550,71 @@ def heatmap(args):
     plt.show()                        
 
 
+def heatmap_colorgrid(args):
+    if len(args) < 3:
+        cp._err('Usage: python utils_vis_sm.py heatmap data_npmat.txt xtick.vec ytick.vec range={-1,1}')
+
+    data = np.loadtxt(args[0])
+    assert len(data.shape) != 1, 'Error, data has only one row/column'
+        
+    xticktext = cp.loadlines(args[1]) if args[1]!='na' else np.arange(data.shape[1])
+    yticktext = cp.loadlines(args[2]) if args[2]!='na' else np.arange(data.shape[0])
+
+    minmax = [-1.0, 1.0]
+
+    if len(args) == 4:
+        minmax = [float(v) for v in args[3].split(',')]
+
+    fig, ax = plt.subplots(1,1, figsize=(10,10))
+
+    # customized continuous color bar
+    #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
+    #im = ax.imshow(data, cmap=mycmap, vmin=minmax[0], vmax=minmax[1])
+
+    # two overlap
+    mycmap = clr.ListedColormap(['white', '#266674', '#afc8cd', '#a93a28'])
+    bounds=[0,0.5,1.0,1.5,2.0]
+    norm = clr.BoundaryNorm(bounds, mycmap.N)
+
+    # three overlap
+    '''
+    mycmap = clr.ListedColormap(['white', '#266674', '#afc8cd', 'red', '#cbc96d', '#008ed0', '#fc9d54', 'cyan'])
+    bounds=[0,0.5,1.0,1.5,2.0,2.5,3.0,3.5]
+    norm = clr.BoundaryNorm(bounds, mycmap.N)
+    '''
+    
+
+    im = ax.imshow(data, interpolation='nearest', cmap=mycmap, norm=norm, vmin=minmax[0], vmax=minmax[1])
+
+    # most accurate way to align the colorbar with plot
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = ax.figure.colorbar(im, cax=cax)
+
+    cbar.ax.set_ylabel('colorbar', rotation=-90, va="bottom")
+
+    # show every 10 count of ticks
+    ax.set_xticks(np.arange(1, data.shape[1]+1,10))
+    ax.set_yticks(np.arange(1, data.shape[0]+1,10)) 
+    #ax.set_xticks(np.arange(1, data.shape[1]+1))
+    #ax.set_yticks(np.arange(1, data.shape[0]+1)) 
+    # ... and label them with the respective list entries.
+    ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)], rotation=90)
+    ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
+    #ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1])])
+    #ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0])])
+    #ax.set_yticklabels(yticktext) 
+
+    # Let the horizontal axes labeling appear on top.
+    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)    
+
+    fig.tight_layout()
+    plt.show()                        
+
+
 def colorpalette(args):
+    #      red        lightblue  darkgreen  orange    dullyellow  lightgreen magenta   lightblue  gray
     cs = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474']
     # start showing colorbar
     #cs = ['#266674','#ffffff','#a93a28']
