@@ -272,7 +272,7 @@ def neighborsflatline2(arglist):
 
 # input .pdb file
 # output: a flat file, recording the minimum distance among all atoms of the current pair of residues
-# A123 A124 5.356
+# output format: A 502 A 503 1.3176
 def writeresdists(args):
 	# residistbyallatom
 	assert len(args) == 2, 'Usage: python utils_protein2.py writeresdists pdbfile outfile'

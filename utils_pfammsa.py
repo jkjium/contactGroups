@@ -125,7 +125,7 @@ class pfammsa(object):
 
 # calculate AA frequency by given column indices
 def aafreq(arglist):
-	if len(arglist) < 1 or arglist == False:
+	if len(arglist) < 2 or arglist == False:
 		cp._err('Usage: python utils_pfammsa.py aafreq PF00000.txt col=all|1,2,3')
 
 	msafile = arglist[0]
@@ -141,9 +141,9 @@ def aafreq(arglist):
 	output =[(k, v, float(v)/freqsum) for k,v in freqdict.items() if v > 0]
 	output.sort(key=operator.itemgetter(1), reverse=True)
 
-	outfile = msafile + '.aafreq'
+	outfile = arglist[2]
 	with open(outfile, 'w') as fp:
-		fp.write('%s\n' % (','.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
+		fp.write('%s\n' % ('\n'.join(['%s %d %.8f' % (k, v, nv) for (k,v,nv) in output])))
 	return cp._info('save to %s' % outfile)
 
 

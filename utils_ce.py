@@ -149,7 +149,7 @@ def keymap(args):
 
 # append all columns from keyvaluefile to targetfile according to key mapping
 # no patch options, merge whatever matches
-def keymerge(args):
+def keymerge_old(args):
     assert len(args) == 5, 'Usage: python utils_ce.py keymerge targetfile targetfile_key_columns {0,2,3} keyvaluefile keyvaluefile_key_columns {0,1,4} outfile'
 
     targetfile = args[0]
@@ -181,6 +181,72 @@ def keymerge(args):
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
     cp._info('save %d records to %s' % (len(outlist), outfile))
+
+# paste all records from two file together according to the matched key
+# updated version of the previous keymerge
+# no patch options, merge whatever matches
+def keymerge(args):
+    assert len(args) == 5, 'Usage: python utils_ce.py keymerge tsvfile1 key_columns {0,2} tsvfile2 key_columns {1,3} outfile'
+    infile1 = args[0]
+    kclist1 = [int(i) for i in args[1].split(',')]
+    infile2 = args[2]
+    kclist2 = [int(i) for i in args[3].split(',')]
+    outfile = args[4]
+
+    valuedict1 ={}
+    for line in cp.loadlines(infile1):
+        sa = line.split(' ')
+        k = ' '.join([sa[i] for i in kclist1])
+        valuedict1[k] = line
+
+    outdict ={}
+    for line in cp.loadlines(infile2):
+        sa = line.split(' ')
+        k = ' '.join([sa[i] for i in kclist2])
+        if k in valuedict1:
+            outdict[k] = '%s %s' % (valuedict1[k], line)
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join([outdict[k] for k in outdict]))
+    cp._info('save %d merged records to %s' % (len(outdict), outfile))
+
+
+def _ce2dict(celines, keyclist, ceclist):
+    cedict={}
+    idpairstub=[]
+    idxset=set()
+    for line in celines:
+        sarr = line.split(' ')
+
+        k = ' '.join(['%s' % sarr[c] for c in keyclist]) # keyclist should always have two columns {id1, id2}
+        # save the same order as the input file
+        # this will control the order of output
+        idpairstub.append(k) 
+
+        # save ce scores 
+        #print k, repr(ceclist), len(sarr)
+        cedict[k] = [float(sarr[c]) for c in ceclist]
+
+        # get all column index in the infile
+        for c in keyclist:
+            idxset.add(int(sarr[int(c)]))
+
+    colslist = list(idxset)
+    colslist.sort()
+    return cedict, idpairstub,colslist
+
+'''
+RCW adjustment for pairwise correlations
+rcw(i,j) = (sum_v(i)+sum_v(j) - MI(i,j)) / (n-1)
+MI_rcw(i,j) = MI(i,j)/rcw(i,j)
+# calcuate rcw with given stub order
+'''
+def _rcw(cedict, idpairstub, colslist):
+    # calculate column-wise sum
+    sumdict = {}
+    for i in xrange(0, len(colslist)):
+        ith_column_sum = 0.0
+
 
 
 
@@ -364,7 +430,15 @@ def cflat2ccmat(args):
     ccmat = np.zeros((len(idlist), len(idlist)))
     for i in range(len(idlist)):
         for j in range(i+1, len(idlist)):
-            ccmat[i,j] = ccmat[j,i] = cedict['%d %d' % (idlist[i], idlist[j])]
+            k1 = '%d %d' % (idlist[i], idlist[j]) 
+            k2 = '%d %d' % (idlist[j], idlist[i]) 
+            if k1 in cedict:
+                v = cedict[k1]
+            elif k2 in cedict:
+                v = cedict[k2]
+            else:
+                v = 0.0
+            ccmat[i,j] = ccmat[j,i] = v
 
     # output files
     outccmatfile = '%s.ccmat' % outprefix

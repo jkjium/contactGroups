@@ -12,6 +12,39 @@ colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d',
 '#60e6c1', '#d7295e', '#008ed0', '#747474']
 #1c225c
 
+# input format: 'value','tick_name'
+def barplot(args):
+    assert len(args) == 2, 'Usage: python utils_vis_sm.py barplot data.vec2 outfile'
+    infile = args[0]
+    outfile = args[1]
+
+    data = []
+    ticks = []
+
+    for line in cp.loadlines(infile):
+        sarr = line.split(',')
+        data.append(float(sarr[0]))
+        ticks.append(sarr[1])
+
+    print(data)
+    print(ticks)
+
+    fig, ax = plt.subplots(figsize=(8,6))
+
+    n = len(data)
+    index = np.arange(n)
+    bar_width = 0.5
+    #opacity = 0.4
+    outbar = plt.bar(index, data, bar_width, color = colorscheme1[0])
+    #plot.xlabel('xlabel')
+    #plot.ylabel('ylabel')
+    plt.xticks(index + bar_width/2, ticks, rotation='vertical')
+    plt.tight_layout()
+    fig.savefig(outfile)
+    plt.show()
+
+
+
 def barplot_fgdist(arglist):
     if len(arglist) < 1:
         cp._err('Usage: python utils_vis_sm.py barplot_fgdist data.tsv outfile')
@@ -496,16 +529,22 @@ def heatmap(args):
     xticktext = cp.loadlines(args[1]) if args[1]!='na' else np.arange(data.shape[1])
     yticktext = cp.loadlines(args[2]) if args[2]!='na' else np.arange(data.shape[0])
 
-    minmax = [-1.0, 1.0]
+    #minmax = [-0.40, 0.40]
+    minmax = [-1.00, 1.00]
 
-    if len(args) == 4:
-        minmax = [float(v) for v in args[3].split(',')]
 
     fig, ax = plt.subplots(1,1, figsize=(10,10))
 
     # customized continuous color bar
-    mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
-    im = ax.imshow(data, cmap=mycmap, vmin=minmax[0], vmax=minmax[1])
+    #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
+    #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#ffffff','#a93a28'], N=256)
+    mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#a93a28','#ffffff'], N=256)
+    if len(args) == 4:
+        minmax = [float(v) for v in args[3].split(',')]
+        im = ax.imshow(data, cmap=mycmap, vmin=minmax[0], vmax=minmax[1])
+    else:
+        im = ax.imshow(data, cmap=mycmap)
+
     #im = ax.imshow(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
     #im = ax.pcolormesh(data, cmap=mycmap, vmin=-1.0, vmax=1.0)
 
@@ -560,21 +599,27 @@ def heatmap_colorgrid(args):
     xticktext = cp.loadlines(args[1]) if args[1]!='na' else np.arange(data.shape[1])
     yticktext = cp.loadlines(args[2]) if args[2]!='na' else np.arange(data.shape[0])
 
-    minmax = [-1.0, 1.0]
+    #minmax = [-1.0, 1.0]
+
+    fig, ax = plt.subplots(1,1, figsize=(10,10))
+    mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
+    # two overlap
+    mycmap = clr.ListedColormap(['white', '#266674', '#afc8cd', '#a93a28'])
+    bounds=[0,0.5,1.0,1.5,2.0]
+    norm = clr.BoundaryNorm(bounds, mycmap.N)
 
     if len(args) == 4:
         minmax = [float(v) for v in args[3].split(',')]
+        im = ax.imshow(data, interpolation='nearest', cmap=mycmap, norm=norm, vmin=minmax[0], vmax=minmax[1])
+    else:
+        im = ax.imshow(data, interpolation='nearest', cmap=mycmap, norm=norm)
 
-    fig, ax = plt.subplots(1,1, figsize=(10,10))
+
 
     # customized continuous color bar
     #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
     #im = ax.imshow(data, cmap=mycmap, vmin=minmax[0], vmax=minmax[1])
 
-    # two overlap
-    mycmap = clr.ListedColormap(['white', '#266674', '#afc8cd', '#a93a28'])
-    bounds=[0,0.5,1.0,1.5,2.0]
-    norm = clr.BoundaryNorm(bounds, mycmap.N)
 
     # three overlap
     '''
@@ -584,7 +629,7 @@ def heatmap_colorgrid(args):
     '''
     
 
-    im = ax.imshow(data, interpolation='nearest', cmap=mycmap, norm=norm, vmin=minmax[0], vmax=minmax[1])
+    #im = ax.imshow(data, interpolation='nearest', cmap=mycmap, norm=norm, vmin=minmax[0], vmax=minmax[1])
 
     # most accurate way to align the colorbar with plot
     from mpl_toolkits.axes_grid1 import make_axes_locatable
