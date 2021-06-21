@@ -597,7 +597,7 @@ def _crosscorrelation(anm, mode_list, n_cpu=1):
 #   _MSF.txt: single row file  (len = n_atoms)
 #   _ccmat: cross-correlation matrix (n_atoms x n_atoms)
 def anmanalysis(args):
-    assert len(args) == 5, 'Usage: python anm pdbfile cutoff modes_for_animation {"1,2,3"} animate_scaler modes_for_correlation {"1,2,3"}'
+    assert len(args) == 5, 'Usage: python anm pdbfile dist_cutoff modes_for_animation {"1,2,3"} animate_scaler modes_for_correlation {"1,2,3"}'
     pdbfile = args[0]
     cutoff = float(args[1])
     mode_animate_list = list(map(int, args[2].split(','))) 

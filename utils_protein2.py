@@ -486,6 +486,30 @@ def writefafile(arglist):
 	fout.close()
 	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
 
+# for testing the dynamic of partial protein structure
+# extract residue atoms from given list and save to a pdbfile
+# list must be sorted by resi 
+# input reslistfile: {chain_resi} A196
+def writeresfromlist(args):
+	assert len(args) == 3, 'Usage: python utils_protein2.py writeresfromlist pdbfile reslistfile outfile'
+	pdbfile = args[0]
+	reslistfile = args[1]
+	outfile = args[2]
+
+	# load residue list
+	reslist = [chain_resi for chain_resi in cp.loadlines(reslistfile) ]
+
+	# get residue atoms from p.resAtomDict['A196']
+	p = protein(pdbfile)
+
+	outlist = []
+	for k in reslist:
+		for a in p.resAtomsDict[k]:
+			outlist.append(a.writeAtom())
+
+	with open(outfile, 'w') as fout:
+		fout.write(''.join(outlist))
+	cp._info('save to %d/%d residues to %s' % (len(reslist), len(p.resAtomsDict), outfile))
 
 
 def writeseqfa(arglist):

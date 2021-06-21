@@ -27,7 +27,7 @@ class pfammsa(object):
 			# convert all abnormal characters into '.'
 			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
 			for head, seq in cp.fasta_iter(msafile):
-				self.msalist.append((head, seq.translate(trans)))
+				self.msalist.append((head, seq.translate(trans).upper()))
 		else:
 			for head, seq in cp.fasta_iter(msafile):
 				#print '%d\n%s\n%s\n' % (count, head, seq)
@@ -687,9 +687,11 @@ def getcolumns(arglist):
 		cp._err('cols: %s exceeds MSA length' % repr(cols))
 
 	colstrlist = pfm.msacolsfa(cols)
+	tag = 'aa'
 	with open(outfile, 'w') as fout:
 		for t in colstrlist:
-			outstr = '%s %s\n' % (t[0], t[1]) #if header_flag == 1 else '%s\n' % (t[1])
+			score = ','.join(['%d' % cp.aascore[tag][a] for a in list(t[1])])
+			outstr = '%s %s %s\n' % (t[0], t[1], score) #if header_flag == 1 else '%s\n' % (t[1])
 			fout.write(outstr)
 	cp._info('column(s) data save to %s' % outfile)
 

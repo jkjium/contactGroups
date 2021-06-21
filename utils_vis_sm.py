@@ -685,6 +685,113 @@ def colorpalette(args):
     plt.show()
     #plt.savefig("colorbar.pdf")    
 
+class seq(object):
+    def __init__(self, props):
+        self.resn = props['resn']
+        self.resi = props['resi']
+        self.ss = props['ss']
+        self.highlight = props['highlight']
+        self.consv = props['consv']
+
+    def __repr__(self):
+        return ('%s %s %s %s') % \
+            (
+                self.resn,
+                self.resi,
+                self.highlight,
+                self.consv
+            )
+
+def t_seq(args):
+    res = {'resi': '30', 'resn': 'LYS' }
+    print res['resi']
+    sq = seq(res)
+    print repr(sq)
+
+def seqdraw(args):
+    # import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(8,12))
+
+    def __parseseq(line):
+        sarr = line.split(' ')
+        return {
+            'resn': sarr[0], 'resi': sarr[1], 'ss': sarr[2], 'highlight': int(sarr[3]), 'consv': sarr[4]
+            }
+
+    seqs = [seq(__parseseq(line)) for line in cp.loadlines('t_seqdraw.data')]
+    
+    for sq in seqs:
+        print repr(sq)
+    print len(seqs)
+
+    sscolor = {'h':'#ff39ff', 's':'#39ffff', 'l': '#ff9999'}
+
+    fs = 12
+
+    # draw seq
+    for i in range(len(seqs)):
+        x = 0 
+        y = float(len(seqs)-i-1)/len(seqs)
+        sq = seqs[i]
+        # draw sequence
+        ax.text( 
+            x,y, 
+            '%s %s' % (sq.resn, sq.resi), 
+            ha='center', va='center',
+            fontsize=fs, family= 'monospace', color='black', 
+            bbox=dict(pad=0.3, facecolor=sscolor[sq.ss], edgecolor=sscolor[sq.ss], alpha=0.3, boxstyle='square'))
+        # highlight
+        x+=0.1
+        fc = 'gray' if sq.highlight == 1 else 'white'
+        ax.text( 
+            x,y, 
+            ' ',
+            ha='center', va='center',
+            fontsize=fs-2, family= 'monospace', color='black', 
+            bbox=dict(pad=0.3, facecolor=fc, edgecolor='white', boxstyle='square'))
+        # conservation
+        x+=0.1
+        ax.text( 
+            x,y, 
+            '%s' % (sq.consv) if sq.consv != 'na' else ' ',
+            ha='center', va='center',
+            fontsize=fs-1, family= 'monospace', color='black', 
+            bbox=dict(pad=0.3, facecolor='white', edgecolor='gray', alpha=0.3, boxstyle='square'))
+    plt.axis('off')
+    plt.show()
+
+    '''
+    from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage, AnnotationBbox)
+    #xy = (0.5, 0.7)
+    xy = (0, 0)
+    ab = AnnotationBbox(TextArea("textarea"), xy,
+                    xybox=([0, 0]), # text location
+                    xycoords='data',
+                    boxcoords=("axes fraction", "data"),
+                    box_alignment=(0., 0.5),
+                    )
+    ax.add_artist(ab)
+    #xy = (0, 0.5)
+    ab = AnnotationBbox(TextArea("textarea1"), xy,
+                    xybox=([0, 0.5]),
+                    xycoords='data',
+                    boxcoords=("axes fraction", "data"),
+                    box_alignment=(0., 0.5),
+                    )
+    ax.add_artist(ab)
+    '''
+    '''
+    ax.text(
+        0,1, # text location, 0:bottom, 1:top
+        'foobar', # text
+        fontsize=12, # fontsize # equal to "size=12"
+        color='black', # fontcolor
+        bbox=dict(facecolor='red', edgecolor='red', boxstyle='round') # box attributes
+        )
+    t = ax.text(
+        0, 0, "Direction", ha="center", va="center", rotation=45, size=15,
+        bbox=dict(boxstyle="rarrow,pad=0.3", fc="cyan", ec="b", lw=2))
+    '''
 
 if __name__ == '__main__':
         cp.dispatch(__name__)
