@@ -121,6 +121,24 @@ def zscore(arglist):
 
 
 
+# reformat .cflat2 file into resi2, resn2, msai2, min_dist, ce_scores
+# for bet result analysis
+# .cflat format
+def cflat2rflat(args):
+	assert len(args) == 2, 'Usage: python utils_cflat.py cflat2rflat cflat2file outfile.rflat'
+	cflat2file = args[0]
+	outfile = args[1]
+
+	with open(outfile, 'w') as fout:
+		for line in cp.loadlines(cflat2file):
+			sarr = line.split(' ')
+			dists = [float(sarr[6]), float(sarr[7]), float(sarr[8])]
+			outstr = ' '.join([sarr[2], sarr[3], sarr[4], sarr[5], sarr[12], sarr[13], '%.4f' % min(dists), sarr[14], sarr[16], sarr[17], sarr[19], sarr[20], sarr[22]])
+			fout.write('%s\n' % outstr)
+	cp._info('save to %s' % outfile)
+
+
+
 
 
 

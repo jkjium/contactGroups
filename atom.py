@@ -88,3 +88,23 @@ class atom(object):
 			  )
 		return self.outputStr
 
+    def __repr__(self):
+		return ('%s%s %s%s%s %s%s%s   %s%s%s%s%s          %s%s\n') % \
+			(
+			  	self.recName,
+			  	str(self.serial).rjust(5),
+			  	self.name,
+			  	self.altLoc,
+			  	self.resName,
+			  	self.chainID,
+			  	str(self.resSeq).rjust(4),
+			  	self.iCode,
+			  	str('%.3f' % (self.x)).rjust(8),
+			  	str('%.3f' % (self.y)).rjust(8),
+			  	str('%.3f' % (self.z)).rjust(8),
+			  	str('%.2f' % (self.occupancy)).rjust(6),
+			  	str('%.2f' % (self.tempFactor)).rjust(6),
+			  	self.element,
+			  	self.charge
+			  )
+

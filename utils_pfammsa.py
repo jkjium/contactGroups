@@ -882,7 +882,7 @@ def msa2rawseq(args):
 
 # reduce a pfammsa by resimap columns
 # input: msafile mapfile outputprefix
-# output: reduced msa, reduced score, 
+# output: reduced msa, reduced score, column_mapping
 def msareduce_withmap(args):
 	assert len(args) == 4, 'Usage: python utils_pfammsa.py msareduce_withmap msafile mapfile scoretag{aa} outprefix'
 	msafile = args[0]
@@ -904,6 +904,56 @@ def msareduce_withmap(args):
 	with open(outprefix+'.rcol', 'w') as fout:
 		fout.write('%s\n' % (','.join(map(lambda x: '%d' % x, cols))))
 	cp._info('save to %s {.scoremat, .rcol}' % outprefix)
+
+# reduce a msa by the given sequence
+# output: reduced msa, reduced score, column_mapping
+def msareduce_byseq(args):
+	assert len(args)==4, 'Usage: python utils_pfammsa.y msareduce_byseq msafile focus_header scoretag{aa} outprefix'
+	msafile = args[0]
+	fh = args[1]
+	scoretag = args[2]
+	outprefix = args[3]
+
+	# locate the focused seq
+	pfm = pfammsa(msafile)
+	focused_seq = ''
+	for i in range(len(pfm.msalist)):
+		s = pfm.msalist[i]
+		if s[0] == fh:
+			focused_seq = s[1]
+			break
+	if len(focused_seq) == 0:
+		cp._err('focused sequence %s not found' % (fh))
+	print('found focused seq: %dth\n>%s\n%s' % (i+1, fh, focused_seq))
+
+	# get focused column indices from focused sequences
+	cols = [i for i in range(len(focused_seq)) if focused_seq[i] not in cp.gaps]
+	#print cols
+	#print len(focused_seq)
+
+	# msa2scorebycols & save scoremat
+	scoremat = pfm.scorebycols(scoretag, cols)
+	np.savetxt(outprefix+'.scoremat', scoremat, delimiter=',', fmt='%i')
+	cp._info('save score to %s.scoremat' % outprefix)
+
+	# save focused columns
+	with open(outprefix+'.rcol', 'w') as fout:
+		fout.write('%s\n' % (','.join(map(lambda x: '%d' % x, cols))))
+	cp._info('save rcol to %s.rcol' % outprefix)
+
+	# score back to msa
+	with open(outprefix+'.r.msa', 'w') as fout:
+		if len(scoremat.shape) == 2: # multiple sequences
+			nrow, ncol = scoremat.shape
+			for i in xrange(0, nrow):
+				title = 'msaseq_%d/0-%d' % (i, ncol-1)
+				msaseq = [cp.scoreaa[scoretag][a] for a in scoremat[i]]
+				fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
+		else: # single MSA sequence
+			title = 'msaseq_0/0-%d' % (len(score)-1)
+			msaseq = [cp.scoreaa[scoretag][a] for a in scoremat]
+			fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))		
+	cp._info('save reduced MSA to %s.r.msa' % outprefix)	
 
 
 # calculate all column nongap rate
@@ -1131,12 +1181,12 @@ def scorebycols(args):
 
 # calculate and save sequence weight with similarity cutoff
 def scoreweight(arglist):
-	if len(sys.argv) < 2:
-		cp._err('Usage: python utils_pfammsa.py scoreweight PF00000.score similarity_value')
+	if len(arglist) < 3:
+		cp._err('Usage: python utils_pfammsa.py scoreweight PF00000.score similarity_value outfile')
 
 	datafile = arglist[0]
 	svalue = float(arglist[1])
-	outfile = '%s.%2d.w' % (datafile, svalue*100)
+	outfile = arglist[2]
 
 	score = np.loadtxt(datafile, delimiter=',')
 	w = cp.hamming_weight(score, 1-svalue)
@@ -1881,6 +1931,7 @@ def main():
 		'hamming_similarity': hamming_similarity,
 		'msareduce': msareduce,
 		'msareduce_withmap': msareduce_withmap,
+		'msareduce_byseq': msareduce_byseq,
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
 		'retitle': retitle, # format header for dca calculation

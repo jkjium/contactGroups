@@ -384,12 +384,13 @@ def signalplotws(arglist):
 # plot roc curves 
 # infile: true/false score1 score2 ...
 def roc(args):
-    assert len(args) == 2, 'Usage: python utils_vis_sm.py roc roc_score_file legend,legend2,..'
+    assert len(args) == 3, 'Usage: python utils_vis_sm.py roc roc_score_file legend,legend2,.. outfile'
     infile = args[0]
     legends = [s for s in args[1].split(',')]
-    print(legends)
+    outfile = args[2]
 
     data = np.loadtxt(infile)
+    print(data.shape)
     p = data.shape[1] # get how many scores
 
     y = data[:,0]
@@ -405,6 +406,8 @@ def roc(args):
     plt.ylabel('True positive rate')
     plt.title('ROC curve')
     plt.legend(loc='best')
+    plt.savefig(outfile)
+    print('save to %s' % outfile)
     plt.show()
 
 def _gridheatmap(data, row_labels, col_labels, ax=None,
@@ -710,7 +713,7 @@ def t_seq(args):
 
 def seqdraw(args):
     # import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(figsize=(8,12))
+    fig, ax = plt.subplots(figsize=(6,50))
 
     def __parseseq(line):
         sarr = line.split(' ')
@@ -718,15 +721,13 @@ def seqdraw(args):
             'resn': sarr[0], 'resi': sarr[1], 'ss': sarr[2], 'highlight': int(sarr[3]), 'consv': sarr[4]
             }
 
-    seqs = [seq(__parseseq(line)) for line in cp.loadlines('t_seqdraw.data')]
-    
-    for sq in seqs:
-        print repr(sq)
+    #seqs = [seq(__parseseq(line)) for line in cp.loadlines('t_seqdraw.data')]
+    seqs = [seq(__parseseq(line)) for line in cp.loadlines('3k54_seqdraw.data')]
     print len(seqs)
 
-    sscolor = {'h':'#ff39ff', 's':'#39ffff', 'l': '#ff9999'}
+    sscolor = {'s':'#ff39ff', 'h':'#39ffff', 'l': '#ff9999'}
 
-    fs = 12
+    fs = 8 
 
     # draw seq
     for i in range(len(seqs)):
@@ -741,7 +742,7 @@ def seqdraw(args):
             fontsize=fs, family= 'monospace', color='black', 
             bbox=dict(pad=0.3, facecolor=sscolor[sq.ss], edgecolor=sscolor[sq.ss], alpha=0.3, boxstyle='square'))
         # highlight
-        x+=0.1
+        x+=0.07
         fc = 'gray' if sq.highlight == 1 else 'white'
         ax.text( 
             x,y, 
@@ -750,7 +751,7 @@ def seqdraw(args):
             fontsize=fs-2, family= 'monospace', color='black', 
             bbox=dict(pad=0.3, facecolor=fc, edgecolor='white', boxstyle='square'))
         # conservation
-        x+=0.1
+        x+=0.05
         ax.text( 
             x,y, 
             '%s' % (sq.consv) if sq.consv != 'na' else ' ',
@@ -758,7 +759,9 @@ def seqdraw(args):
             fontsize=fs-1, family= 'monospace', color='black', 
             bbox=dict(pad=0.3, facecolor='white', edgecolor='gray', alpha=0.3, boxstyle='square'))
     plt.axis('off')
-    plt.show()
+    #plt.show()
+    fig.tight_layout()
+    plt.savefig("3k54.png")
 
     '''
     from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage, AnnotationBbox)

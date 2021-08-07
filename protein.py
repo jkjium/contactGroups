@@ -40,6 +40,7 @@ class protein(object):
         
         self.nbcutoff = nbcutoff
         self.ca = []
+        self.reslist = []
         
         fin=open(pdbname, 'r')
         lines=fin.readlines()
@@ -47,7 +48,10 @@ class protein(object):
        
         lastname =''
         lastres = ''
+        ratoms = [] # store residue atoms
+        rlist = []
         aamap = AAmap()
+        lastresi = '' # redundant ... should make this better (when have time)
         for i in xrange(0,len(lines)):
             line = lines[i]
             # load only one model
@@ -61,16 +65,30 @@ class protein(object):
                     continue
             if line[0:6]=='ATOM  ':
                 at = atom(lines[i])
-                if (at.name == lastname) and (at.resSeq == lastres):
+                # at.name = {CA, N, ...}
+                if (at.name == lastname) and (at.resSeq == lastres): # discard alternative locations (same residue number and same atom name)
                     #print '[%s]::alter loc:\n%s' % (self.pdbfile, lines[i])
                     #if (line[16]==' ' or line[16]=='A'): # to avoid alternative location
                     continue
-                else:
+                else: # for all the normal ATOM entries
                     self.atoms.append(at)
                     if at.name.strip()=='CA':
                         self.ca.append(at)
                     lastname = at.name
                     lastres = at.resSeq
+
+                # store atoms by residueID 
+                if (at.resSeq != lastresi): # reach a new residue
+                    if(len(ratoms)!=0):
+                        self.reslist.append(ratoms) # put atoms for last residue in reslist
+                    ratoms = [] # init a new list to store the current residue atoms
+                    lastresi = at.resSeq
+                    ratoms.append(at)
+                else: # still for the same residue
+                    ratoms.append(at)
+        # store the last residue
+        if(len(ratoms)!=0):
+            self.reslist.append(ratoms)
 
         # map for Chain+Resi : (index in sequence, ResName)
         # 'B529': (132, 'V')

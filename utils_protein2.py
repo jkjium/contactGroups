@@ -182,6 +182,31 @@ def pdbcontact(args):
 		fout.write('%s\n' % '\n'.join(outlist))
 	cp._info('save contacts to %s' % outfile)
 
+# chop pdb file by given residue indices (not residue ID)
+# for ps3 pipeline
+# input: original pdb {12e8.pdb}, chainID, {A}, index segments, {1-120,130-200,...}, outfile {12e8H01}
+# output: chopped pdb file
+# python utils_protein2.py pdbchop 19hc.pdb A 100-129,168-292 19hcA01
+def pdbchop(args):
+	assert len(args) == 4, 'Usage: python utils_protein2.py pdbchop pdbfile chainID chopping_segments {1-120,130-200,...} outfile'
+	pdbfile = args[0]
+	chainid = args[1]
+	_region = lambda x: [int(i)-1 for i in x.split('-')]
+	seglist = [_region(seg) for seg in args[2].split(',')]
+	outfile = args[3]
+
+	# load pdb by chain
+	p = protein(pdbfile, chain=chainid)
+	resstrlist = []
+	for s in seglist:
+		for atomlist in p.reslist[s[0]:(s[1]+1)]:
+			 resstrlist.append(''.join([at.writeAtom() for at in atomlist]))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ''.join(resstrlist))
+	cp._info('save chopped pdb to %s' % outfile)
+
+
 
 # input: pdb file, target residue IDs, cutoff distance
 # output: a flat file

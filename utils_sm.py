@@ -400,7 +400,19 @@ def outnpcore(arglist):
 	sm.outnpcore(outfile)
 	cp._info('save core to %s' % outfile)
 
+# similar to savecolvec
+# output full 20x20 scores 
+def outflatfull(args):
+	assert len(args) == 2, 'Usage: python utils_sm.py outflatfull b62 b62.flat'
+	sm = smatrix(args[0])
+	outfile = args[1]
+	with open(outfile, 'w') as fout:
+		outstr = '\n'.join(['%s %d' % (k, sm.score[k]) for k in sm.score])
+		fout.write('%s\n' % outstr)
+	cp._info('save matrix flat file to %s' % outfile)
 
+
+# output 210 matrix value  (with header)
 def savecolvec(arglist):
 	if len(arglist) < 2:
 		cp._err('Usage:python utils_sm.py savecolvec sm.emboss outfile')
@@ -441,8 +453,9 @@ def main():
 		'interpolate': 	interpolate,
 		'outblast': 	outblast,
 		'outblast62':	outblast62,
-		'outnpcore':	outnpcore,
-		'printflatten':	printflatten,
+		'outnpcore':	outnpcore, # write core 20x20 matrix
+		'outflatfull':	outflatfull, # output .vec file {with all 20x20 AA score_value} 
+		'printflatten':	printflatten, 
 		'scalepn':		scalepn,
 		'stat':			stat,
 		'savecolvec':	savecolvec,

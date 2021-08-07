@@ -43,7 +43,6 @@ def augmented_dendrogram(*args, **kwargs):
 			str = '%.3g' % y
 			plt.annotate(str, (x,y), xytext=(0,-8), textcoords='offset points', va='top', ha='center')
 	return ddata
-
 # x: str list in np.array format
 #$ python proc_hammingweight.py t_hamming_weight.score 0.9
 #array([1, 2, 2, 3, 4, 1, 1], dtype=int32)
@@ -57,8 +56,8 @@ def augmented_dendrogram(*args, **kwargs):
 # 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 : 0.333
 def hamming_weight(x, max_d):
 	linkage_matrix = linkage(x, "single", metric='hamming')
-	ddata = augmented_dendrogram(linkage_matrix, color_threshold=1)
-	plt.show()	
+	#ddata = augmented_dendrogram(linkage_matrix, color_threshold=1)
+	#plt.show()	
 	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
 	#print repr(clusters)
 	normdict = cp.freq(clusters)
