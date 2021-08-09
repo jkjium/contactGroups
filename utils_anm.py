@@ -588,6 +588,11 @@ def _crosscorrelation(anm, mode_list, n_cpu=1):
 
     return covariance
 
+def _distfluctuations(ccmat):
+        cc_diag = np.diag(ccmat).reshape(-1,1)
+        dfmat = cc_diag.T + cc_diag -2.*ccmat
+        return dfmat    
+
 
 # analysis outputs: 
 #   _frequencies.txt: eigenvalues (single column file, len = n_atoms*3)
@@ -609,22 +614,41 @@ def anmanalysis(args):
     # convert to symmetric matrix
     contactmap = cc + cc.T
 
-    np.savetxt(anm.proteinName + '_frequencies.txt', anm.e, fmt = '%.3f')
-    np.savetxt(anm.proteinName + '_modes.txt', anm.v, fmt = '%.3f')
-    np.savetxt(anm.proteinName + '_contactMatrix.txt', contactmap, fmt = '%d')
+    freqfile = '%s_frequencies.txt' % anm.proteinName
+    np.savetxt(freqfile, anm.e, fmt = '%.3f')
+    cp._info('save frequencies (eigen values) to %s' % freqfile)
+
+    modesfile = '%s_modes.txt' % anm.proteinName
+    np.savetxt(modesfile, anm.v, fmt = '%.3f')
+    cp._info('save modes to %s' % modesfile)
+
+    ctfile = '%s_contactmatrix' % anm.proteinName
+    np.savetxt(ctfile, contactmap, fmt = '%d')
+    cp._info('save contact map to %s' % ctfile)
     #np.savetxt(anm.proteinName + '_contactMatrix.txt', anm.getCX(), fmt = '%.3e') # for method='pf'
-    np.savetxt(anm.proteinName + '_Hessian.txt', anm.getHess(), fmt = '%.3f')
-    np.savetxt(anm.proteinName + '_MSF.txt', anm.getMSF(), fmt = '%.3f')
-    cp._info('Data (frequencies, modes, contactMatrix, Hessian, MSF) saved.')
+
+    hessianfile = '%s_hessian.txt' % anm.proteinName
+    np.savetxt(hessianfile, anm.getHess(), fmt = '%.3f')
+    cp._info('save hessian to %s' % hessianfile)
+
+    msffile = '%s_msf.txt' % anm.proteinName
+    np.savetxt(msffile, anm.getMSF(), fmt = '%.3f')
+    cp._info('save MSF to %s' % msffile)
 
     anm.modeAnimator(mode_animate_list, scaler=animate_scaler)
     cp._info('%d animation movies saved.' % len(mode_animate_list))
     
-    #ccmat = _crosscorrelation(anm.v[:,mode_correlation_list+5], anm.e[mode_correlation_list+5])
+    # dynamic cross=correlations
     ccmat = _crosscorrelation(anm, mode_correlation_list+5)
-    print ccmat.round(3)
-    np.savetxt(anm.proteinName + '_ccmat.txt', ccmat, fmt = '%.3f')
+    ccmatfile = '%s_ccmat.txt' % anm.proteinName
+    np.savetxt(ccmatfile, ccmat, fmt = '%.3f')
     cp._info('Cross-Correlation matrix of %d modes : %s_ccmat.txt saved.' % (len(mode_correlation_list), anm.proteinName))
+
+    # distance fluctuations
+    dfmat = _distfluctuations(ccmat)
+    dffile = '%s_dfmat.txt' % anm.proteinName
+    np.savetxt(dffile, dfmat, fmt = '%.3f')
+    cp._info('save distance fluctuations to %s' % dffile)
 
 
 if __name__ == '__main__':
