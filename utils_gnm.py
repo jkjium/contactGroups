@@ -53,6 +53,38 @@ class gnm:
         diagvar = np.diag(1/self.frequencies[modelist])
         return np.dot(v * v, diagvar).sum(axis=1)
 
+# output all ..
+# calculate 20 modes by default
+def analysis(args):
+    assert len(args) >=4, 'Usage: python utils_gnm.py analysis pdbfile cutoff gamma is_ca (mode_list{1,2,3,...])'
+    pdbfile = args[0]
+    cutoff = float(args[1])
+    gamma = float(args[2])
+    is_ca = bool(args[3]) # or str in next version 
+    mode_list = map(int, args[4].split(',')) if len(args) == 5 else list(range(1,20))
+
+    g = gnm(pdbfile, is_ca, cutoff, gamma)
+    dcmat = g.calcdyncc(mode_list)
+    dfmat = g.calcdistflucts(mode_list)
+    msf = g.calcmsf(mode_list)
+
+    outdcmat = '%s.dcmat.txt' % pdbfile
+    np.savetxt(outdcmat, dcmat, fmt='%.3f')
+
+    outdfmat = '%s.dfmat.txt' % pdbfile
+    np.savetxt(outdfmat, dfmat, fmt='%.3f')
+
+    outmsf = '%s.msf.txt' % pdbfile
+    np.savetxt(outmsf, msf, fmt='%.3f')
+
+    outmodes = '%s.modes.txt' % pdbfile
+    np.savetxt(outmodes, g.modes, fmt='%.3f')
+
+    outfreqs = '%s.freqs.txt' % pdbfile
+    np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
+
+    cp._info('save %s.{dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
+    
 
 def foo(args):
     #g = gnm('t1.pdb')
