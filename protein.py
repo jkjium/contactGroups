@@ -114,9 +114,9 @@ class protein(object):
         '''
         self.resAtomsDict = {} 
         for rlist in self.resAtoms:
-            key = '%s%d' % (rlist[0].chainID, rlist[0].resSeq)
+            key = '%s%d%s' % (rlist[0].chainID, rlist[0].resSeq, rlist[0].iCode)
             if key in self.resAtomsDict:
-                cp._err('duplicate residue found: %s in %s' % (key, self.name))
+                cp._err('duplicate residue found: %s in %s' % (key, self.pdbfile))
             self.resAtomsDict[key] = rlist
 
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
@@ -602,7 +602,11 @@ class protein(object):
         for a in self.atoms:
             fo.write('%f %f %f %d %s\n' % (a.x, a.y, a.z, a.resSeq, aamap.getAAmap(a.resName)))
         fo.close()
-
+    
+    # write all ATOM entries as a pdbfile
+    def writepdb(self, filename):
+        with open(filename, 'w') as fout:
+            fout.write('%s\n' % ''.join([at.writeAtom() for at in atomlist]))
 
     # use spectral clustering method to find residue contact groups        
     '''

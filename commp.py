@@ -462,7 +462,17 @@ def disttrans(vec, method='log'):
 		op = lambda x: math.log(x,2)
 	return [op(v) for v in vec]
 
-
+# set /0 = 0
+def div0(a, b):
+    from numpy import errstate, true_divide, isfinite, isscalar
+    with errstate(divide='ignore', invalid='ignore'):
+        c = true_divide(a, b)
+        if isscalar(c):
+            if not isfinite(c):
+                c = 0
+        else:
+            c[~isfinite(c)] = 0.  # -inf inf NaN
+    return c
 
 # (joint) entropy calculation
 # input: a list of np.array()
