@@ -64,6 +64,15 @@ class pfammsa(object):
 				sumfreq[k]+=dd[k]
 		return sumfreq
 
+	# calculate weighted frequencies of AA pairs
+	def aapairfreqw(self, clist, w, aa=cp.aas01):
+		aafreqdict = dict(('%s %s' % (aa[i], aa[j]), 0.0) for i in range(len(aa)) for j in range(len(aa)))
+		for i in range(len(self.msalist)):
+			s = self.msalist[i][1]
+			k = '%s %s' % (s[clist[0]], s[clist[1]])
+			if k in aafreqdict: # remove k with gap symbols
+				aafreqdict[k]+=w[i]
+		return aafreqdict
 
 	# improved msa reduction 
 	# converting AA alphabet to aaprop values

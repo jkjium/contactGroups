@@ -585,7 +585,12 @@ def hamming_cluster(x, max_d):
 	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
 	return clusters
 
-
+# convert square formed matrix to flat list form
+# names is a list of column names ordered according to matrix column indices
+# output: list of vec3, c1 c2 value
+def mat2flat(mat, names, sym=True):
+	assert mat.shape[0] == mat.shape[1], 'cp.mat2flat::error:non-square matrix %s' % repr(mat.shape)
+	return [(names[i],names[j],mat[i,j]) for i in range(mat.shape[0]) for j in range(i,mat.shape[0])] if sym==True else [(names[i],names[j],mat[i,j]) for i in range(mat.shape[0]) for j in range(mat.shape[0])]
 
 
 # jaccard distance for two sets
@@ -609,6 +614,8 @@ def ncrset(varnum, order):
 def ncrvar(varset, order):
 	return [s for s in set(itertools.combinations(varset, order))]
 
+def normminmax(nplist):
+	return 1.0*(nplist - np.min(nplist))/(np.max(nplist)-np.min(nplist))
 
 # given two strings
 # normal sequence & aligned sequence
@@ -829,6 +836,10 @@ def rankstd(d):
 # take nth root
 def root(v, n):
 	return v**(1./n) if 0<=v else -(-v)**(1./n)
+
+
+def minpositive(d):
+	return d-d.min()
 
 # load all lines except for the empty lines
 def loadlinesu(filename, ecode=None):

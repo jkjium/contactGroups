@@ -589,7 +589,10 @@ def heatmap(args):
     ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)    
 
     fig.tight_layout()
-    plt.show()                        
+    outfile = args[0]+'.png'
+    fig.savefig(outfile)
+    cp._info('save figure to %s' % outfile)
+    #plt.show()                        
 
 
 def heatmap_colorgrid(args):
