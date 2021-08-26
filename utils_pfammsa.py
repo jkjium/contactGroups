@@ -1822,6 +1822,24 @@ def wfreqcsfgdist_1(arglist):
 			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
 		cp._info('save %s foreground distribution to %s' % (cs, outfile))
 
+# sort msa by hamming distance (of the input sequence)
+def writesortedmsa(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py writesortedmsa msafile single.fa outmsa.fa'
+	msafile = args[0]
+	fafile = args[1]
+	outfile = args[2]
+
+	pfm = pfammsa(msafile)
+	srcfa = next(cp.fasta_iter(fafile))
+
+	#msasimilarities =  sorted([(i,cp.hamming_diff(srcfa[1], pfm.msalist[i][1])) for i in range(len(pfm.msalist))], key=lambda x:x[1], reverse=True)
+	msasimilarities =  sorted([(i,cp.hamming_diff(srcfa[1], pfm.msalist[i][1])) for i in range(len(pfm.msalist))], key=lambda x:x[1])
+	print('%s ... %s' % (repr(msasimilarities[0:5]), repr(msasimilarities[-5:])))
+
+	outlist = ['>%s|%d\n%s' % (pfm.msalist[k[0]][0], k[1], pfm.msalist[k[0]][1]) for k in msasimilarities]
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save sorted MSA to %s' % outfile)						 
 # combine two msa according to the species information
 # only works for full.txt for now
 # _fullmsa_species needs to be separated
@@ -1960,7 +1978,8 @@ def main():
 		'wfreqcs2sm':wfreqcs2sm,
 		'wfreqbgdist': wfreqbgdist,
 		'wfreqcsfgdist':wfreqcsfgdist,
-		'wfreqcsfgdist_1':wfreqcsfgdist_1
+		'wfreqcsfgdist_1':wfreqcsfgdist_1,
+		'writesortedmsa': writesortedmsa			   
 	}
 
 	if sys.argv[1] not in dispatch:
