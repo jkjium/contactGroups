@@ -61,6 +61,65 @@ def vec3norm(args):
     cp._info('save normalized vec3 to %s' % outfile)
 
 
+# calculate weighed value density of 210 aa pairs from MSA {dca, mi, mip}
+# output ce density and dfmat density
+# load from .vec11 instead of cflat2 file
+def aadensity(args):
+    assert len(args) == 4, 'Usage: python utils_minip.py .vec11 PF00000_full.txt weightfile outfile'
+    # get 210 aa pairs (weighted) frequenccies
+    cefile = args[0]
+    msafile = args[1]
+    weightfile = args[2]
+    outprefix = args[3]
+
+    # load msa & weight
+    pfm = pfammsa(msafile)
+    w = np.loadtxt(weightfile)
+    cp._info('MSA and weights loaded.')
+
+    # init 
+    aa = cp.aat01
+    aaidx =  ['%s %s' % (aa[i], aa[j]) for i in range(len(aa)) for j in range(len(aa))]
+
+    freqdensity = np.zeros(400)
+    cedensity = np.zeros(400)
+    dccdensity = np.zeros(400)
+    dfdensity = np.zeros(400)
+
+    # loop through all residue pairs
+    count=0
+    #  PF00497-1ggg.r2-m2-idx2-dca-dcaz-dist-dyncc-dflut.vec11
+    # 0.r1 1.r2 2.m1 3.m2 4.i1 5.i2 6.dca 7.dcaz 8.dist 9.dyncc 10.dflut
+    for c in cp.loadtuples(cefile):
+        count+=1
+        # calcualte weighed 400 aa frequencies for current msai pair
+        pfreqwdict = pfm.aapairfreqw([int(c[2]), int(c[3])], w, aa)
+        #print(pfreqwdict)
+
+        # convert aafreq to 400x1 np arrays
+        pfreqwnp = np.array([pfreqwdict[aapair] for aapair in aaidx])
+        #pfreqwnp = cp.normminmax(np.array([pfreqwdict[aapair] for aapair in aaidx]))
+
+        # multiply by correlation values
+        cedensity += (pfreqwnp * float(c[6])) # dca
+        dccdensity += (pfreqwnp * np.abs(float(c[9]))) # absolute value of dyncc score
+        dfdensity += (pfreqwnp * float(c[10]))
+        freqdensity += pfreqwnp
+        if count%100==0:
+            cp._info('%d pairs done.' % count)
+
+    cedensityn = cp.normminmax(cedensity/freqdensity).reshape(20,20)
+    dccdensityn = cp.normminmax(dccdensity/freqdensity).reshape(20,20)
+    dfdensityn = cp.normminmax(dfdensity/freqdensity).reshape(20,20)
+    freqdensityn = cp.normminmax(freqdensity).reshape(20,20)
+
+    np.savetxt(outprefix+'.freqmat', (freqdensityn+freqdensityn.T), fmt='%.2f')
+    np.savetxt(outprefix+'.cemat', (cedensityn+cedensityn.T), fmt='%.2f')
+    np.savetxt(outprefix+'.dccmat', (dccdensityn+dccdensityn.T), fmt='%.2f')
+    np.savetxt(outprefix+'.dfmat', (dfdensityn+dfdensityn.T), fmt='%.2f')
+    cp._info('save %s.{cemat, dccmat, dfmat, freqmat}' % outprefix)
+
+
 
 # calculate weighed value density of 210 aa pairs from MSA {dca, mi, mip}
 # output ce density and dfmat density

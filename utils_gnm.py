@@ -68,6 +68,9 @@ def analysis(args):
     dfmat = g.calcdistflucts(mode_list)
     msf = g.calcmsf(mode_list)
 
+    outadjmat = '%s.adjmat.txt' % pdbfile
+    np.savetxt(outadjmat, g.ctmat, fmt='%d')
+
     outdcmat = '%s.dcmat.txt' % pdbfile
     np.savetxt(outdcmat, dcmat, fmt='%.3f')
 
@@ -83,7 +86,7 @@ def analysis(args):
     outfreqs = '%s.freqs.txt' % pdbfile
     np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
 
-    cp._info('save %s.{dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
+    cp._info('save %s.{adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
     
 
 def foo(args):
