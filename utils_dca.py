@@ -71,12 +71,20 @@ def dca(args):
 
     # - C = Compute_C(Pij, Pi, alignment_width, q);
     mflat = np.zeros([ncol*(q-1), ncol*(q-1)])
-    _fid = lambda _i,_aa,_q: (_q-1)*(_i-1)+_aa + 3
+    _fid = lambda _i,_aa,_q: (_q-1)*(_i)+_aa 
+    #_fid = lambda _i,_aa,_q: (_q-1)*(_i-1)+_aa + 3
+    count=0
     for i in range(ncol):
         for j in range(ncol):
             for aai in range(q-1):
                 for aaj in range(q-1):
                     mflat[_fid(i,aai,q), _fid(j,aaj,q)] = pij[i,j,aai,aaj] - pi[i,aai]*pi[j,aaj]
+                    '''
+                    count+=1
+                    if count==200:
+                        return
+                    print(i,j,aai,aaj,_fid(i,aai,q), _fid(j,aaj,q))
+                    '''
 
     # - invC = inv(C);
     #np.savetxt('pvar', mflat, fmt='%.3f')
@@ -143,8 +151,8 @@ def _calc_di_mu(i,j,W,p,q):
 # calculate mutual information
 def _calc_mi(i, j, p2, p1, q):
     M = 0.0
-    for a in range(q-1):
-        for b in range(q-1):
+    for a in range(q):
+        for b in range(q):
             if p2[i,j,a,b]>0:
                 M+=p2[i,j,a,b]*np.log(p2[i,j,a,b]/p1[i,a]/p1[j,b])
     return M
