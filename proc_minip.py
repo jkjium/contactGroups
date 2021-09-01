@@ -181,8 +181,8 @@ def aapaircorrdensity(args):
         dyndensity += (pfreqwnp * corrdict[k][1]) # df score
         freqdensity += pfreqwnp_o
 
-    cedensityn = cp.normminmax(cedensity/freqdensity).reshape(20,20)
-    dyndensityn = cp.normminmax(dyndensity/freqdensity).reshape(20,20)
+    cedensityn = cp.normminmax(cedensity).reshape(20,20)
+    dyndensityn = cp.normminmax(dyndensity).reshape(20,20)
     freqdensityn = cp.normminmax(freqdensity).reshape(20,20)
 
     np.savetxt(outprefix+'.freqmat', freqdensityn, fmt='%.2f')
