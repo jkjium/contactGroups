@@ -3,6 +3,120 @@ import commp as cp
 from protein import protein
 from atom import atom
 from utils_pfammsa import pfammsa
+from utils_gnm import gnm
+
+def _mat2residict(mat,names):
+    return dict((('%s %s' % (v[0], v[1])), v[2]) for v in cp.mat2flat(mat,names))
+
+# ce source: kjia@lhb-ps4 ~/workspace/mcb/1ggg/stage{.anm}/PF00497-1ggg.r2-m2-idx2-dca-dcaz-dist-dyncc-dflut.vec11
+def searchagreement(args):
+    assert len(args) == 5, 'Usage: python proc_minip.py searchagreement 1ggg.pdb .vec11 ce_zscore mode_num outfile'
+    pdbfile = args[0]
+    cefile = args[1]
+    cecutoff = float(args[2])
+    mode_num = int(args[3])
+    outfile = args[4]
+
+    # get full dynamic correlations
+    g = gnm(pdbfile)
+    p = protein(pdbfile)
+    names = ['%d' % at.resSeq for at in p.ca]
+
+    dccutofflist = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+    # loop here
+    mode_list = np.array(range(mode_num))+1
+
+    dcmat = g.calcdyncc(mode_list)
+    dyndict = _mat2residict(dcmat, names)
+
+    # load ec and resi pairs
+    cevec = []
+    dcvec = []
+    for ce in cp.loadtuples(cefile):
+        # 5 6 214 215 0 1 0.350477 12.274227 1.3324 0.970 0.061
+        cevec.append(float(ce[7])) # ce[7]: dcaz
+        dcvec.append(dyndict['%s %s' % (ce[0], ce[1])])
+
+    n = len(cevec)
+    nce = (np.array(cevec)>=cecutoff).astype(int)
+    ndyn = np.abs(np.array(dcvec)) # convert to all positive elements
+
+    fout = open(outfile, 'w')
+    scorelist = []
+    for dccutoff in dccutofflist: 
+        ndc =(ndyn>=dccutoff)
+        n01 = np.sum(np.logical_xor(nce,ndc)) # number of 0:1
+        n11 = np.dot(nce,ndc) # number of 1:1
+        n00 = n - n01 - n11
+        #score1 = 1.0*cp.div0(n11,n01)/(n*n)
+        #score2 = cp.div0(n11,n01*n00)
+        #fout.write('%.2f %d %.2f %.3f %.3f\n' % (cecutoff, mode_num, dccutoff, score1, score2))
+        fout.write('%.2f %d %.2f %.3f\n' % (cecutoff, mode_num, dccutoff, (n11+n01)*cp.div0(n11,n01)))
+    fout.close()
+
+
+
+def outresultmats(args):
+    assert len(args) == 4, 'Usage: python proc_minip.py outresultmats 1ggg.pdb .vec11 parameter_list{0.10,3,0.10} outprefix'
+    pdbfile =args[0]
+    cefile = args[1]
+    sarr = args[2].split(',')
+
+    cecutoff = float(sarr[0])
+    mode_num = int(sarr[1])
+    dccutoff = float(sarr[2])
+    outprefix = args[3]
+
+    p = protein(pdbfile)
+    names = ['%d' % at.resSeq for at in p.ca]    
+
+    mode_list = np.array(range(mode_num))+1
+    g = gnm(pdbfile)
+    dcmat = g.calcdyncc(mode_list)
+    dyndict = _mat2residict(dcmat, names)
+    dfmat = cp.normmax(g.calcdistflucts(mode_list))
+    dfdict = _mat2residict(dfmat, names)
+
+    cevec = []
+    dcvec = []
+    dfvec = []
+    stub = []
+    for ce in cp.loadtuples(cefile):
+        # 5 6 214 215 0 1 0.350477 12.274227 1.3324 0.970 0.061
+        k = '%s %s' % (ce[0], ce[1])
+        cevec.append(float(ce[7])) # ce[7]: dcaz
+        dcvec.append(dyndict[k])
+        dfvec.append(dfdict[k])
+        stub.append(k)
+
+    nce = (np.array(cevec)>=cecutoff).astype(int)
+    ndyn = (np.abs(np.array(dcvec))>=dccutoff).astype(int) # convert to all positive element
+    ndfn = (np.array(dfvec)>=dccutoff).astype(int)
+
+    outce = []
+    outdc = []
+    outdf = []
+    for i in range(len(stub)):
+        outce.append('%s %d' % (stub[i], nce[i]))
+        outdc.append('%s %d' % (stub[i], ndyn[i]))
+        outdf.append('%s %d' % (stub[i], ndfn[i]))
+
+    outfile = outprefix+'.cevec'
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outce))
+    cp._info('save ce matrix to %s' % outfile)
+
+    outfile = outprefix+'.dcvec'
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outdc))
+    cp._info('save dc matrix to %s' % outfile)
+
+    outfile = outprefix+'.dfvec'
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outdf))
+    cp._info('save df matrix to %s' % outfile)
+
 
 # convert square matrix to vec3 flat
 # for enm distance fluctuations matrix, dynamic cross-correlations matrix (should be symmetrical)
@@ -185,7 +299,7 @@ def aapaircorrdensity(args):
     dyndensityn = cp.normminmax(dyndensity).reshape(20,20)
     freqdensityn = cp.normminmax(freqdensity).reshape(20,20)
 
-    np.savetxt(outprefix+'.freqmat', freqdensityn, fmt='%.2f')
+    np.savetxt(outprefix+'.freqmat', freqdensityn)
     np.savetxt(outprefix+'.cemat', (cedensityn+cedensityn.T))
     np.savetxt(outprefix+'.dynmat', (dyndensityn+dyndensityn.T))
     cp._info('save %s.{cemat, dynmat, freqmat} with full precision' % outprefix)
@@ -198,7 +312,7 @@ def densitysum(args):
     filelist = args[0]
     outfile= args[1]
 
-    density = np.zeros((400,2))
+    density = np.zeros((20,20))
     count=0
     for vfile in cp.loadlines(filelist):
         density += np.loadtxt(vfile)
@@ -206,7 +320,7 @@ def densitysum(args):
         if(count%100==0):
             cp._info('%d families is done.' % count)
 
-    np.savetxt(outfile, 1.0*(density)/np.max(density), fmt='%.4f')
+    np.savetxt(outfile, 1.0*(density)/np.max(density), fmt='%.6f')
     cp._info('save sum density to %s' % outfile)
     
 

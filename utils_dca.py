@@ -2,7 +2,7 @@ import commp as cp
 import numpy as np
 
 '''
-A python version of DCA calculation
+A python version of mfDCA calculation
 The original matlab version was developed by Chris Sander lab.
 Marks, Debora S., Thomas A. Hopf, and Chris Sander. "Protein structure prediction from sequence variation." Nature biotechnology 30.11 (2012): 1072-1080.
 '''

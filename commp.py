@@ -617,6 +617,9 @@ def ncrvar(varset, order):
 def normminmax(nplist):
 	return 1.0*(nplist - np.min(nplist))/(np.max(nplist)-np.min(nplist))
 
+def normmax(nplist):
+	return 1.0*(nplist)/np.max(nplist)
+
 # given two strings
 # normal sequence & aligned sequence
 # return map 1. key=1  pos[s1] = s2; 2. key=2 pos[s2] = s1
