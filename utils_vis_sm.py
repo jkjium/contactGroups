@@ -12,6 +12,32 @@ colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d',
 '#60e6c1', '#d7295e', '#008ed0', '#747474']
 #1c225c
 
+# 1: tsv data file
+# 2: index for x,y,color value
+# 3: outfile name
+def scatter(args):
+    assert len(args) == 5, 'Usage: python utils_vis_sm.py scatter datafile idx.x idx.y idx.color outfile'
+    infile = args[0]
+    xid = int(args[1])
+    yid = int(args[2])
+    cid = int(args[3])
+    outfile = args[4]
+
+    d = np.loadtxt(infile)
+    #plt.scatter(d[xid], d[yid], c=d[cid], cmap="RdYlGn", s=500, edgecolors="black")
+    #plt.scatter(d[xid], d[yid], c=d[cid], cmap="RdYlGn")
+    #cs = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474']
+    cs = ['#266674','#a93a28']
+    mycmap = clr.LinearSegmentedColormap.from_list('mybar', cs, N=256)
+    #plt.scatter(d[:,xid], d[:,yid], c=d[:,cid],s=5, facecolors='none', edgecolors='k')
+    #plt.scatter(d[:,xid], d[:,yid], c=d[:,cid],s=5, alpha=0.5)
+    plt.scatter(d[:,xid], d[:,yid], c=d[:,cid],s=10,alpha=0.8)
+    plt.tight_layout()
+    #fig.savefig(outfile)
+    plt.show()
+
+
+
 # input format: 'value','tick_name'
 def barplot(args):
     assert len(args) == 2, 'Usage: python utils_vis_sm.py barplot data.vec2 outfile'

@@ -4,6 +4,42 @@ from protein import protein
 from atom import atom
 from utils_pfammsa import pfammsa
 from utils_gnm import gnm
+import collections
+
+# for plotting ce,dist vs resi scatter plot
+# ce: .vec11
+# rvc: resi, value, color value
+# $ head PF00497-1ggg.r2-m2-idx2-dca-dcaz-dist-dyncc-dflut.vec11
+# 5 6 214 215 0 1 0.350477 12.274227 1.3324 0.970 0.061
+# load tuples into flat {resi, dist, dca, dc} points
+def ce2rvc(args):
+    assert len(args) == 2, 'Usage: python proc_minip.py ce2rvc .vec11 outfile'
+    cefile = args[0]
+    outfile = args[1]
+
+    rvdict = collections.defaultdict(list)
+    rtick = set()
+    for p in cp.loadtuples(cefile):
+        r1 = int(p[0])
+        r2 = int(p[1])
+        dca = p[6]
+        dist = p[8]
+        dc = p[9]
+        rvdict[r1].append('%s %s %s %s %d' % (r1,dist,dca,dc,r2-r1))
+        rvdict[r2].append('%s %s %s %s %d' % (r2,dist,dca,dc,r2-r1))
+        rtick.add(r1)
+        rtick.add(r2)
+
+    fout = open(outfile,'w')
+    rlist = list(rtick)
+    print(rlist)
+    rlist.sort()
+    print(rlist)
+    for r in rlist:
+        fout.write('%s\n' % '\n'.join(rvdict[r]))
+    cp._info('save rvc to %s' % outfile)
+
+
 
 def _mat2residict(mat,names):
     return dict((('%s %s' % (v[0], v[1])), v[2]) for v in cp.mat2flat(mat,names))
