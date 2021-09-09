@@ -7,17 +7,22 @@ calculate gnm freqieunces, modes, contact matrix, squared pdist matrix,
      cross-correlations, distance fluctuations, squared fluctuations
 '''
 class gnm:
-    def __init__(self, pdbfile, ca=True, cutoff=10, gamma=1.0):
+    def __init__(self, pdbfile, ca=True, cutoff=10, gamma=1.0, ctmat=None):
         self.p = protein(pdbfile)
         self.atoms = self.p.ca if ca == True else self.p.atoms
         self.cutoff = cutoff
         self.gamma = gamma
         self.coords = np.array([[at.x, at.y, at.z] for at in self.atoms])
 
-        # squared pairwise distance matrix
-        self.spdmat = ((self.coords[:, :, None] - self.coords[:, :, None].T) ** 2).sum(1)
-        # contact matrix
-        self.ctmat = (self.spdmat <= self.cutoff**2).astype(int)
+        if ctmat==None:
+            # squared pairwise distance matrix
+            self.spdmat = ((self.coords[:, :, None] - self.coords[:, :, None].T) ** 2).sum(1)
+            # contact matrix
+            self.ctmat = (self.spdmat <= self.cutoff**2).astype(int)
+        else:
+            assert len(ctmat) == len(self.atoms), 'Matrix dimension mismatch.'
+            self.ctmat = ctmat
+            cp._info('External contact map used.')
         np.fill_diagonal(self.ctmat, 0)
         D = np.diag(np.sum(self.ctmat, axis=0))
         # laplacian
