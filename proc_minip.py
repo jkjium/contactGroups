@@ -111,47 +111,49 @@ def outresultmats(args):
     g = gnm(pdbfile)
     dcmat = g.calcdyncc(mode_list)
     dyndict = _mat2residict(dcmat, names)
-    dfmat = cp.normmax(g.calcdistflucts(mode_list))
-    dfdict = _mat2residict(dfmat, names)
+    #dfmat = cp.normmax(g.calcdistflucts(mode_list))
+    #dfdict = _mat2residict(dfmat, names)
 
     cevec = []
     dcvec = []
-    dfvec = []
+    #dfvec = []
     stub = []
     for ce in cp.loadtuples(cefile):
         # 5 6 214 215 0 1 0.350477 12.274227 1.3324 0.970 0.061
         k = '%s %s' % (ce[0], ce[1])
         cevec.append(float(ce[7])) # ce[7]: dcaz
         dcvec.append(dyndict[k])
-        dfvec.append(dfdict[k])
+        #dfvec.append(dfdict[k])
         stub.append(k)
 
     nce = (np.array(cevec)>=cecutoff).astype(int)
     ndyn = (np.abs(np.array(dcvec))>=dccutoff).astype(int) # convert to all positive element
-    ndfn = (np.array(dfvec)>=dccutoff).astype(int)
+    #ndfn = (np.array(dfvec)>=dccutoff).astype(int)
 
     outce = []
     outdc = []
-    outdf = []
+    #outdf = []
     for i in range(len(stub)):
         outce.append('%s %d' % (stub[i], nce[i]))
         outdc.append('%s %d' % (stub[i], ndyn[i]))
-        outdf.append('%s %d' % (stub[i], ndfn[i]))
+        #outdf.append('%s %d' % (stub[i], ndfn[i]))
 
     outfile = outprefix+'.cevec'
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outce))
-    cp._info('save ce matrix to %s' % outfile)
+    cp._info('save ce flat to %s' % outfile)
 
     outfile = outprefix+'.dcvec'
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outdc))
-    cp._info('save dc matrix to %s' % outfile)
+    cp._info('save dc flat to %s' % outfile)
 
+    '''
     outfile = outprefix+'.dfvec'
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outdf))
-    cp._info('save df matrix to %s' % outfile)
+    cp._info('save df flat to %s' % outfile)
+    '''
 
 
 # convert square matrix to vec3 flat

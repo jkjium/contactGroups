@@ -7,22 +7,22 @@ calculate gnm freqieunces, modes, contact matrix, squared pdist matrix,
      cross-correlations, distance fluctuations, squared fluctuations
 '''
 class gnm:
-    def __init__(self, pdbfile, ca=True, cutoff=10, gamma=1.0, ctmat=None):
-        self.p = protein(pdbfile)
-        self.atoms = self.p.ca if ca == True else self.p.atoms
+    def __init__(self, atoms=None, cutoff=10, gamma=1.0, ctmat=None):
         self.cutoff = cutoff
         self.gamma = gamma
-        self.coords = np.array([[at.x, at.y, at.z] for at in self.atoms])
 
         if ctmat==None:
+            assert atoms!=None
+            self.atoms = atoms
+            self.coords = np.array([[at.x, at.y, at.z] for at in self.atoms])
             # squared pairwise distance matrix
             self.spdmat = ((self.coords[:, :, None] - self.coords[:, :, None].T) ** 2).sum(1)
             # contact matrix
             self.ctmat = (self.spdmat <= self.cutoff**2).astype(int)
         else:
-            assert len(ctmat) == len(self.atoms), 'Matrix dimension mismatch.'
             self.ctmat = ctmat
             cp._info('External contact map used.')
+
         np.fill_diagonal(self.ctmat, 0)
         D = np.diag(np.sum(self.ctmat, axis=0))
         # laplacian
@@ -68,7 +68,8 @@ def analysis(args):
     is_ca = bool(args[3]) # or str in next version 
     mode_list = map(int, args[4].split(',')) if len(args) == 5 else list(range(1,20))
 
-    g = gnm(pdbfile, is_ca, cutoff, gamma)
+    p = protein(pdbfile)
+    g = gnm(atoms=p.ca, cutoff=cutoff)
     dcmat = g.calcdyncc(mode_list)
     dfmat = g.calcdistflucts(mode_list)
     msf = g.calcmsf(mode_list)
@@ -96,7 +97,8 @@ def analysis(args):
 
 def foo(args):
     #g = gnm('t1.pdb')
-    g = gnm('1aar_a.pdb')
+    p = protein('1aar_a.pdb')
+    g = gnm(atoms=p.ca)
     print(g.kirchhoff)
     mlist = [1,2,3]
     dyncc = g.calcdyncc(mlist)
