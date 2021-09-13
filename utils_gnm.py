@@ -96,9 +96,11 @@ def analysis(args):
     
 
 def foo(args):
-    #g = gnm('t1.pdb')
-    p = protein('1aar_a.pdb')
+    p = protein('1ggg_a.pdb')
     g = gnm(atoms=p.ca)
+    for i in range(len(g.frequencies)):
+        print('%d %.4f' %  (i, g.frequencies[i]))
+    '''
     print(g.kirchhoff)
     mlist = [1,2,3]
     dyncc = g.calcdyncc(mlist)
@@ -108,6 +110,7 @@ def foo(args):
     print(g.calcdistflucts(mlist).round(3))
     print('---------------')
     print(g.calcmsf(mlist).round(3))
+    '''
 
 if __name__=='__main__':
     cp.dispatch(__name__)

@@ -650,6 +650,13 @@ def anmanalysis(args):
     np.savetxt(dffile, dfmat, fmt = '%.3f')
     cp._info('save distance fluctuations to %s' % dffile)
 
+def foo(args):
+    a = _ANMbuilder('1ggg_a.pdb',12)
+    cc = a.getCX()
+    ctmat = cc+cc.T
+    np.savetxt('t1.ctmat.out', ctmat, fmt='%d')
+    np.savetxt('t1.hess.out', a.getHess(), fmt='%.3f')
+
 
 if __name__ == '__main__':
     cp.dispatch(__name__)
