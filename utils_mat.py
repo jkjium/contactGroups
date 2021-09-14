@@ -1,6 +1,32 @@
 import numpy as np
 import commp as cp
 
+def _trimbytick(mat, fulltick, trimtick):
+    trimidlist = [fulltick.index(i) for i in (set(fulltick) - set(trimtick))]
+    outmat = np.delete(mat, trimidlist, axis=0) # trim rows
+    outmat = np.delete(outmat, trimidlist, axis=1) # trim columns
+    return outmat
+
+
+# resi list from cemat is less than dyncc mat
+# filter matrix by ticks to match dimension of cemat and dyncc mat
+def trimbytick(args):
+    assert len(args) == 4, 'Usage: python utils_mat.py filterbytick matfile fulltickfile trimtickfile outfile'
+    matfile = args[0]
+    fulltickfile = args[1]
+    trimtickfile = args[2]
+    outfile = args[3]
+
+    mat = np.loadtxt(matfile)
+
+    fullticklist = cp.loadtuples(fulltickfile)[0]
+    trimticklist = cp.loadtuples(trimtickfile)[0]
+    assert len(fullticklist) > len(trimticklist), 'fulltick is smaller than trimtick.'
+
+    outmat = _trimbytick(mat, fullticklist, trimticklist)
+    np.savetxt(outfile, outmat)
+
+
 def _fillbyticksep(mat, t, s, v):
     n = len(t)
     for i in range(n):

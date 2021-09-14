@@ -70,6 +70,10 @@ def analysis(args):
 
     p = protein(pdbfile)
     g = gnm(atoms=p.ca, cutoff=cutoff)
+    outticks = '%s.tick' % pdbfile
+    with open(outticks, 'w') as fout:
+        fout.write('%s\n' % (' '.join([str(a.resSeq) for a in p.ca])))
+
     dcmat = g.calcdyncc(mode_list)
     dfmat = g.calcdistflucts(mode_list)
     msf = g.calcmsf(mode_list)
@@ -92,7 +96,7 @@ def analysis(args):
     outfreqs = '%s.freqs.txt' % pdbfile
     np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
 
-    cp._info('save %s.{adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
+    cp._info('save %s.{tick, adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
     
 
 def foo(args):

@@ -403,7 +403,7 @@ def adjustment(args):
 # 460
 # 461
 def cflat2ccmat(args):
-    assert len(args) == 4, 'Usage: python utils_ce2ccmat .cflatfile index.cols{0,1} cevalue.col{13} outprefix {.cecol, .ccmat}'
+    assert len(args) == 4, 'Usage: python utils_ce.py cflat2ccmat .cflatfile index.cols{0,1} cevalue.col{13} outprefix {.tick, .ccmat}'
     cflatfile = args[0]
     index_colids = [int(i) for i in args[1].split(',')]
     value_colid = int(args[2])

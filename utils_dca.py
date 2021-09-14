@@ -112,7 +112,7 @@ def dca(args):
             #out = -invmflat[np.ix_(rowlist, collist)]
             #np.savetxt('pvar', out, fmt='%.3f')
             di_mf_pc = _calc_di_mu(i, j, mfw, pi, q)
-            fout.write('%d %d %.6f %.6f\n' % (clist[i],clist[j], M, di_mf_pc))
+            fout.write('%d %d %d %d %.6f %.6f\n' % (clist[i],clist[j], i, j, M, di_mf_pc))
             count+=1
             if(count%1000==0):
                 cp._info('%d/%d pairs calculated ... ' % (count, total))
