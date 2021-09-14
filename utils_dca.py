@@ -140,7 +140,7 @@ def _calc_di_mu(i,j,W,p,q):
         mu2 = new2
 
     # compute_di
-    tiny = 1.0e-100;
+    tiny = 1.0e-100
     #pdir = W * (np.dot(mu1.T,mu2))
     pdir = _normalize(W * (np.dot(mu1.T,mu2)))
     pfac = np.outer(p[i,:], p[j,:])
