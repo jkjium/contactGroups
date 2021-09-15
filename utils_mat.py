@@ -1,6 +1,39 @@
 import numpy as np
 import commp as cp
 
+# calculate (accumulative) overlaps between two sets of vectors
+# kuse: Vector of values for the number of modes to use in accumulative overlap 
+def _modeoverlap(m1, m2, kuse):
+    print(m1.shape)
+    print(m2.shape)
+    print(kuse)
+
+
+# output mode (accumulative) overlaps
+def modeoverlap(args):
+    assert len(args) == 6, 'Usage: python utils_mat.py modeoverlap mat1 col_range1{1:10} mat2 col_range2{6:16} accumulative_grid outprefix'
+    matfile1 = args[0]
+    mode_range1 = map(int, args[1].split(':'))
+    matfile2 = args[2]
+    mode_range2 = map(int, args[3].split(':'))
+    cogrid = map(int, args[4].split(','))
+    outprefix = args[5]
+
+    mat1 = np.loadtxt(matfile1)
+    mat2 = np.loadtxt(matfile1)
+
+    # get focused modes to start comparison
+    modes1 = mat[:,mode_range1[0]:mode_range1[1]]
+    modes2 = mat[:,mode_range2[0]:mode_range2[1]]
+
+    o, co = _modeoverlap(modes1, modes2, cogrid)
+
+
+
+
+
+# use trimtick to reduce fulltick matrix
+# deal with dimension matching between dynmat and cemat
 def _trimbytick(mat, fulltick, trimtick):
     trimidlist = [fulltick.index(i) for i in (set(fulltick) - set(trimtick))]
     outmat = np.delete(mat, trimidlist, axis=0) # trim rows
@@ -11,7 +44,7 @@ def _trimbytick(mat, fulltick, trimtick):
 # resi list from cemat is less than dyncc mat
 # filter matrix by ticks to match dimension of cemat and dyncc mat
 def trimbytick(args):
-    assert len(args) == 4, 'Usage: python utils_mat.py filterbytick matfile fulltickfile trimtickfile outfile'
+    assert len(args) == 4, 'Usage: python utils_mat.py trimbytick matfile fulltickfile trimtickfile outfile'
     matfile = args[0]
     fulltickfile = args[1]
     trimtickfile = args[2]
@@ -35,7 +68,7 @@ def _fillbyticksep(mat, t, s, v):
                 mat[i,j] = mat[j,i] = v
     return mat
 
-# thrsholding matrix by tick separations
+# thresholding matrix by tick separations
 # for example filtering cemat by large sequential separations
 def fillbyticksep(args):
     assert len(args) == 5, 'Usage:python utils_mat.py fillbyticksep inmatfile tickfile separation{int value} value outfile'
