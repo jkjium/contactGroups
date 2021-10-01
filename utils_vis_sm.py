@@ -249,6 +249,20 @@ def dendrogram_mat(arglist):
     plt.show()
     '''
 
+def dendrogram_linkage(args):
+    assert len(args) == 3, 'Usage: python utils_vis_sm.py dendrogram_linkage Z_mat (return from scipy linkage) tick outfile'
+    matfile = args[0]
+    tickfile = args[1]
+    outfile = args[2]
+    mat  = np.loadtxt(matfile)
+    xt = cp.loadlines(tickfile)
+    plt.figure(figsize=(8,8))
+    dd = dendrogram(mat, labels=xt, color_threshold=1, link_color_func=lambda x: 'k')  # leaf_rotation=90
+    plt.xticks(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(outfile)
+    plt.show()
+
 
 # plot side-by-side barplot from the data in a two-column file
 # total_num: total row number

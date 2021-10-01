@@ -77,7 +77,11 @@ def main():
 	#with open(datafile) as fp:
 	#	strlist = np.array([[cp.aascore['aa'][a] for a in line.strip()] for line in fp if len(line.strip())!=0])
 	w = hamming_weight(score, 1-svalue)
-	print repr(w)
+	#print repr(w)
+	outfile = '%s.%d.weight' % (datafile, svalue*100)
+	np.savetxt(outfile, w, fmt='%.8f')
+	cp._info('save weight to %s' % outfile)
+
 	'''
 	for i in xrange(0, len(w)):
 		print '%s : %.03f' % (','.join(['%2d' % v for v in score[i,:]]), w[i])

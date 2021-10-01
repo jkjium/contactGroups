@@ -39,9 +39,36 @@ def bgdists(arglist):
 
 # calculate weighted frequency
 # frequencies each pair of columns are weighted into sum of 1 (no final normalization)
+'''
+clist = [0,1]
+data:				weight: (70%)
+[[1. 1. 1. 1. 1.]	0.5
+ [1. 1. 0. 1. 1.]	0.5
+ [2. 2. 0. 2. 1.]	1.0
+ [2. 2. 2. 2. 2.]	0.5
+ [3. 2. 2. 2. 2.]]	0.5
+-------------------------
+class:(1.0, 1.0)
+v: [ True  True False False False]
+v*w: [0.5 0.5 0.  0.  0. ]
+-------------------------
+class:(1.0, 2.0) # all zeros, do nothing
+class:(2.0, 1.0) # all zeros, do nothing
+-------------------------
+class:(2.0, 2.0)
+v: [False False  True  True False]
+v*w: [0.  0.  1.  0.5 0. ]
+-------------------------
+class:(3.0, 1.0) # all zeros, do nothing
+-------------------------
+class:(3.0, 2.0)
+v: [False False False False  True]
+v*w: [0.  0.  0.  0.  0.5]
+
+'''
 def _wfreq(data, varset, w):
 	X = data[:, varset].T
-	meff = np.sum(w)
+	meff = np.sum(w) 
 	'''
 	print X.T 
 	print
@@ -50,25 +77,36 @@ def _wfreq(data, varset, w):
 	H = 0
 	#print [set(x) for x in X] 
 	#print
-	prob = {}
+	#freqdict = {}
+	#meff = 0.0
+	prob={}
 	for classes in itertools.product(*[set(x) for x in X]):
-		#print '-------------------------'
-		#print 'class:' + str(classes)
+		print '-------------------------'
+		print 'class:' + str(classes)
 		v = reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))
-		#print "v:", 
-		#print v
+		print "v:", 
+		print v
 		if np.sum(v) == 0:
 			continue
-		'''
 		# the original p
-		p = np.mean(v) # should divide effective number, which is the sum of all weights
+		#p = np.mean(v) # should divide effective number, which is the sum of all weights
 		#print 'p0: ' + str(p)
-		prob[classes] = p
-		'''
-		# apply weights
+		#prob[classes] = p
+
+		print(v*w)
+		# apply weights and get frequency for each class(observation)
 		p = sum(v*w)/meff
-		# print 'pw: ' + str(p)
+		'''
+		wf = sum(v*w)
+		print 'wf: ' + str(wf)
+		freqdict[classes] = wf
+		'''
 		prob[classes] = p
+
+		#meff+=wf # accumulate all weighted frequencies
+		#print 'meff: %.2f' % meff
+
+	#prob = dict((c, freqdict[c]/meff) for c in freqdict)
 
 	'''
 	print
@@ -199,6 +237,9 @@ def tupleqij(arglist):
 
 
 # combine single frequency and substitution frequency into sm
+# > combine all pfam frequencies
+# $ cat *.eij *.qij > d45-ceg0.wfreq
+# $ python utils_pairfreq.py wfreq2sm d45-ceg0.wfreq d45c0w70.sm
 def wfreq2sm(arglist):
 		if len(arglist) < 2:
 			cp._err('Usage: python utils_pairfreq.py wfreq2sm combine.wfreq outsmfile {bits unit}')
@@ -352,6 +393,48 @@ def single_210x400(arglist):
 			std = np.std([nd[p] for p in nd])
 			#print k, ' '.join(['%s:%.2f' % (a,nd[a]) if a in nd else '%s:0' % (a) for a in cp.aat01])
 			fout.write('%.4f %.4f %s %s\n' % (std, H, k, ' '.join(['%.2f' % (nd[a]) if a in nd else '0.00' for a in cp.aat01])))
+
+# new functions for deriving 400 x 400 matrix
+# parallel to tupleqij
+# calculate foreground probabilities of 400 (AA -> AA)
+# input: .freq2 from tupledist
+# output: *.qij400 (400 x 400)
+def qij400(args):
+	assert len(args)==2, 'Usage: python utils_pairfreq.py qij400 PF00003.fg.freq2 PF00003.qij400'
+	freq2file = args[0]
+	outfile = args[1] # .qij400
+
+	qij = collections.defaultdict(float)
+	# use the first two msai as a key to group entries
+	# freqs within each msai2 group sum up to 1
+	for msai2, freq2list in itertools.groupby(cp.loadtuples(freq2file), lambda x: (x[0], x[1])):
+		# foreach msai2 calculate qij
+		aafreq = dict((e[2]+e[3], float(e[4])) for e in freq2list)
+		k = [aa for aa in aafreq.keys() if '.' not in aa] # remove gap
+		k.sort()
+		# off-diagonal terms 
+		for i in xrange(0, len(k)):
+			for j in xrange(i+1, len(k)):
+				qij['%s%s' % (k[i], k[j])]+=aafreq[k[i]]*aafreq[k[j]]
+		# diagonal terms
+		for i in xrange(0, len(k)):
+			qij['%s%s' % (k[i],k[i])]+=(aafreq[k[i]]*aafreq[k[i]] / 2.0) # not n(n-1)/2 because freqs are weighted (less than 1)
+
+	# ticks for 400x400 AAAA types
+	aakey = ['%s%s%s%s' % (cp.aas01[i],cp.aas01[j],cp.aas01[k],cp.aas01[l]) for i in range(len(cp.aas01)) for j in range(len(cp.aas01)) for k in range(len(cp.aas01)) for l in range(len(cp.aas01))]
+	total = sum(qij.values())
+	if total > 1e-10:
+		#cp._err('%s zero total' % tuplefile)
+		with open(outfile, 'w') as fout:
+			fout.write('%s\n' % ('\n'.join([('fg %s %.8f' % (k, qij[k]/total)) for k in aakey])))
+		cp._info('save to %s' % outfile)
+	else:
+		cp._info('%s zero total: %f' % (freq2file, total))
+
+
+
+
+
 
 if __name__ == '__main__':
 	cp.dispatch(__name__)

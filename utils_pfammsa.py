@@ -1199,7 +1199,7 @@ def scoreweight(arglist):
 
 	score = np.loadtxt(datafile, delimiter=',')
 	w = cp.hamming_weight(score, 1-svalue)
-	np.savetxt(outfile, w)
+	np.savetxt(outfile, w, fmt='%.8f')
 	cp._info('save weight to %s' % outfile)
 
 
