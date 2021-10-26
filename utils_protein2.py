@@ -577,6 +577,19 @@ def writeseq(arglist):
 	fout.close()
 	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
 
+# input: original pdb
+# output: tip atoms in pdb format
+def writetippdb(args):
+	assert len(args) == 2, 'Usage: python utils_protein2.py writetippdb input.pdb output.pdb'
+	pdbfile = args[0]
+	outfile = args[1]
+
+	p = protein(pdbfile)
+	with open(outfile, 'w') as fout:
+		fout.write('%s' % ''.join([a.writeAtom() for a in p.atomsbytip()]))
+	cp._info('write tip pdb to %s' % outfile)
+
+
 def foo(arglist):
 	cp._info(repr(arglist))
 

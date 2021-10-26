@@ -9,8 +9,6 @@ from AAmap import AAmap
 from cluster import cluster
 from ncg import ncg
 import commp as cp
-#from sklearn.cluster import spectral_clustering
-#from scipy.sparse import coo_matrix
 
 __all__=['protein']
 
@@ -609,8 +607,10 @@ class protein(object):
             fout.write('%s\n' % ''.join([at.writeAtom() for at in atomlist]))
 
     # use spectral clustering method to find residue contact groups        
-    '''
     def spectralClustering(self, cluster_size):
+        from sklearn.cluster import spectral_clustering
+        from scipy.sparse import coo_matrix
+
         rowlist = []
         collist = []
         datalist = []
@@ -639,7 +639,8 @@ class protein(object):
         data = np.array(datalist)
 
         graph = coo_matrix((data, (row, col)), shape=(N, N))
-        labels = spectral_clustering(graph, n_clusters=int(N/cluster_size), eigen_solver='arpack') 
+        #labels = spectral_clustering(graph, n_clusters=int(N/cluster_size), eigen_solver='arpack') 
+        labels = spectral_clustering(graph, n_clusters=int(N/cluster_size))
 
         amap = AAmap()
         cluster2fid = {}
@@ -655,7 +656,6 @@ class protein(object):
             c.pdbResSeq=c.pdbResSeq.lstrip()
             meanDist = self.clusterMeanDist(c)
             print ('%s,%0.2f,%s,%s,%s') % (self.pdb, meanDist, ''.join(sorted(c.str)), ''.join(sorted(c.typeStr)), c.pdbResSeq)
-    '''
 
     # pairwise
     # read all atom XXXX_A.pdb and get pairwise contact within a cutoff and a sequential distance
