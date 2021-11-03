@@ -32,10 +32,7 @@ def map_hmm2hmm(seq1, json1, seq2, json2):
 	#embosshmm.dump()
 
 	match_level, hmmmap = embosshmm.getAlignedpos()
-	cp._info('info:%s hmm match level: %.2f' % (title, match_level))
-	if match_level < 0.9:
-		cp._info('err:%s hmm match less than 90% : %.2f' % (title, match_level))
-		exit()
+	cp._info('%s hmm match level: %.2f' % (title, match_level))
 
 	# map between pfamscan hmm sequence and emboss hmm sequence
 	# use emboss alignment index as key

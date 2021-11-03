@@ -16,7 +16,10 @@ def dca(args):
 
     # loading reduced sequences
     score = np.loadtxt(scorefile, delimiter=',', dtype =float).astype(int)
-    clist = np.loadtxt(colfile, delimiter=',', dtype=int)
+    #clist = np.loadtxt(colfile, delimiter=',', dtype=int)
+    clist = np.loadtxt(colfile, delimiter=' ', dtype=int)
+    # clist[:,0]: resi
+    # clist[:,1]: msai
     #print(score.shape)
 
     w = np.loadtxt(weightfile)
@@ -26,7 +29,7 @@ def dca(args):
 
     # initialize memory
     q = int(np.max(score)+1)
-    print(q)
+    #print(q)
     nrow = score.shape[0]
     ncol = score.shape[1]
     pij_true = np.zeros([ncol,ncol,q,q])
@@ -112,7 +115,7 @@ def dca(args):
             #out = -invmflat[np.ix_(rowlist, collist)]
             #np.savetxt('pvar', out, fmt='%.3f')
             di_mf_pc = _calc_di_mu(i, j, mfw, pi, q)
-            fout.write('%d %d %d %d %.6f %.6f\n' % (clist[i],clist[j], i, j, M, di_mf_pc))
+            fout.write('%d %d %d %d %d %d %.6f %.6f\n' % (clist[:,0][i], clist[:,0][j], clist[:,1][i],clist[:,1][j], i, j, M, di_mf_pc))
             count+=1
             if(count%1000==0):
                 cp._info('%d/%d pairs calculated ... ' % (count, total))

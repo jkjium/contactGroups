@@ -907,17 +907,26 @@ def msareduce_withmap(args):
 	_func_getresi = lambda x: int(x[0])
 	ress = [_func_getresi(line.split()) for line in cp.loadlines(mapfile)]
 
+	rescol = zip(ress, cols)
+
 	# msa2score
 	pfm = pfammsa(msafile)
 	scoremat = pfm.scorebycols(scoretag, cols)
 
 	# output
 	np.savetxt(outprefix+'.scoremat', scoremat, delimiter=',', fmt='%i')
+	# keep separate .rcol file for being compabible with older pipelines
 	with open(outprefix+'.rcol', 'w') as fout:
 		fout.write('%s\n' % (','.join(map(lambda x: '%d' % x, cols))))
+
+	with open(outprefix+'.rcid', 'w') as fout:
+		fout.write('%s\n' %  ('\n'.join(['%d %d' % (c[0], c[1]) for c in rescol])))
+
+	'''
 	with open(outprefix+'.rres', 'w') as fout:
 		fout.write('%s\n' % (','.join(map(lambda x: '%d' % x, ress))))
-	cp._info('save to %s {.scoremat, .rcol, .rres}' % outprefix)
+	'''
+	cp._info('save to %s {.scoremat, .rcol, .rcid}' % outprefix)
 
 # reduce a msa by the given sequence
 # output: reduced msa, reduced score, column_mapping
