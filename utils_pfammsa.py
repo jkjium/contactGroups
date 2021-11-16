@@ -104,6 +104,7 @@ class pfammsa(object):
 	# convert msa to score by given columns
 	def scorebycols(self, scoretag, scols):
 		npscore = np.array([[cp.aascore[scoretag][a] for a in s[1]] for s in self.msalist])
+		print(npscore.shape)
 		return npscore[:,scols]
 		
 
@@ -604,6 +605,25 @@ def scoreentropy(arglist):
 	score = np.loadtxt(scorefile, delimiter=',')
 	hlist = [cp.entropy([score[:,i]]) for i in xrange(0, score.shape[1])]
 	print '%s %.8f' % (scorefile, sum(hlist)/score.shape[1])
+
+
+# output entropy values for all the positions
+# input: scoremat, .rcid {resi, msai}
+# output: resi, msai, id, entropy
+def scoreentropyall(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py scoreentropyall scorematfile rcidfile outfile'
+	scorefile = args[0]
+	idfile = args[1]
+	outfile = args[2]
+
+	score = np.loadtxt(scorefile, delimiter=',')
+	idstrs = cp.loadlines(idfile)
+	assert len(idstrs) == score.shape[1], 'rcid and scoremat dimension mismatch!\nwc -l %s\nwc -l %s' % (scorefile, rcfile)
+	# for each column
+	outstr = '\n'.join(['%s %d %.4f' % (idstrs[i], i, cp.entropy([score[:,i]])) for i in range(score.shape[1])])
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % outstr)
+	cp._info('save all entropy to %s' % outfile)
 
 
 # generate frequency lookup file for all the column combinations
@@ -1960,7 +1980,6 @@ def main():
 		'entropyfromfile': entropyfromfile,
 		'scorebycols': scorebycols,
 		'seqfa': seqfa,
-		'scoreentropy': scoreentropy,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
 		'getcolumns': getcolumns, # get columns from MSA
@@ -1978,6 +1997,8 @@ def main():
 		'retitle': retitle, # format header for dca calculation
 		'samplebyhamming': samplebyhamming,
 		'scol2resi': scol2resi,
+		'scoreentropy': scoreentropy,
+		'scoreentropyall': scoreentropyall, # output all position entropy
 		'scoreweight': scoreweight,
 		'score2msa':score2msa, # for cad.ppi.2
 		'splitfa': splitfa,

@@ -45,6 +45,8 @@ def _mat2residict(mat,names):
     return dict((('%s %s' % (v[0], v[1])), v[2]) for v in cp.mat2flat(mat,names))
 
 # ce source: kjia@lhb-ps4 ~/workspace/mcb/1ggg/stage{.anm}/PF00497-1ggg.r2-m2-idx2-dca-dcaz-dist-dyncc-dflut.vec11
+# input: ce cutoff, number of modes
+# output: evalutation results for each {cecutoff, mode_num, dccutoff} - evaluation_score
 def searchagreement(args):
     assert len(args) == 5, 'Usage: python proc_minip.py searchagreement 1ggg.pdb .vec11 ce_zscore mode_num outfile'
     pdbfile = args[0]
