@@ -56,8 +56,10 @@ def searchagreement(args):
     outfile = args[4]
 
     # get full dynamic correlations
-    g = gnm(pdbfile)
+    # g = gnm(pdbfile) # old version
+
     p = protein(pdbfile)
+    g = gnm(atoms=p.ca)
     names = ['%d' % at.resSeq for at in p.ca]
 
     dccutofflist = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
@@ -110,7 +112,7 @@ def outresultmats(args):
     names = ['%d' % at.resSeq for at in p.ca]    
 
     mode_list = np.array(range(mode_num))+1
-    g = gnm(pdbfile)
+    g = gnm(atoms=p.ca)
     dcmat = g.calcdyncc(mode_list)
     dyndict = _mat2residict(dcmat, names)
     #dfmat = cp.normmax(g.calcdistflucts(mode_list))
@@ -377,6 +379,84 @@ def densitysingle(args):
     aat01mat = np.array([aas01dict['%s %s' % (cp.aat01[i], cp.aat01[j])] for i in range(len(cp.aat01)) for j in range(len(cp.aat01))]).reshape(20,20)
     np.savetxt(outfile, 1.0*(aat01mat)/np.max(aat01mat), fmt='%.4f')
     cp._info('save aat01 mat to %s' % outfile)
+
+
+
+# fan's request
+# bbmb_kjia_admin@BB-RJER-3630519 ~/workspace/src 2021-11-16 20:40:35
+# $ python proc_minip.py raa r2000_15
+# $ python proc_minip.py raa r2000_8
+def raa(args):
+    assert len(args)==1, 'Usage: python proc_minip.py raa r2000_8'
+    #'r2000_8', r2000_15
+    r9 = cp.aascore[args[0]]
+    rr9 = collections.defaultdict(list)
+    for i in r9:
+        # ('Q', 6)
+        # print(i, r9[i])
+        rr9[r9[i]].append(i)
+    for k in rr9:
+        print('g%d: %s' % (k, ','.join([('%d' % cp.aascore['aa'][a]) for a in rr9[k]])))
+
+# report agreement between (dc - ec) & conserved positions
+def dcecmat_conserved(args):
+    assert len(args)==6, 'Usage:python proc_minip.py dcecmat_conserved dc.ccmat ec.ccmat .ccmat.tick score.entropy entropy_cutoff outprefix'
+    dcmat = np.loadtxt(args[0])
+    ecmat = np.loadtxt(args[1])
+    ticks = np.loadtxt(args[2]).astype(int)
+    entropyfile = args[3]
+    cutoff=float(args[4])
+    outprefix= args[5]
+
+    # points in dcmat not in ecmat
+    diffmat = (dcmat - ecmat).clip(min=0)
+    #np.savetxt('t',diffmat,fmt='%d')
+
+    # get diffmat positions
+    posset = np.nonzero(diffmat)
+    diffpos = set(posset[0]).intersection(set(posset[1]))
+
+    # get positions from entropy filtered with cutoff
+    # resi msai scorei entropy
+    # 5 214 0 1.7593
+    conservedpos = set()
+    for e in cp.loadtuples(entropyfile):
+        if float(e[3])< cutoff:
+            conservedpos.add(int(e[0]))
+
+    overlap = diffpos.intersection(conservedpos)
+    print('report: %s_%.2f %d %d %d %.2f %.2f' %(outprefix, cutoff, len(diffpos), len(conservedpos), len(overlap), 1.0*len(overlap)/len(diffpos), 1.0*len(overlap)/len(conservedpos)))
+    #with open(outfile, 'w') as fout:
+        # dc-ec pos, conserved pos, overlap between the previous two, % of overlap to dc-ec, % of overlap to conservedpos
+        #fout.write('%d %d %d %.2f %.2f' %(len(diffpos), len(conservedpos), len(overlap), 1.0*len(overlap)/len(diffpos), 1.0*len(overlap)/len(conservedpos)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
