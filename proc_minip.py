@@ -96,7 +96,8 @@ def searchagreement(args):
     fout.close()
 
 
-
+# given 1.1,16,0.7 {ce_cutoff, num_modes, dyncc_cutoff}
+# output flat format ce network and dyncc network
 def outresultmats(args):
     assert len(args) == 4, 'Usage: python proc_minip.py outresultmats 1ggg.pdb .vec11 parameter_list{0.10,3,0.10} outprefix'
     pdbfile =args[0]
@@ -142,11 +143,13 @@ def outresultmats(args):
         outdc.append('%s %d' % (stub[i], ndyn[i]))
         #outdf.append('%s %d' % (stub[i], ndfn[i]))
 
+    # resi2 ceflag
     outfile = outprefix+'.cevec'
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outce))
     cp._info('save ce flat to %s' % outfile)
 
+    # res2 dynccflag
     outfile = outprefix+'.dcvec'
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outdc))
@@ -416,15 +419,19 @@ def dcecmat_conserved(args):
     posset = np.nonzero(diffmat)
     diffpos = set(posset[0]).intersection(set(posset[1]))
 
+    # convert matrix index to resi, ticks has the same size as the matrix
+    diffresi = set([ticks[i] for i in diffpos])
+
     # get positions from entropy filtered with cutoff
     # resi msai scorei entropy
     # 5 214 0 1.7593
     conservedpos = set()
     for e in cp.loadtuples(entropyfile):
         if float(e[3])< cutoff:
-            conservedpos.add(int(e[0]))
+            conservedpos.add(int(e[0])) # use resi as index
 
-    overlap = diffpos.intersection(conservedpos)
+    # overlap between dyncc addtitional positions and conserved positions
+    overlap = diffresi.intersection(conservedpos)
     print('report: %s_%.2f %d %d %d %.2f %.2f' %(outprefix, cutoff, len(diffpos), len(conservedpos), len(overlap), 1.0*len(overlap)/len(diffpos), 1.0*len(overlap)/len(conservedpos)))
     #with open(outfile, 'w') as fout:
         # dc-ec pos, conserved pos, overlap between the previous two, % of overlap to dc-ec, % of overlap to conservedpos
