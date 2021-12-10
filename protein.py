@@ -112,9 +112,13 @@ class protein(object):
         '''
         self.resAtomsDict = {} 
         for rlist in self.resAtoms:
-            key = '%s%d%s' % (rlist[0].chainID, rlist[0].resSeq, rlist[0].iCode)
+            #key = '%s%d%s' % (rlist[0].chainID, rlist[0].resSeq, rlist[0].iCode)
+            # insertion of residues are skipped in previous self.getSeq()
+
+            key = '%s%d' % (rlist[0].chainID, rlist[0].resSeq)
             if key in self.resAtomsDict:
-                cp._err('duplicate residue found: %s in %s' % (key, self.pdbfile))
+                cp._info('duplicate residue found: %s in %s' % (key, self.pdbfile))
+                continue
             self.resAtomsDict[key] = rlist
 
         # some residue does not have CA!! 1e6i.aln.pdb the last residue
@@ -326,9 +330,11 @@ class protein(object):
 
         resAtomsAll = []
         resatoms = []
+        insertion_residues={} # record insertion residues
         for i in xrange(0,len(self.atoms)):
             a=self.atoms[i]
-            if last_resSeq != a.resSeq:
+            #print '[%s]' % a.iCode
+            if last_resSeq != a.resSeq: # this will naturally avoid loading insertion residues, since insertion residues have the same resSeq
                 seq=seq+aamap.getAAmap(a.resName)
                 last_resSeq = a.resSeq
 
@@ -343,7 +349,18 @@ class protein(object):
                     resAtomsAll.append(resatoms)
                     resatoms=[]
 
-            resatoms.append(a)
+            if a.iCode!=' ':
+                cp._info('insertion residue %d%s found in %s' % (a.resSeq, a.iCode, self.pdbfile))
+                if a.resSeq not in insertion_residues: 
+                    insertion_residues[a.resSeq] = a.iCode
+                    resatoms.append(a) 
+                else:
+                    if insertion_residues[a.resSeq] == a.iCode: # atoms in the same residue
+                        resatoms.append(a) 
+                    else: # inserted residues of the same resi, discard atom
+                        continue
+            else:
+                resatoms.append(a) # add normal atoms
 
         # after loop add the last res into resatoms
         # only resSeq change trigger adding above

@@ -370,7 +370,7 @@ def adjustment(args):
     outlists = []
     for i in xrange(0, len(ceclist)):
         cedict = dict((k, cedicts[k][i]) for k in cedicts.keys())
-        outlist = adj_func(cedict, idpairstub, colslist) # returns a list of pair tuple (rcw_value, ce_rcw)
+        outlist = adj_func(cedict, idpairstub, colslist) # returns a list of pair tuple (apc value, final MIp)
         outlists.append(outlist)
 
     #print '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])

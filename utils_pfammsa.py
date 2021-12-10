@@ -104,7 +104,6 @@ class pfammsa(object):
 	# convert msa to score by given columns
 	def scorebycols(self, scoretag, scols):
 		npscore = np.array([[cp.aascore[scoretag][a] for a in s[1]] for s in self.msalist])
-		print(npscore.shape)
 		return npscore[:,scols]
 		
 

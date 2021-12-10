@@ -29,7 +29,7 @@ def bgdists(arglist):
 	print nrow, ncol
 	print eij
 	'''
-	eij.pop(0, None)
+	eij.pop(0, None) # remove gap count
 	total = sum(eij.values())
 	with open(outfile , 'w') as fout:
 		#fout.write('%s\n' % ('\n'.join(['bg %s %.8f' % (cp.scoreaa['aa'][k], eij[k]/total) for k in eij])))
@@ -81,11 +81,11 @@ def _wfreq(data, varset, w):
 	#meff = 0.0
 	prob={}
 	for classes in itertools.product(*[set(x) for x in X]):
-		print '-------------------------'
-		print 'class:' + str(classes)
+		#print '-------------------------'
+		#print 'class:' + str(classes)
 		v = reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))
-		print "v:", 
-		print v
+		#print "v:", 
+		#print v
 		if np.sum(v) == 0:
 			continue
 		# the original p
@@ -93,7 +93,7 @@ def _wfreq(data, varset, w):
 		#print 'p0: ' + str(p)
 		#prob[classes] = p
 
-		print(v*w)
+		#print(v*w)
 		# apply weights and get frequency for each class(observation)
 		p = sum(v*w)/meff
 		'''
