@@ -5,6 +5,41 @@ import string
 import itertools
 from protein import protein
 
+# column selection & stat
+# input: .vec19, .map (for stat) ec_cutoff(percentage rank)
+# output: .scols file, .scols.stat
+def scols(args):
+    assert len(args) == 5, 'Usage: python utils_ps3.py scols .vec19 .map ec_col_id ec_cutoff outprefix'
+    vecfile = args[0]
+    mapfile = args[1]
+    ecid = int(args[2]) # 0-based
+    cutoff = float(args[3])
+    outprefix = args[4]
+
+    # load map
+    m = cp.loadlines(mapfile)
+
+    outlist = []
+    msaiset = set()
+    for v in cp.loadtuples(vecfile):
+        if float(v[11])<=cutoff:
+            outlist.append('%s %s %s %s' % (v[2], v[3], v[ecid-1], v[ecid])) # m1 m2 zscore p-rank
+            msaiset.add(v[2])
+            msaiset.add(v[3])
+    
+    # scol output
+    outscolfile = '%s.scols' % outprefix
+    with open(outscolfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+
+    # stat info
+    statstr = '%s %.2f %d %d %.4f' % (outprefix[:7], cutoff, len(m), len(msaiset), 1.0*len(msaiset)/len(m))
+    outstatfile = '%s.stat' % outscolfile
+    with open(outstatfile, 'w') as fout:
+        fout.write('%s\n' % statstr)
+    cp._info('save to {%s, %s}, stat %s' % (outscolfile, outstatfile, statstr))
+
+
 # append rand percentile to each ec score
 # output a vec19 file
 def appendrankp(args):
@@ -31,16 +66,16 @@ def appendrankp(args):
     #print(np.stack((mi,-mi, mir),axis=1))
     dcar = rankdata(-dca)/n
     mipr = rankdata(-mip)/n
-    dcapr = rankdata(-dca)/n
+    dcapr = rankdata(-dcap)/n
 
     indices = vec15[:,0:6]
     dist = vec15[:,14]
 
     # put back together
-    outce = np.stack((mi,miz,mir,dca,dcaz,dcar,mip,mipz,mipr,dcap,dcapz,dcar,dist), axis=1)
+    outce = np.stack((mi,miz,mir,dca,dcaz,dcar,mip,mipz,mipr,dcap,dcapz,dcapr,dist), axis=1)
     outnp = np.concatenate((indices, outce), axis=1)
 
-    np.savetxt(outfile, outnp, fmt='%d %d %d %d %d %d %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f')
+    np.savetxt(outfile, outnp, fmt='%d %d %d %d %d %d %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f')
     cp._info('save to %s' % outfile)
 
 
