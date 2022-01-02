@@ -21,11 +21,13 @@ def scols(args):
 
     outlist = []
     msaiset = set()
+    zscorelist = []
     for v in cp.loadtuples(vecfile):
-        if float(v[11])<=cutoff:
-            outlist.append('%s %s %s %s' % (v[2], v[3], v[ecid-1], v[ecid])) # m1 m2 zscore p-rank
+        if float(v[ecid])<=cutoff:
+            outlist.append('%s %s %s %s %s %s' % (v[2], v[3], v[4], v[5], v[ecid-1], v[ecid])) # m1 m2 i1 i2 zscore p-rank
             msaiset.add(v[2])
             msaiset.add(v[3])
+            zscorelist.append(float(v[ecid-1])) # get all zscores
     
     # scol output
     outscolfile = '%s.scols' % outprefix
@@ -33,7 +35,8 @@ def scols(args):
         fout.write('%s\n' % '\n'.join(outlist))
 
     # stat info
-    statstr = '%s %.2f %d %d %.4f' % (outprefix[:7], cutoff, len(m), len(msaiset), 1.0*len(msaiset)/len(m))
+    npzscore = np.array(zscorelist)
+    statstr = '%s %.2f %d %d %.4f %.4f %.4f' % (outprefix[:7], cutoff, len(m), len(msaiset), 1.0*len(msaiset)/len(m), npzscore.mean(), npzscore.std())
     outstatfile = '%s.stat' % outscolfile
     with open(outstatfile, 'w') as fout:
         fout.write('%s\n' % statstr)

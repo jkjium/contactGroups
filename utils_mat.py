@@ -11,7 +11,7 @@ def _modeoverlap(m1, m2, kuse):
 
 # output mode (accumulative) overlaps
 def modeoverlap(args):
-    assert len(args) == 6, 'Usage: python utils_mat.py modeoverlap mat1 col_range1{1:10} mat2 col_range2{6:16} accumulative_grid outprefix'
+    assert len(args) == 6, 'Usage: python utils_mat.py modeoverlap mat1 col_range1{1:10} mat2 col_range2{6:16} co_grid outprefix'
     matfile1 = args[0]
     mode_range1 = map(int, args[1].split(':'))
     matfile2 = args[2]

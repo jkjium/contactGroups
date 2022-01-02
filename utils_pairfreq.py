@@ -156,13 +156,12 @@ def tupledist(arglist):
 # input: .tupledist.freq2 from tupledist()
 # ['0', '1', 'A', 'C', '0.1667']
 # ['0', '1', 'C', 'A', '0.1667']
-# ...
-# ['2', '3', 'A', 'C', '0.3333']
-# ['2', '3', 'C', 'F', '0.5000']
 # output: .qij
 # aa accumulative_frequency normalized(to 1)_freuency(probability)
 # AA 0.13891112, 0.069449
 # AC 0.43060278, 0.215280
+# [kjia@lhb-ps3 ~/workspace/pfam31.0/p90/stage] 2021-12-29 16:12:33
+# $ python utils_pairfreq.py tupleqij PF01693.fg.freq2 PF01693.qij > t
 def tupleqij(arglist):
 	if(len(arglist) < 2):
 		cp._err('Usage: python tupleqij tuplefile outfile')
@@ -171,6 +170,7 @@ def tupleqij(arglist):
 	outfile = arglist[1]
 	plist = [line.split(' ') for line in cp.loadlines(tuplefile)]
 	qij = collections.defaultdict(float)
+	colset = set()
 	for c, group in itertools.groupby(plist, lambda x: (x[0], x[1])):
 		# for freqs of each different column tuple
 		aafreq1 = collections.defaultdict(float)
@@ -179,10 +179,17 @@ def tupleqij(arglist):
 		'''
 		print c
 		print '================='
+		c: ('19', '20')
+		=================
+		e: 
+		['19', '20', 'W', 'W', '0.0024']
+		['19', '20', '.', 'Y', '0.0574']
+		...
 		'''
 		for e in group:
-			aafreq1[e[2]]+=float(e[4])
-			aafreq2[e[3]]+=float(e[4])
+			#print e
+			aafreq1[e[2]]+=float(e[4]) # accumulate the marginal frequency of amino acid e[2] at position 1
+			aafreq2[e[3]]+=float(e[4]) # accumulate the marginal frequency of amino acid e[3] at position 2
 		'''
 		print 'aafreq1:'
 		print aafreq1
@@ -192,37 +199,45 @@ def tupleqij(arglist):
 		print '-----------------------'
 		'''
 		# the first column
-		aafreq1.pop('.', None)
-		k = aafreq1.keys()
-		k.sort()
-		# off-diagonal terms
-		for i in xrange(0, len(k)):
-			for j in xrange(i+1, len(k)):
-				qij['%s%s' % (k[i], k[j])]+=aafreq1[k[i]]*aafreq1[k[j]]
-		# diagonal terms
-		for i in xrange(0, len(k)):
-			qij['%s%s' % (k[i],k[i])]+=(aafreq1[k[i]]*aafreq1[k[i]] / 2.0)
+		if e[0] not in colset: # make sure the mutation frequency won't be calculated more than once
+			aafreq1.pop('.', None)
+			k = aafreq1.keys()
+			k.sort()
+			# off-diagonal terms
+			for i in xrange(0, len(k)):
+				for j in xrange(i+1, len(k)):
+					qij['%s%s' % (k[i], k[j])]+=aafreq1[k[i]]*aafreq1[k[j]]
+			# diagonal terms
+			for i in xrange(0, len(k)):
+				qij['%s%s' % (k[i],k[i])]+=(aafreq1[k[i]]*aafreq1[k[i]] / 2.0)
 		'''
 		print 'qij of aafreq1:'
 		print qij
 		print '-----------------------'
 		'''
-		# the second column
-		# off-diagonal terms
-		aafreq2.pop('.', None)
-		k = aafreq2.keys()
-		k.sort()
-		for i in xrange(0, len(k)):
-			for j in xrange(i+1, len(k)):
-				qij['%s%s' % (k[i], k[j])]+=aafreq2[k[i]]*aafreq2[k[j]]
-		# off-diagonal terms
-		for i in xrange(0, len(k)):
-			qij['%s%s' % (k[i],k[i])]+=(aafreq2[k[i]]*aafreq2[k[i]] / 2.0)
+		
+		if e[1] not in colset:
+			# the second column
+			aafreq2.pop('.', None)
+			k = aafreq2.keys()
+			k.sort()
+			for i in xrange(0, len(k)):
+				for j in xrange(i+1, len(k)):
+					qij['%s%s' % (k[i], k[j])]+=aafreq2[k[i]]*aafreq2[k[j]]
+			# off-diagonal terms
+			for i in xrange(0, len(k)):
+				qij['%s%s' % (k[i],k[i])]+=(aafreq2[k[i]]*aafreq2[k[i]] / 2.0)
 		'''
 		print 'qij of aafreq1 and 2:'
 		print qij
 		print '-----------------------'
 		'''
+		colset.add(e[0])
+		colset.add(e[1])
+		if (c[1]=='63'):
+			break
+
+
 	aakey = ['%s%s' % (cp.aas01[i],cp.aas01[j]) for i in xrange(0, len(cp.aas01)) for j in xrange(i, len(cp.aas01))]
 	total = sum(qij.values())
 	if total != 0:
