@@ -234,8 +234,8 @@ def tupleqij(arglist):
 		'''
 		colset.add(e[0])
 		colset.add(e[1])
-		if (c[1]=='63'):
-			break
+		#if (c[1]=='63'):
+		#	break
 
 
 	aakey = ['%s%s' % (cp.aas01[i],cp.aas01[j]) for i in xrange(0, len(cp.aas01)) for j in xrange(i, len(cp.aas01))]
