@@ -132,9 +132,11 @@ class utils_pfamscan(object):
 		elif opt == 'all':
 			hmmfa = '\n'.join([ '>%s_hmm\n%s' % (ps.seqname, ps.alnhmm) for ps in self.pslist])
 
-	def getPDBseq(self, pfamid):
+	#def getPDBseq(self, pfamid):
+	def getpfsseq(self, pfamid):
 		ps = self.getMatchpfs(pfamid)
-		return ps.alnseq.upper().translate(None, ''.join(cp.gaps))
+		ret = False if ps == False else ps.alnseq.upper().translate(None, ''.join(cp.gaps))
+		return ret
 
 ################### procedures #####################
 
