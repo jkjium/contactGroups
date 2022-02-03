@@ -182,6 +182,25 @@ def splitalnab(args):
     pb.writepdb(alnpdbfile[:-4]+".B.pdb")
     cp._info('save chain B to %s' % alnpdbfile[:-4]+".B.pdb")
 
+# compare predicted contacts in top x% coevolved pair (dca vs dcap)
+# read .vec19
+def prankcomp(args):
+    vecfile = args[0]
+    idx1 = int(args[1]) # first ce prank 0-based
+    idx2 = int(args[2]) # second ce prank 0-based
+    pcutoff = float(args[3]) # fraction (percentage)/100
+    dcutoff = float(args[4])
+    n1 = 0
+    n2 = 0
+    for s in cp.loadtuples(vecfile):
+        dist = float(s[18]) # last one
+        if dist <= dcutoff:
+            if float(s[idx1]) <= pcutoff:
+                n1+=1
+            if float(s[idx2]) <= pcutoff:
+                n2+=1
+    print('%d: %d %d: %d at %.4f percentage %.4f distance' % (idx1, n1, idx2, n2, pcutoff, dcutoff))
+
     
 
                 

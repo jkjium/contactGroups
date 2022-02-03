@@ -596,14 +596,19 @@ def seqfa(arglist):
 
 
 # calculate mean entropy for score file
-def scoreentropy(arglist):
+# write entropy of each column to outfile
+def scoreentropy(args):
 	if len(arglist) < 1:
-		cp._err('Usage: python utils_pfammsa.py scoreentropy scorefile')
+		cp._err('Usage: python utils_pfammsa.py scoreentropy scorefile outfile')
 
-	scorefile = arglist[0]
+	scorefile = args[0]
+	outfile =args[1]
 	score = np.loadtxt(scorefile, delimiter=',')
-	hlist = [cp.entropy([score[:,i]]) for i in xrange(0, score.shape[1])]
+	hlist = ['%d %.8f' % (i, cp.entropy([score[:,i]])) for i in xrange(0, score.shape[1])]
 	print '%s %.8f' % (scorefile, sum(hlist)/score.shape[1])
+	with open(outfile, 'w') ass fout:
+		fout.write('%s\n' % '\n'.join(hlist))
+
 
 
 # output entropy values for all the positions

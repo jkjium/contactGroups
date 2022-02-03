@@ -13,7 +13,7 @@ class atom(object):
         self.serial=int(line[6:11])
         self.name=line[12:16]
         self.altLoc=line[16]
-        self.resName=line[17:20]
+        self.resName=line[17:20].strip()
         self.chainID=line[21]
         self.resSeq=int(line[22:26])
         self.iCode=line[26]

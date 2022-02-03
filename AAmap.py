@@ -27,6 +27,12 @@ class AAmap(object):# -*- coding: utf-8 -*-
         self.AAA2A['PHE']='F'
         self.AAA2A['TYR']='Y'
         self.AAA2A['TRP']='W'
+        # for nuleotide sequence
+        self.AAA2A['A'] = 'A'
+        self.AAA2A['G'] = 'G'
+        self.AAA2A['U'] = 'U'
+        self.AAA2A['T'] = 'T'
+        self.AAA2A['C'] = 'C'
 
         self.A2AAA={}
         self.A2AAA['R']='ARG'
