@@ -573,7 +573,8 @@ def heatmap(args):
     yticktext = cp.loadlines(args[2]) if args[2]!='na' else np.arange(data.shape[0])
 
     #minmax = [-0.40, 0.40]
-    minmax = [-1.00, 1.00]
+    #minmax = [-1.00, 1.00] for protein dynamic search agreement
+    #minmax = [-1.00, 1.00]
 
 
     fig, ax = plt.subplots(1,1, figsize=(10,10))
@@ -581,7 +582,8 @@ def heatmap(args):
     # customized continuous color bar
     #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#266674','#ffffff','#a93a28'], N=256)
     #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#ffffff','#a93a28'], N=256)
-    mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#a93a28','#ffffff'], N=256)
+    #mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#a93a28','#ffffff'], N=256)
+    mycmap = clr.LinearSegmentedColormap.from_list('mybar', ['#ffffff','#000000'], N=256)
     if len(args) == 4:
         minmax = [float(v) for v in args[3].split(',')]
         im = ax.imshow(data, cmap=mycmap, vmin=minmax[0], vmax=minmax[1])

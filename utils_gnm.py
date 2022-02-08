@@ -11,7 +11,7 @@ class gnm:
         self.cutoff = cutoff
         self.gamma = gamma
 
-        if ctmat==None:
+        if ctmat is None:
             assert atoms!=None
             self.atoms = atoms
             self.coords = np.array([[at.x, at.y, at.z] for at in self.atoms])

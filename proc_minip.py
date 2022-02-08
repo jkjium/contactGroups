@@ -126,21 +126,36 @@ def outresultmats(args):
     for ce in cp.loadtuples(cefile):
         # 5 6 214 215 0 1 0.350477 12.274227 1.3324 0.970 0.061
         k = '%s %s' % (ce[0], ce[1])
-        cevec.append(float(ce[7])) # ce[7]: dcaz
+        #cevec.append(float(ce[7])) # ce[7]: dcaz
+        cevec.append(float(ce[6])) # ce[6]: dca
         dcvec.append(dyndict[k])
         #dfvec.append(dfdict[k])
         stub.append(k)
 
+    '''
     nce = (np.array(cevec)>=cecutoff).astype(int)
     ndyn = (np.abs(np.array(dcvec))>=dccutoff).astype(int) # convert to all positive element
     #ndfn = (np.array(dfvec)>=dccutoff).astype(int)
+    '''
+    nce = np.array(cevec) / max(cevec)
+    print(nce)
+    nce=np.sqrt(nce)
+    print(nce)
+    nce=np.sqrt(nce)
+    nce[nce<cecutoff]=0
+
+    ndyn = np.abs(np.array(dcvec))
+    #ndyn=np.power(ndyn,2)
+    ndyn[ndyn<dccutoff]=0
 
     outce = []
     outdc = []
     #outdf = []
     for i in range(len(stub)):
-        outce.append('%s %d' % (stub[i], nce[i]))
-        outdc.append('%s %d' % (stub[i], ndyn[i]))
+        #outce.append('%s %d' % (stub[i], nce[i]))
+        #outdc.append('%s %d' % (stub[i], ndyn[i]))
+        outce.append('%s %.4f' % (stub[i], nce[i]))
+        outdc.append('%s %.4f' % (stub[i], ndyn[i]))
         #outdf.append('%s %d' % (stub[i], ndfn[i]))
 
     # resi2 ceflag
@@ -161,6 +176,94 @@ def outresultmats(args):
         fout.write('%s\n' % '\n'.join(outdf))
     cp._info('save df flat to %s' % outfile)
     '''
+
+
+
+# input: 1.1,16,0.7 {ce_cutoff, num_modes, dyncc_cutoff}
+# contact matrix of rna
+# output flat format ce network and dyncc network by given cutoff {#. Modes, correlation cutoffs}
+def outrnamats(args):
+    assert len(args) == 5, 'Usage: python proc_minip.py outrnamats rna.vec10.ccmat resiticks vec9file parameter_list{0.10,3,0.10} outprefix'
+    ctmatfile = args[0]
+    names = cp.loadlines(args[1])
+    cefile = args[2]
+    sarr = args[3].split(',') # parameters
+
+    cecutoff = float(sarr[0])
+    mode_num = int(sarr[1])
+    dccutoff = float(sarr[2])
+
+    outprefix = args[4]
+
+    mode_list = np.array(range(mode_num))+1
+
+    in_ctmat = np.loadtxt(ctmatfile)
+    g = gnm(ctmat=in_ctmat)
+    dcmat = g.calcdyncc(mode_list)
+    dyndict = _mat2residict(dcmat, names)
+    #dfmat = cp.normmax(g.calcdistflucts(mode_list))
+    #dfdict = _mat2residict(dfmat, names)
+
+    cevec = []
+    dcvec = []
+    #dfvec = []
+    stub = []
+    for ce in cp.loadtuples(cefile):
+        # 1 2 0 1 0 1 0.391646 0.044843 1.6182 0.23906878 0.03586285
+        k = '%s %s' % (ce[0], ce[1])
+        # 2k4c.r2m2i2.mi.dca.dist.dcaz.vec10
+        #cevec.append(float(ce[9])) # 2k4c.r2m2i2.mi.dca.dist.mip.dcap.vec11
+        #cevec.append(float(ce[9])) # 2k4c.r2m2i2.mi.dca.dist.mip.dcap.vec11, mip
+        cevec.append(float(ce[9])) # 2k4c.r2m2i2.mi.dca.dist.mip.dcap.vec11, dcap
+        dcvec.append(dyndict[k])
+        #dfvec.append(dfdict[k])
+        stub.append(k)
+
+    '''
+    nce = (np.array(cevec)>=cecutoff).astype(int)
+    ndyn = (np.abs(np.array(dcvec))>=dccutoff).astype(int) # convert to all positive element
+    '''
+    nce = np.array(cevec) / max(cevec)
+    #nce = np.power(nce, 1/4)
+    nce=np.sqrt(nce)
+    nce[nce<cecutoff]=0
+
+    ndyn = np.abs(np.array(dcvec))
+    ndyn=np.power(ndyn,2)
+    ndyn[ndyn<dccutoff]=0
+    #ndfn = (np.array(dfvec)>=dccutoff).astype(int)
+
+    outce = []
+    outdc = []
+    #outdf = []
+    for i in range(len(stub)):
+        #outce.append('%s %d' % (stub[i], nce[i]))
+        #outdc.append('%s %d' % (stub[i], ndyn[i]))
+        outce.append('%s %.4f' % (stub[i], nce[i]))
+        outdc.append('%s %.4f' % (stub[i], ndyn[i]))
+        #outdf.append('%s %d' % (stub[i], ndfn[i]))
+
+    # resi2 ceflag
+    outfile = outprefix+'.cevec'
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outce))
+    cp._info('save ce flat to %s' % outfile)
+
+    # res2 dynccflag
+    outfile = outprefix+'.dcvec'
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outdc))
+    cp._info('save dc flat to %s' % outfile)
+
+    '''
+    outfile = outprefix+'.dfvec'
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outdf))
+    cp._info('save df flat to %s' % outfile)
+    '''
+
+
+
 
 
 # convert square matrix to vec3 flat
@@ -436,32 +539,6 @@ def dcecmat_conserved(args):
     #with open(outfile, 'w') as fout:
         # dc-ec pos, conserved pos, overlap between the previous two, % of overlap to dc-ec, % of overlap to conservedpos
         #fout.write('%d %d %d %.2f %.2f' %(len(diffpos), len(conservedpos), len(overlap), 1.0*len(overlap)/len(diffpos), 1.0*len(overlap)/len(conservedpos)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

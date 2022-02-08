@@ -350,7 +350,7 @@ Output: ssv file in the format of {rcw rcw_ce | rcw2 rcw_ce2 | ...}
 adj_func_dict = {'rcw': _rcw, 'apc': _apc}
 
 def adjustment(args):
-    assert len(args) == 5, 'Usage: python utils_ce.py adjustment infile.ssv stub_columns{0,1} ce_columns{2,3,5} rcw outfile'
+    assert len(args) == 5, 'Usage: python utils_ce.py adjustment infile.ssv stub_columns{0,1} apc ce_columns{2,3,5} outfile'
 
     # inputs
     infile = args[0]

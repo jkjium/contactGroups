@@ -606,7 +606,7 @@ def scoreentropy(args):
 	score = np.loadtxt(scorefile, delimiter=',')
 	hlist = ['%d %.8f' % (i, cp.entropy([score[:,i]])) for i in xrange(0, score.shape[1])]
 	print '%s %.8f' % (scorefile, sum(hlist)/score.shape[1])
-	with open(outfile, 'w') ass fout:
+	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % '\n'.join(hlist))
 
 
