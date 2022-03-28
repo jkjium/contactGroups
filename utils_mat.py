@@ -1,6 +1,27 @@
 import numpy as np
 import commp as cp
 
+# convert square matrix to flat file
+def mat2flat(args):
+    assert len(args) == 3, 'Usage: python utils_mat.py mat2flat mat.file name.file outfile'
+    matfile = args[0]
+    namefile = args[1]
+    outfile = args[2] 
+
+    mat = np.loadtxt(matfile)
+    n = mat.shape[0]
+    name = cp.loadlines(namefile)
+
+    outlist = []
+    for i in range(n):
+        for j in range(i+1,n):
+            outlist.append('%s %s %.4f' % (name[i], name[j], mat[i,j]))
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % ('\n'.join(outlist)))
+    cp._info('save flat to %s' % outfile)
+    
+
 # calculate (accumulative) overlaps between two sets of vectors
 # kuse: Vector of values for the number of modes to use in accumulative overlap 
 def _modeoverlap(m1, m2, kuse):
