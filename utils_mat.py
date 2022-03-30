@@ -3,12 +3,13 @@ import commp as cp
 
 # convert square matrix to flat file
 def mat2flat(args):
-    assert len(args) == 3, 'Usage: python utils_mat.py mat2flat mat.file name.file outfile'
+    assert len(args) >= 3, 'Usage: python utils_mat.py mat2flat mat.file name.file outfile'
     matfile = args[0]
     namefile = args[1]
     outfile = args[2] 
+    dc = args[3] if len(args) > 3 else ' '
 
-    mat = np.loadtxt(matfile)
+    mat = np.loadtxt(matfile, delimiter=dc)
     n = mat.shape[0]
     name = cp.loadlines(namefile)
 
