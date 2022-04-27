@@ -110,11 +110,15 @@ class sdii(object):
     # general information entropy
     # X: varible set in list type
 	def entropy(self, X):
+		#print X
 		return np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
 
 	# calculate entropy with  (-1)^(n+1) sign 
 	# for deltaN_bar entropy hashing
 	def signed_entropy(self, X, s):
+		#print('--- in signed_entropy ---')
+		#print(X)
+		#print(s)
 		key = repr(s)
 		if key in self.entropy_board:
 			H = self.entropy_board[key]
@@ -126,6 +130,24 @@ class sdii(object):
 				H = math.pow(-1, len(s)+1) * self.w_entropy(X)
 			self.entropy_board[key] = H
 			#print 'put %s' % key
+		return H
+
+	# derived from signed_entropy function
+	# remove the power of -1
+	def hashed_entropy(self, s):
+		#print('--- in hashed_entropy ---')
+		#print('s', s)
+		key = repr(s)
+		X = self.data[:,s].T # transpose is needed
+		#print('X', X)
+		if key in self.entropy_board:
+			H = self.entropy_board[key]
+		else:
+			if self.isWeighted == False:
+				H = np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
+			else:
+				H = self.w_entropy(X)
+			self.entropy_board[key] = H
 		return H
 
 
