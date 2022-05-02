@@ -408,6 +408,17 @@ def splitpdbbyseq(arglist):
 				fout.write(a.writeAtom())
 	cp._info('save %d residues to %s' % (len(seqbody), outfile))
 
+# extract selection pdb first
+# output resi and x,y,z
+def writecoor(args):
+	assert len(args) == 2, 'Usage: python utils_protein2.py writecoor pdb pdb.coor'
+	pdbfile =args[0]
+	outfile =args[1]
+	p = protein(pdbfile)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(p.printcoor())))
+	cp._info('save resi,x,y,z to %s' % outfile)
+
 
 # write cutoff contact by specific method
 # output: 1. method residue pdb file

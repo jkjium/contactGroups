@@ -312,11 +312,9 @@ class protein(object):
             a=self.atoms[i]
             a.dump()
         
-    # print Coordinates
-    def printCoor(self):
-        for i in xrange(0,len(self.atoms)):
-            a=self.atoms[i]
-            print a.getCoor()
+    # return a list of 'str' Coordinates
+    def printcoor(self):
+        return ['%d %.3f %.3f %.3f' % (a.resSeq, a.x, a.y, a.z) for a in self.atoms] 
 
     # return sequence extracted from pdb file
     # assign values for self.resDict['B641'] = (seqpos, 'R')
