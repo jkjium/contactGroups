@@ -34,7 +34,13 @@ def hxm(args):
     imat_123 = (hmat * m_h2i_123).sum(axis=1)
     gmat_123 = (hmat * m_h2g_123).sum(axis=1)
 
-    imat = np.vstack((imat_12,imat_13,imat_23,imat_123, gmat_123))
+    dii_3 = imat_123 - imat_12
+    dii_2 = imat_123 - imat_13
+    dii_1 = imat_123 - imat_23
+
+    print(imat_123, imat_12)
+
+    imat = np.vstack((imat_12,imat_13,imat_23,imat_123, dii_3, dii_2, dii_1, gmat_123))
     np.savetxt(outfile, imat.T, fmt='%.6f')
     cp._info('save II to %s' % outfile)
 
