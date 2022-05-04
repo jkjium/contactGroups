@@ -11,7 +11,7 @@ import itertools
 
 # entropy to interaction information
 # entropy to totoal correlation (multi-information)
-# output format: MI_12, MI_13, MI_23, MI_123, TC_123 
+# output format: MI_12, MI_13, MI_23, MI_123, DII_3, DII_2, DII_1, TC_123 
 # 2nd TC is equivalent to MI
 def hxm(args):
     assert len(args) == 2, 'Usage: python proc_sdiitest.py hxm entropy.mat outfile'
@@ -38,7 +38,7 @@ def hxm(args):
     dii_2 = imat_123 - imat_13
     dii_1 = imat_123 - imat_23
 
-    print(imat_123, imat_12)
+    #print(imat_123, imat_12)
 
     imat = np.vstack((imat_12,imat_13,imat_23,imat_123, dii_3, dii_2, dii_1, gmat_123))
     np.savetxt(outfile, imat.T, fmt='%.6f')
@@ -52,8 +52,11 @@ def hxm(args):
 # 0 1 3 1.918296 1.459148 0.650022 1.918296 2.251629 1.792481 2.251629
 # 0 2 3 1.918296 0.000000 0.650022 1.918296 2.251629 0.650022 2.251629
 # 1 2 3 1.459148 0.000000 0.650022 1.459148 1.792481 0.650022 1.79248
+# python proc_sdiitest.py entropy_mat t.score.rna
 def entropy_mat(args):
-    d = np.loadtxt('t.score', delimiter=',')
+    datafile = args[0]
+    #outfile = args[1]
+    d = np.loadtxt(datafile, delimiter=',')
     s = sdii(d)
     s.isWeighted = False
     # generate variable set in the order of :
@@ -81,6 +84,20 @@ def entropy_mat(args):
     with open('t.hlist', 'w') as fout:
         fout.write('%s\n' % '\n'.join(retlist))
     cp._info('save to t.hlist')
+
+# test sdii.II() and sdii.deltaN_bar() {sdii} with II from entropy operators (hxm)
+# $ python proc_sdiitest.py test_ii t.score.rna
+# sdii.ii correctness confirmed
+# sdii.deltaN_bar() SDII correctness confirmed
+def test_ii(args):
+    d = np.loadtxt(args[0], delimiter=',')
+    s = sdii(d)
+    s.isWeighted = False
+    varset = [0,1,2,3]
+    triple_var = list(itertools.chain.from_iterable([itertools.combinations(varset, 3)]))
+    for v3 in triple_var: # iterate variable triplets
+        #print(v3, s.II(v3))
+        print(v3, s.deltaN_bar(v3))
 
 
 # test entropy functions
