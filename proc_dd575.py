@@ -1,10 +1,57 @@
 import numpy as np
 import commp as cp
+import itertools
 
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 
+# compare two clusters generated using different cutoffs
+# input: cluster.12100.out cluster.13000.out (must be sorted first)
+# cluster.xxx.out format:
+# 4 AG6000735
+# 23 AG6000741
+# 23 AG6000767
+def cluster_comp(args):
+    assert len(args) ==3, 'Usage: python proc_dd575.py cluster_comp cluster.12100.out cluster.13000.out'
+    oldfile = args[0]
+    newfile = args[1]
+    outfile = args[2]
+
+    c_old = cp.loadtuples(oldfile)
+    c_new = cp.loadtuples(newfile)
+
+    # ('224', ['AG6006935', 'AG6007576', 'AG6010406', 'AG6033388']) ('xxx', [xxx])
+    c_old_dict = dict((k, [i[1] for i in list(g)]) for k, g in itertools.groupby(c_old, lambda x: x[0]))
+    c_new_dict = dict((k, [i[1] for i in list(g)]) for k, g in itertools.groupby(c_new, lambda x: x[0]))
+
+    if len(c_new_dict) > len(c_old_dict):
+        cp._err('args order error: old:%s new:%s' % (oldfile, newfile))
+
+    fout = open(outfile, 'w')
+    for p in c_old_dict:
+        oldc = set(c_old_dict[p])
+        for q in c_new_dict:
+            newc = set(c_new_dict[q])
+            if len(newc)>3:
+                c_inter = oldc.intersection(newc)
+                diff = newc - oldc
+                if len(c_inter)!=0 and len(diff)!=0:
+                    if len(oldc)<4:
+                        fout.write('oldc: %s n: %d newc: %s n: %d diff: %s\n' % (p, len(oldc), q, len(newc), ','.join([g for g in newc])))
+                    else:
+                        fout.write('oldc: %s n: %d newc: %s n: %d diff: %s\n' % (p, len(oldc), q, len(newc), ','.join([g for g in diff])))
+
+    fout.close()
+    cp._info('save comparison result to %s' % outfile)
+
+
+
+
 # input: distance mat & names
+# output sorted cluster information:
+# 4 AG6000735
+# 23 AG6000741
+# 23 AG6000767
 def clustering(args):
     assert(len(args)==4), 'Usage: python proc_dd575.py clustering mat.txt name.txt cutoff outfile'
 
@@ -21,7 +68,9 @@ def clustering(args):
     z = linkage(dists, 'complete')
     clusters = fcluster(z, t=cutoff, criterion='distance')
 
-    outstr = '\n'.join(['%d %s' % (clusters[i], names[i]) for i in range(len(clusters))])
+    c_sort = sorted([(clusters[i], names[i]) for i in range(len(clusters))], key = lambda x: x[0])
+    outstr = '\n'.join(['%d %s' % (c[0], c[1]) for c in c_sort])
+    #outstr = '\n'.join(['%d %s' % (clusters[i], names[i]) for i in range(len(clusters))])
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % outstr)
     #print(ret)
