@@ -5,6 +5,16 @@ import itertools
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 
+def pairgenes(args):
+    assert len(args) == 2, 'Usage: python proc_dd575.py pairgenes full.list out.pair.list'
+    genes = cp.loadtxt(args[0])
+    fout = open(args[1], 'w')
+    for i in range(len(genes)):
+        for j in range(i+1, len(genes)):
+            fout.write('%s %s\n' % (genes[i], gene[j]))
+    cp._info('save paired genes to %s' % args[1])
+
+
 # compare two clusters generated using different cutoffs
 # input: cluster.12100.out cluster.13000.out (must be sorted first)
 # cluster.xxx.out format:
