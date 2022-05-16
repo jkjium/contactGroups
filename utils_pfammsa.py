@@ -1171,6 +1171,25 @@ def samplebyhamming(args):
 		fout.write('%s\n' % ('\n'.join(outseqlist)))
 	cp._info('save %d seqs to %s' % (len(outseqlist), outfile))
 
+
+# uniformly sample from fa sequences
+def sampleu(args):
+	import random
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py sampleu msafile number outfile.fa'
+	msafile = args[0]
+	n = int(args[1])
+	outfile = args[2]
+
+	pfm = pfammsa(msafile)
+	sampled = random.sample(range(len(pfm.msalist)), n)
+	fout = open(outfile, 'w')
+	for i in sampled:
+		s =  pfm.msalist[i]
+		fout.write('>%s\n%s\n' % (s[0], s[1]))
+	fout.close()
+	cp._info('save sampled sequences to %s' % outfile)
+
+
 # print scol -> resi set
 def scol2resi(arglist):
 	if len(arglist) < 2:
@@ -1273,6 +1292,19 @@ def score2msa(arglist):
 		fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
 	fout.close()
 	cp._info('save to %s' % outfile)
+
+
+# save each sequence in .fas file into separated .fa file WITHOUT ANY TRANSFORMATION
+# use header info as filename
+def splitofabyheader(args):
+	assert len(args) == 1, 'Usage: python utils_pfammsa.py splitfabyheader in.fas'
+	fafile = args[0]
+	c = 0
+	for h, s in cp.fasta_iter(fafile):
+		with open(('%s.fa' % h), 'w') as fout:
+			fout.write('>%s\n%s\n' % (h,s))
+		c+=1
+	cp._info('%s : save %d fa files' %(fafile, c))
 
 
 # split fasta file into separate .fa file
@@ -2000,12 +2032,14 @@ def main():
 		'psicovaln': psicovaln,
 		'retitle': retitle, # format header for dca calculation
 		'samplebyhamming': samplebyhamming,
+		'sampleu': sampleu, # sample sequences uniformly
 		'scol2resi': scol2resi,
 		'scoreentropy': scoreentropy,
 		'scoreentropyall': scoreentropyall, # output all position entropy
 		'scoreweight': scoreweight,
 		'score2msa':score2msa, # for cad.ppi.2
 		'splitfa': splitfa,
+		'splitofabyheader': splitofabyheader,
 		'splithidfa': splithidfa,
 		'splitheadfa': splitheadfa,
 		'tuplesubfreq': tuplesubfreq,

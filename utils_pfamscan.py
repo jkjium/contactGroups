@@ -166,6 +166,26 @@ def haspfam(arglist):
 	else:
 		print '%s %s 0' % (jsonfile, pfamid)
 
+
+# get matched sequence and output as a fasta file
+def outmatchfa(args):
+	assert len(args) == 3, 'Usage: python utils_pfamscan.py outmatchfa jsonfile PF00062 outfile'
+	jsonfile = args[0]
+	pfamid = args[1]
+	outfile = args[2]
+
+	ups = utils_pfamscan(jsonfile)
+	ps = ups.getMatchpfs(pfamid)
+	if ps==False:
+		cp._err('%s not found in %s\n' % (pfamid, jsonfile))
+	header = '%s|%s-%s' % (ps.seqname, ps.seqfrom, ps.seqto)
+	seq = ups.getpfsseq(pfamid)
+	with open(outfile, 'w') as fout:
+		fout.write('>%s\n%s\n' % (header, seq))
+	cp._info('save pfamscan seq to %s' % outfile)
+
+
+
 # for caths20_wo_pfam 
 # input pfamscan result, cathS20-0000.fa.json 
 # output: cathS20-0000.fa.json.pfamid.out
@@ -191,16 +211,16 @@ def outpfam(arglist):
 
 
 def test(arglist):
-
-	ups = utils_pfamscan('t.json')
-	pfamid = 'PF02576'
+	jsonfile = arglist[0]
+	ups = utils_pfamscan(jsonfile)
+	pfamid = arglist[1]
 	print 'json loaded: -----------------------'
 	ups.dump()
-	print 'get PF02576 match -----------------------'
-	ps = ups.getMatchpfs('PF02576')
+	print 'get %s match -----------------------' % pfamid
+	ps = ups.getMatchpfs(pfamid)
 	ps.dump()
 	print 'pdb seq ----------------------------'
-	print ups.getPDBseq(pfamid)
+	print ups.getpfsseq(pfamid)
 
 
 	# test writeHMMfa

@@ -1,17 +1,30 @@
 import numpy as np
 import commp as cp
 import itertools
+import subprocess as sp 
 
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 
+# cmd call tmalign (tmscore.sh)
+# input two gene names (in string)
+def _tmscore(param):
+    return sp.Popen(['tmscore.sh', param[0], param[1]], stdout=sp.PIPE).communicate()[0]
+
+# test _tmscore function
+# input two gene names
+def tmscore(args):
+    assert len(args) == 2, 'Usage: python proc_dd575.py tmscore AG6000091 AG6000243'
+    print(_tmscore(args))
+
+# pair all the genes
 def pairgenes(args):
     assert len(args) == 2, 'Usage: python proc_dd575.py pairgenes full.list out.pair.list'
-    genes = cp.loadtxt(args[0])
+    genes = cp.loadlines(args[0])
     fout = open(args[1], 'w')
     for i in range(len(genes)):
         for j in range(i+1, len(genes)):
-            fout.write('%s %s\n' % (genes[i], gene[j]))
+            fout.write('%s %s\n' % (genes[i], genes[j]))
     cp._info('save paired genes to %s' % args[1])
 
 
@@ -55,13 +68,12 @@ def cluster_comp(args):
     cp._info('save comparison result to %s' % outfile)
 
 
-
-
 # input: distance mat & names
 # output sorted cluster information:
 # 4 AG6000735
 # 23 AG6000741
 # 23 AG6000767
+# python proc_dd575.py clustering 575.s.pairwise.pkl.txt 575.names.pkl.txt 7200 out
 def clustering(args):
     assert(len(args)==4), 'Usage: python proc_dd575.py clustering mat.txt name.txt cutoff outfile'
 
