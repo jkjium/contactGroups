@@ -1,6 +1,73 @@
 import commp as cp
 import numpy as np
 
+# input:
+# lhb-ps4 ~/workspace/sprotein.100k/all/stage.niaid
+# 1. scoremat of sp200k.rbd.nr.hmmalign.scoremat
+# 2. time info : sp200k.flat.date.vec
+# separate into 3 parts
+'''
+     26 2020-01 
+     92 2020-02 
+   1663 2020-03 
+   1471 2020-04 
+    758 2020-05 
+    889 2020-06 
+   1335 2020-07 
+   1823 2020-08 
+    776 2020-09 
+   1809 2020-10 
+   2091 2020-11 
+   3302 2020-12 
+   5289 2021-01 
+   4710 2021-02 
+'''
+def splitbydate(args):
+	score = np.loadtxt(args[0], delimiter=',')
+	dinfo = cp.loadlines(args[1])
+	outprefix = args[2]
+
+	ds1 = ['2020-01', '2020-02', '2020-03', '2020-04', '2020-05']
+	ds2 = ['2020-06', '2020-07', '2020-08', '2020-09', '2020-10']
+	ds3 = ['2020-11', '2020-12', '2021-01', '2021-02']
+
+	ids1 = []
+	ids2 = []
+	ids3 = []
+
+	for i in range(len(dinfo)):
+		if dinfo[i] in ds1:
+			ids1.append(i)
+		if dinfo[i] in ds2:
+			ids2.append(i)
+		if dinfo[i] in ds3:
+			ids3.append(i)
+
+	np.savetxt(outprefix+'.ds1.score', score[ids1,:], delimiter=',')
+	np.savetxt(outprefix+'.ds2.score', score[ids2,:], delimiter=',')
+	np.savetxt(outprefix+'.ds3.score', score[ids3,:], delimiter=',')
+	
+	cp._info('save to %s.{1,2,3}.score' % outprefix)
+
+# input:
+# full header into sp200k.info
+# indices of sp200k.info from sp200k.rbd.nr.hmmalign.fa
+# output:
+# sp200k.nr.info
+def getheader(args):
+	info = cp.loadlines(args[0])
+	idx = np.loadtxt(args[1]).astype(int)
+	outfile = args[2]
+
+	outstr = '\n'.join([info[i] for i in idx])
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % outstr)
+	cp._info('save to %s' % outfile)
+
+
+
+
+
 # input: 
 #	1. filtered spike protein sequences
 # 	2. stub file contains timestamp needed

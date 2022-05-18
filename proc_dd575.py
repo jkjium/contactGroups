@@ -27,9 +27,43 @@ def pairgenes(args):
             fout.write('%s %s\n' % (genes[i], genes[j]))
     cp._info('save paired genes to %s' % args[1])
 
+# output cluster information {id, number of members, tm.mean, tm.sd, tm.min, tm.max, member_list}
+# input: the output from function clustering: cluster_id, member_id, sorted by cluster_id from func clustering()
+# input: pairwise dist/similarity file, in this case tmalign scores 
+def flatcluster(args):
+    assert len(args) == 3, 'Usage: python proc_dd575.py flatcluster clustering.out tmscore.list outfile'
+
+    clusterfile = args[0]
+    scorefile = args[1]
+    outfile = args[2]
+
+    # load dist/similarity file into a dictionary
+    # AG6000091 AG6000243 0.36034
+    # AG6000091 AG6000244 0.40890
+    #print(cp.loadtuples(dfile))
+    sdict = dict(('%s %s' % (s[0], s[1]), float(s[2])) for s in cp.loadtuples(scorefile))
+    print(len(sdict))
+    #  print(take(10, dinfodict.iteritems())) # python 3.6
+
+    # load clustering information
+    # 431 AG6000091
+    # 521 AG6000243
+    cinfo = cp.loadtuples(clusterfile)
+    # ('224', ['AG6006935', 'AG6007576', 'AG6010406', 'AG6033388']) ('xxx', [xxx])
+    cdict = dict((k, [i[1] for i in list(g)]) for k, g in itertools.groupby(cinfo, lambda x: x[0]))
+
+    # iterate all clusters to map pairwise scores (tm)
+    scores = []
+
+    c=0
+    for k in cdict:
+        if c<10:
+            print(k, cdict[k])
+        c+=1
+
 
 # compare two clusters generated using different cutoffs
-# input: cluster.12100.out cluster.13000.out (must be sorted first)
+# input: cluster.12100.out cluster.13000.out (must be sorted by the clusters ID first)
 # cluster.xxx.out format:
 # 4 AG6000735
 # 23 AG6000741

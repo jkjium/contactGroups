@@ -86,6 +86,7 @@ def alterbresi2(args):
 	outfile = args[2]
 
 	resi_b = lambda x: (int(x[0]), float(x[1]))
+	#resi_b = lambda x: (int(x[0]), np.power(float(x[1]), 2))												 
 	nbdict = dict(resi_b(line.split()) for line in cp.loadlines(nbfile))
 
 	p = protein(pdbfile)
