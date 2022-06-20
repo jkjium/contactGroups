@@ -1367,6 +1367,25 @@ def splitheadfa(arglist):
 		count+=1
 	cp._info('save %d .fa files' % count)
 
+# same function with splitfa 
+# use specified header field as each separate fa file name
+# input: .fas delimiter field_idx
+def splitfabyfield(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py splitfabyfield full.fas delimiter{" ",|} 0'
+	fafile = args[0]
+	delimiter = args[1]
+	idx = int(args[2])
+
+	count =0
+	for h, s in cp.fasta_iter(fafile):
+		outname = h.split(delimiter)[idx]
+		with open(('%s.fa' % outname), 'w') as fout:
+			fout.write('>%s\n%s\n' % (h, s))
+			cp._info('File %s saved.' % (outname))
+		count+=1
+	cp._info('save %d .fa files' % count)
+
+
 # accumulate weighted background frequcney for each AA 
 def wfreq(arglist):
 	if len(arglist) < 4:
@@ -2042,6 +2061,7 @@ def main():
 		'splitofabyheader': splitofabyheader,
 		'splithidfa': splithidfa,
 		'splitheadfa': splitheadfa,
+		'splitfabyfield': splitfabyfield,
 		'tuplesubfreq': tuplesubfreq,
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,

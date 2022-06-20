@@ -610,20 +610,6 @@ def alignparse(title, alignstr):
 	return ' '.join(out)
 
 
-# call needle or water to get the alignment 
-# needle <(echo -e ">a\n$1") <(echo -e ">b\n$2") "${@:3}" -filter
-def align_exec(seqpair, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
-	with open(seqpair) as fp:
-		line = fp.readline()
-		if len(line)<3:
-			print 'Error: invalid pairfile : %s\n%s' % (seqpair, line)
-			exit(1)
-		seqArr = line.split(' ')
-
-	#$ ./align.sh needle "ALIGN" "LINE" B62 8 2
-	return sp.Popen(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend], stdout=sp.PIPE).communicate()[0]
-	#return sp.check_output(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend])
- 
 
 def printpair(arglist):
 	if len(arglist)< 2:
@@ -668,6 +654,21 @@ def splitfa2seq(args):
 		count+=1
 	cp._info('save %d .fa clean seqs' % count)
 
+
+# call needle or water to get the alignment 
+# needle <(echo -e ">a\n$1") <(echo -e ">b\n$2") "${@:3}" -filter
+def align_exec(seqpair, cmd='needle', matrix='B62', gapopen='10.0', gapextend='0.5'):
+	with open(seqpair) as fp:
+		line = fp.readline()
+		if len(line)<3:
+			print 'Error: invalid pairfile : %s\n%s' % (seqpair, line)
+			exit(1)
+		seqArr = line.split(' ')
+
+	#$ ./align.sh needle "ALIGN" "LINE" B62 8 2
+	return sp.Popen(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend], stdout=sp.PIPE).communicate()[0]
+	#return sp.check_output(['align.sh', cmd, seqArr[0], seqArr[1], matrix, gapopen, gapextend])
+ 
 
 def testpool(arglist):
 	if len(arglist)< 5:

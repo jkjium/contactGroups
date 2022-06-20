@@ -27,7 +27,7 @@ def hxm(args):
     #print(hmat)
     #print(hmat * m_h2i_123)
 
-    # output: [(1, 2), (1, 3), (2, 3), (1, 2, 3), t(1,2,3)]
+    # output: [(1, 2), (1, 3), (2, 3), (1, 2, 3), d3, d2, d1,t(1,2,3)]
     imat_12  = (hmat * m_h2i_12).sum(axis=1)
     imat_13  = (hmat * m_h2i_13).sum(axis=1)
     imat_23  = (hmat * m_h2i_23).sum(axis=1)
@@ -84,6 +84,63 @@ def entropy_mat(args):
     with open('t.hlist', 'w') as fout:
         fout.write('%s\n' % '\n'.join(retlist))
     cp._info('save to t.hlist')
+
+# calculate average dii 
+# input: 100k.hlist.idx, 100k.hlist.multi
+# validated by: 
+# paste -d " " 100k.hlist.idx 100k.hlist.multi | \
+# awk '{total+=($8+$9+$10);c[$3]++;d[$3]+=$8;c[$2]++;d[$2]+=$9;c[$1]++;d[$1]+=$10} END {for(a in d){print a,d[a],c[a],d[a]/c[a],total/NR;break}}'
+def averagedii(args):
+    assert len(args) == 3, 'Usage: python proc_sdiitest.py averagedii 100k.hlist.idx 100k.hlist.multi outfile'
+    from collections import defaultdict
+    idxfile = args[0]
+    mfile = args[1]
+    outfile = args[2]
+
+    # 100k.hlist.idx
+    # 1 2 3
+    idxlist = cp.loadtuples(idxfile)
+    # 100k.hlist.multi
+    # MI_12, MI_13, MI_23, MI_123, DII_3, DII_2, DII_1, TC_123
+    mscores = cp.loadtuples(mfile)
+    n = len(mscores)
+    diisumdict = defaultdict(float)
+    idxcount = defaultdict(int) # validate dii numbers
+    for i in range(n):
+        diisumdict[idxlist[i][2]]+=float(mscores[i][4]) #ii123 - mi12
+        diisumdict[idxlist[i][1]]+=float(mscores[i][5]) #ii123 - mi13
+        diisumdict[idxlist[i][0]]+=float(mscores[i][6]) #ii123 - mi23
+
+        idxcount[idxlist[i][0]]+=1
+        idxcount[idxlist[i][1]]+=1
+        idxcount[idxlist[i][2]]+=1
+
+    freqs = set(idxcount.values())
+    cp._info(repr(freqs))
+    if len(freqs)!=1:
+        cp._info('Error: index frequency is no unique')
+        return
+    else:
+        freq = freqs.pop()
+
+    # overall average dii
+    total_average = sum(diisumdict.values())/n
+    cp._info('total: %.6f, n: %d' % (sum(diisumdict.values()), n))
+    # output with triplet form {average.dii3,average.dii2,average.dii1,total_average} 
+    fout = open(outfile, 'w')
+    for i in range(n):
+        #outstr = '%s %.6f %.6f %.6f %.6f' % (' '.join(idxlist[i]),diisumdict[idxlist[i][2]]/freq, diisumdict[idxlist[i][1]]/freq, diisumdict[idxlist[i][0]]/freq, total_average)
+        outstr = '%.6f %.6f %.6f %.6f' % (diisumdict[idxlist[i][2]]/freq, diisumdict[idxlist[i][1]]/freq, diisumdict[idxlist[i][0]]/freq, total_average)
+        fout.write('%s\n' % outstr)
+    fout.close()
+    cp._info('save average dii {average.dii3,average.dii2,average.dii1,total_average} to %s' % outfile)
+
+    
+
+
+
+
+
 
 # test sdii.II() and sdii.deltaN_bar() {sdii} with II from entropy operators (hxm)
 # $ python proc_sdiitest.py test_ii t.score.rna

@@ -10,6 +10,7 @@ from sklearn import metrics
 
 colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', 
 '#60e6c1', '#d7295e', '#008ed0', '#747474']
+colorscheme2 = ['#a93a28', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474', '#afc8cd',]
 #1c225c
 
 # 1: tsv data file
@@ -248,6 +249,78 @@ def dendrogram_mat(arglist):
     plt.title("test")
     plt.show()
     '''
+
+# for dd575
+# color xlabels with color flag
+# labelfile: {label, flag}
+def dendrogram_mat_withflag(args):
+    if len(args) < 3:
+        cp._err('Usage: python utils_vis_sm.py dendrogram_mat_withflag matfile labelfile outfile')
+    matfile = args[0]
+    tickfile = args[1]
+    outfile = args[2]
+
+    nc=10
+
+    mat = np.loadtxt(matfile, delimiter= ' ')
+    xt = []
+    flagset = set()
+    labeltuples = cp.loadtuples(tickfile)
+    for t in labeltuples:
+        xt.append(t[0])
+        flagset.add(t[1])
+    cp._info('load %d labels' % (len(xt)))
+
+    # generate color map from labels
+    #f2ndict[flag] = number
+    f2ndict = dict((flagset.pop(),i%nc) for i in range(len(flagset)))
+    #print(f2ndict)
+    #print(f2ndict['single'])
+    colors = set(f2ndict.values())
+
+    # hard coded coloring for single
+    for k in f2ndict:
+        #if k=='single': # for combined.rcluster.tick
+        if k=='0': # for combined.rcluster.2.tick
+            f2ndict[k] = 999
+    
+    colordict = dict((t[0], f2ndict[t[1]]) for t in labeltuples)
+    #print(colordict)
+    #exit(0)
+    mycmap = plt.cm.get_cmap("Accent", len(colors))
+    cp._info('creating color map for %d cluster with %d colors' % (len(f2ndict), len(colors)))
+
+    dists = squareform(mat)
+    #linkage_matrix = linkage(dists, "single")
+    linkage_matrix = linkage(dists, "complete")
+    plt.figure(figsize=(10, 80))
+    #plt.figure(figsize=(50, 60))
+    #ddata = dendrogram(linkage_matrix, labels=xt, leaf_rotation=90, color_threshold=1, link_color_func=lambda x: "k")
+    dendrogram(linkage_matrix, labels=xt, leaf_rotation=0, orientation="left", color_threshold=100, above_threshold_color='grey')
+
+    ax = plt.gca()
+    #ax.axis('off')
+    #ax.set_facecolor((0.5, 0.5, 0.5))
+    xls = ax.get_ymajorticklabels()
+    for x in xls:
+        cv = colordict[str(x.get_text())]
+
+        #print(mycmap(cv))
+        if cv==999:
+            #print('999 found')
+            x.set_color('black')
+        else:
+            #x.set_color(mycmap(cv))
+            x.set_color(colorscheme2[cv])
+        #x.set_color(colorscheme1[cv%len(colorscheme1)])
+
+    plt.yticks(fontsize=10)
+    plt.xticks(fontsize=10)
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(outfile)
+    cp._info('Save to %s' % outfile)
+
 
 def dendrogram_linkage(args):
     assert len(args) == 3, 'Usage: python utils_vis_sm.py dendrogram_linkage Z_mat (return from scipy linkage) tick outfile'

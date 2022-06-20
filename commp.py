@@ -842,6 +842,10 @@ def rank01(d):
 	s = float(sum(d.values()))
 	return dict((k, d[k]/s) for k in d)
 
+# transform an np.array to [0,1] by (x-min)/(x.max - x.min)
+def rankminmax(d):
+	return (d-d.min())/(d.max()-d.min())
+
 
 # convert a set of float number into value of d: d = (v - mean') / std'
 # a = {'a':1,'b':2,'c':3,'d':4,'e':10,'f':15}
@@ -954,8 +958,13 @@ def zscore(inlist):
 
 # main routine. for testing
 def main():
+	# test rankminmax
+	a = [-2, -1, 10, 2, 5, -3, 0.45, -3.2]
+	print(a)
+	print(rankminmax(np.array(a)))
 	# test freqw
 	#data = np.loadtxt('t_apply_weight.score', delimiter=',')
+	'''
 	data = np.loadtxt('t_lookup.score', delimiter=',')
 	print repr(data)
 	w = np.loadtxt('t_apply_weight.score.70.w')
@@ -966,7 +975,7 @@ def main():
 	print '-----------------'
 	for (c,lookup) in freqlookup(data[:,colset].T):
 		print '%s%s %s %s' % (scoreaa['aa'][c[0]], scoreaa['aa'][c[1]], repr(c), ','.join([str(a) for a in lookup]))
-
+	'''
 	# test rank01
 	'''
 	d = {'A': 0.00005, 'B': 0.00003, 'C': 0.00001, 'D': 0.00001, 'E': 0.00000}

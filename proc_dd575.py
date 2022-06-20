@@ -230,5 +230,83 @@ def clustering(args):
     #print(ret)
     cp._info('save %d %f clusters info to %s' % (len(set(clusters)), cutoff, outfile))
 
+# add cluster flags for coloring in dendrogram
+# input: cat r0.cluster.txt  r1.cluster.txt  r2.cluster.txt  r3.single.txt > combined.rcluster.txt
+# output: genes, label
+# output in .stub order to match the matrix index
+def rlabelflat(args):
+    assert len(args)==3, 'Usage: python proc_dd575.py rlabelflat combined.rx.cluster.txt out.stub outfile'
+
+    infile = args[0]
+    stubfile = args[1]
+    outfile = args[2]
+
+    #cidset = set()
+    glist = []
+    for t in cp.loadtuples(infile):
+        if len(t) == 9 and t[8] in ['1','2']: # clusters r0,r1
+            cid='%s.%s' % (t[0],t[1])
+            #cidset.add(cid)
+            for g in t[7].split(','):
+                glist.append((cid, g))
+        elif len(t) > 1: # r2
+            for g in t[7].split(','):
+                glist.append(('single', g))
+        else: # singlets
+            #cidset.add('single')
+            g = t[0]
+            glist.append(('single', g))
+
+    #colordict = dict((cidset.pop(),i) for i in range(len(cidset)))
+    #print(colordict)
+
+    #outlist = ['%s %s %s' % (g[0], g[1], colordict[g[0]]) for g in glist]
+    stub = cp.loadlines(stubfile)
+
+    # outdict[xlabel]= color_flag
+    outdict = dict((g[1], g[0]) for g in glist)
+    #print(outlist)
+    outlist = ['%s %s' % (g, outdict[g]) for g in stub]
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save labeled flat file: %s' % outfile)
+
+
+
+# similar to rlabelflat
+# for binary color labeling
+def rlabelflat2(args):
+    assert len(args)==3, 'Usage: python proc_dd575.py rlabelflat combined.rx.cluster.txt out.stub outfile'
+
+    infile = args[0]
+    stubfile = args[1]
+    outfile = args[2]
+
+    #cidset = set()
+    glist = []
+    for t in cp.loadtuples(infile):
+        if len(t) == 9 and t[8] in ['1','2']: # clusters r0,r1
+            for g in t[7].split(','):
+                glist.append((t[8], g))
+        elif len(t) > 1: # r2
+            for g in t[7].split(','):
+                glist.append(('0', g))
+        else: # singlets r3
+            #cidset.add('single')
+            g = t[0]
+            glist.append(('0', g))
+
+    stub = cp.loadlines(stubfile)
+
+    # outdict[xlabel]= color_flag
+    outdict = dict((g[1], g[0]) for g in glist)
+    #print(outlist)
+    outlist = ['%s %s' % (g, outdict[g]) for g in stub]
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save binary labeled flat file: %s' % outfile)
+
 if __name__=='__main__':
     cp.dispatch(__name__)

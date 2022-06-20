@@ -210,7 +210,7 @@ def keymerge(args):
         fout.write('%s\n' % '\n'.join([outdict[k] for k in outdict]))
     cp._info('save %d merged records to %s' % (len(outdict), outfile))
 
-
+'''
 def _ce2dict(celines, keyclist, ceclist):
     cedict={}
     idpairstub=[]
@@ -234,26 +234,15 @@ def _ce2dict(celines, keyclist, ceclist):
     colslist = list(idxset)
     colslist.sort()
     return cedict, idpairstub,colslist
-
 '''
-RCW adjustment for pairwise correlations
-rcw(i,j) = (sum_v(i)+sum_v(j) - MI(i,j)) / (n-1)
-MI_rcw(i,j) = MI(i,j)/rcw(i,j)
-# calcuate rcw with given stub order
-'''
-def _rcw(cedict, idpairstub, colslist):
-    # calculate column-wise sum
-    sumdict = {}
-    for i in xrange(0, len(colslist)):
-        ith_column_sum = 0.0
 
 
-
-
-
+# works for multivarable
+# input: tsv lines, key column indices, ce value column indecies
+# output: cedict['0 2 3']= (ii, tc, sdii), idstub = ['0 1 2', '0 1 3', ...,], collist = [0,1,2,3,...]
 def _ce2dict(celines, keyclist, ceclist):
     cedict={}
-    idpairstub=[]
+    idstub=[]
     idxset=set()
     for line in celines:
         sarr = line.split(' ')
@@ -261,7 +250,7 @@ def _ce2dict(celines, keyclist, ceclist):
         k = ' '.join(['%s' % sarr[c] for c in keyclist]) # keyclist should always have two columns {id1, id2}
         # save the same order as the input file
         # this will control the order of output
-        idpairstub.append(k) 
+        idstub.append(k) 
 
         # save ce scores 
         #print k, repr(ceclist), len(sarr)
@@ -273,7 +262,7 @@ def _ce2dict(celines, keyclist, ceclist):
 
     colslist = list(idxset)
     colslist.sort()
-    return cedict, idpairstub,colslist
+    return cedict, idstub,colslist
 
 '''
 RCW adjustment for pairwise correlations
@@ -316,11 +305,11 @@ output: single column MIp corresponding to the original order in SDII file (for 
 def _apc(cedict, idpairstub, colslist):
     avgMI = sum(cedict.itervalues()) / len(cedict)
 
-    # column-wise sum
+    # column-wise average
     MIax = {}
-    for i in xrange(0, len(colslist)):
+    for i in range(0, len(colslist)):
         marginMI = 0.0
-        for j in xrange(0, len(colslist)):
+        for j in range(0, len(colslist)):
             if i == j:
                 continue
             k = ('%s %s' % (colslist[i], colslist[j])) if i < j else ('%s %s' % (colslist[j], colslist[i]))
@@ -338,16 +327,61 @@ def _apc(cedict, idpairstub, colslist):
             k = '%d %d' % (colslist[p], colslist[q])
             if k in cedict:
                 MIp = cedict[k] - apc
-                MIpdict[k] = (apc, MIp)
+                #MIpdict[k] = (apc, MIp)
+                # output spectrum
+                MIpdict[k] = (apc, MIp, p, q, MIax[colslist[p]], MIax[colslist[q]], avgMI)
                 #print '%s %.8f %.8f %.8f\n' % (k, cedict[k], apc, MIp)
     return [MIpdict[k] for k in idpairstub]
+
+'''
+calculate apc for triplet measures (ii, tc, sdii)
+output apc3 spectrum {avgA avgB avgC total_avg}
+'''
+def _apc3(cedict, idstub, colslist):
+    total_avg = sum(cedict.itervalues()) / len(cedict)
+
+    nc = cp.ncr(len(colslist)-1, 2)
+    # column-wise average
+    vpos = collections.defaultdict(float)
+    #cdict = collections.defaultdict(int)
+    for k in idstub:
+        s = k.split(' ')
+        v = cedict[k]
+
+        vpos[s[0]]+=v
+        vpos[s[1]]+=v
+        vpos[s[2]]+=v
+        '''
+        cdict[s[0]]+=1
+        cdict[s[1]]+=1
+        cdict[s[2]]+=1
+        '''
+
+    outlist = []
+    for k in idstub:
+        s = k.split(' ')
+        #outlist.append('%s %.8f %.8f %.8f %.8f' % (k, vpos[s[0]]/nc, vpos[s[1]]/nc, vpos[s[2]]/nc, total_avg))
+        outlist.append((vpos[s[0]]/nc, vpos[s[1]]/nc, vpos[s[2]]/nc, total_avg))
+
+    '''
+    k1 = idstub[2]
+    s = k1.split(' ')
+    print(cdict[s[0]])
+    print(cdict[s[1]])
+    print(cdict[s[2]])
+    print(nc)
+    '''
+
+    return outlist
+        
+
 
 
 '''
 Input: a space separted file, column id(s) for calculating RCW
 Output: ssv file in the format of {rcw rcw_ce | rcw2 rcw_ce2 | ...}
 '''
-adj_func_dict = {'rcw': _rcw, 'apc': _apc}
+adj_func_dict = {'rcw': _rcw, 'apc': _apc, 'apc3': _apc3}
 
 def adjustment(args):
     assert len(args) == 5, 'Usage: python utils_ce.py adjustment infile.ssv stub_columns{0,1} apc ce_columns{2,3,5} outfile'
@@ -355,7 +389,7 @@ def adjustment(args):
     # inputs
     infile = args[0]
     keyclist = [int(c) for c in args[1].split(',')] # which two columns are the indices
-    assert len(keyclist) == 2, 'illegal number of index columns for paired keys'
+    #assert len(keyclist) == 2, 'illegal number of index columns for paired keys'
     adj_func = adj_func_dict[args[2]]
     ceclist = [int(c) for c in args[3].split(',')] # target columns for the adjustment
     outfile = args[4]
@@ -377,7 +411,8 @@ def adjustment(args):
     with open(outfile, 'w') as fout:
         flatstr = '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])
         fout.write('%s\n' % flatstr)
-    cp._info('save {rcw rcw_ce rcw2 rcw_ce2 ...} to %s' % outfile)
+    #cp._info('save {rcw rcw_ce rcw2 rcw_ce2 ...} to %s' % outfile)
+    cp._info('save {apc MIp a b avgMI(a,x) avgMI(b,x) avgMI}, {...} to %s' % outfile)
 
 
 # generate ccmatrix for downstream analysis {EC analysis}
