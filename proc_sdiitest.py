@@ -135,8 +135,28 @@ def averagedii(args):
     fout.close()
     cp._info('save average dii {average.dii3,average.dii2,average.dii1,total_average} to %s' % outfile)
 
-    
 
+# calculate mean dist of triplets
+# distfile:
+# python utils_protein2.py writeresdists 1a2t_a.pdb 1a2t_a.pdb.dist
+# A 1 A 3 5.5
+# index file: {id1, id2, id3}
+def mdist(args):
+    sdiifile = args[0]
+    distfile = args[1]
+    outfile = args[2]
+
+    distd = dict(('%s %s' % (d[1],d[3]), float(d[4])) for d in cp.loadtuples(distfile))
+
+    fout=open(outfile, 'w')
+    for s in cp.loadtuples(sdiifile):
+        k1 = '%s %s' % (s[0], s[1])
+        k2 = '%s %s' % (s[1], s[2])
+        k3 = '%s %s' % (s[0], s[2])
+        md = (distd[k1]+distd[k2]+distd[k3])/3.0
+        fout.write('%s %s %s %.8f\n' % (s[0], s[1], s[2], md))
+    fout.close()
+    cp._info('append average id1,id2,id3,dist to %s' % outfile)
 
 
 

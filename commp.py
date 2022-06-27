@@ -434,8 +434,6 @@ def _info(msg, flag='INFO'):
 
 
 
-
-
 # return ith column of matrix (list(list))
 # 	[...]
 # [ [...] ]
@@ -470,6 +468,20 @@ def dcall(callstr):
 # used in utils_mprun.py
 def drun(runstr):
 	return subprocess.Popen(runstr, stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
+
+
+
+# calculate adjusted mean and std
+# introduced in sdii shadow paper
+def adjmean(nlist, c):
+	nplist = np.array(nlist)
+	if c==0: 
+		return nplist.mean()
+	outlier = nplist.mean()+c*nplist.std()
+	nplist_no_outlier = np.array([v for v in nlist if v < outlier])
+	adjm = nplist_no_outlier.mean()
+	return adjm
+
 
 # transfer a skewed distribution into normal
 # input: vec, a list of float values

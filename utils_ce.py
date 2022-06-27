@@ -270,7 +270,7 @@ rcw(i,j) = (sum_v(i)+sum_v(j) - MI(i,j)) / (n-1)
 MI_rcw(i,j) = MI(i,j)/rcw(i,j)
 # calcuate rcw with given stub order
 '''
-def _rcw(cedict, idpairstub, colslist):
+def _rcw(cedict, idpairstub, colslist, c):
     # calculate column-wise sum
     sumdict = {}
     for i in xrange(0, len(colslist)):
@@ -302,7 +302,7 @@ masi1 msai2 sdii
 APC(a,b) = (MIax * MIbx) / avgMI
 output: single column MIp corresponding to the original order in SDII file (for paste to append)
 '''
-def _apc(cedict, idpairstub, colslist):
+def _apc(cedict, idpairstub, colslist, c):
     avgMI = sum(cedict.itervalues()) / len(cedict)
 
     # column-wise average
@@ -333,49 +333,59 @@ def _apc(cedict, idpairstub, colslist):
                 #print '%s %.8f %.8f %.8f\n' % (k, cedict[k], apc, MIp)
     return [MIpdict[k] for k in idpairstub]
 
+
 '''
 calculate apc for triplet measures (ii, tc, sdii)
 output apc3 spectrum {avgA avgB avgC total_avg}
 '''
-def _apc3(cedict, idstub, colslist):
-    total_avg = sum(cedict.itervalues()) / len(cedict)
-
-    nc = cp.ncr(len(colslist)-1, 2)
+def _apc3c(cedict, idstub, colslist, c=0):
+    if c==0:
+        total_avg = sum(cedict.itervalues()) / len(cedict)
+    else:
+        total_avg = cp.adjmean(list(cedict.itervalues()), c)
+    #nc = cp.ncr(len(colslist)-1, 2)
     # column-wise average
     vpos = collections.defaultdict(float)
-    #cdict = collections.defaultdict(int)
+    vlistdict = collections.defaultdict(list)
     for k in idstub:
         s = k.split(' ')
         v = cedict[k]
-
+        '''
         vpos[s[0]]+=v
         vpos[s[1]]+=v
         vpos[s[2]]+=v
         '''
-        cdict[s[0]]+=1
-        cdict[s[1]]+=1
-        cdict[s[2]]+=1
-        '''
+        vlistdict[s[0]].append(v)
+        vlistdict[s[1]].append(v)
+        vlistdict[s[2]].append(v)
 
     outlist = []
     for k in idstub:
         s = k.split(' ')
-        #outlist.append('%s %.8f %.8f %.8f %.8f' % (k, vpos[s[0]]/nc, vpos[s[1]]/nc, vpos[s[2]]/nc, total_avg))
+        #outlist.append((vpos[s[0]]/nc, vpos[s[1]]/nc, vpos[s[2]]/nc, total_avg))
+        m1 = cp.adjmean(vlistdict[s[0]], c)
+        m2 = cp.adjmean(vlistdict[s[1]], c)
+        m3 = cp.adjmean(vlistdict[s[2]], c)
+        outlist.append((m1,m2,m3,total_avg))
+    return outlist
+
+# the orginal apc3 without adjusted mean
+def _apc3(cedict, idstub, colslist):
+    total_avg = sum(cedict.itervalues()) / len(cedict)
+    nc = cp.ncr(len(colslist)-1, 2)
+    # column-wise average
+    vpos = collections.defaultdict(float)
+    for k in idstub:
+        s = k.split(' ')
+        v = cedict[k]
+        vpos[s[0]]+=v
+        vpos[s[1]]+=v
+        vpos[s[2]]+=v
+    for k in idstub:
+        s = k.split(' ')
         outlist.append((vpos[s[0]]/nc, vpos[s[1]]/nc, vpos[s[2]]/nc, total_avg))
-
-    '''
-    k1 = idstub[2]
-    s = k1.split(' ')
-    print(cdict[s[0]])
-    print(cdict[s[1]])
-    print(cdict[s[2]])
-    print(nc)
-    '''
-
     return outlist
         
-
-
 
 '''
 Input: a space separted file, column id(s) for calculating RCW
@@ -411,8 +421,40 @@ def adjustment(args):
     with open(outfile, 'w') as fout:
         flatstr = '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])
         fout.write('%s\n' % flatstr)
+    cp._info('save {rcw rcw_ce rcw2 rcw_ce2 ...} to %s' % outfile)
+
+# copy adjustment 
+# just for apc3
+def apc3(args):
+    assert len(args) == 5, 'Usage: python utils_ce.py apc3 infile.ssv stub_columns{0,1} ce_columns{2,3,5} adjmean_cutoff outfile'
+
+    # inputs
+    infile = args[0]
+    keyclist = [int(c) for c in args[1].split(',')] # which two columns are the indices
+    ceclist = [int(c) for c in args[2].split(',')] # target columns for the adjustment
+    adjmean_cutoff = float(args[3])
+    outfile = args[4]
+
+    # load ce index scores from infile
+    # cedicts['2 4'] = [1.1, 2.2, 3.3]
+    # idpairstub: contains the output order
+    # colslist: all the indices in an ordered list
+    cedicts, idpairstub, colslist = _ce2dict(cp.loadlines(infile), keyclist, ceclist)
+
+    # calculate the adjustment one by one
+    outlists = []
+    for i in xrange(0, len(ceclist)):
+        cedict = dict((k, cedicts[k][i]) for k in cedicts.keys())
+        outlist = _apc3c(cedict, idpairstub, colslist, adjmean_cutoff) # returns a list of pair tuple (apc value, final MIp)
+        outlists.append(outlist)
+
+    #print '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])
+    with open(outfile, 'w') as fout:
+        flatstr = '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])
+        fout.write('%s\n' % flatstr)
     #cp._info('save {rcw rcw_ce rcw2 rcw_ce2 ...} to %s' % outfile)
-    cp._info('save {apc MIp a b avgMI(a,x) avgMI(b,x) avgMI}, {...} to %s' % outfile)
+    cp._info('save {m1,m2,m3,total_m}, {...} to %s' % outfile)
+
 
 
 # generate ccmatrix for downstream analysis {EC analysis}

@@ -513,7 +513,11 @@ def roc(args):
     plt.plot([0, 1], [0, 1], 'k--')
     for k in xrange(0, len(curves)):
         c = curves[k]
-        plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
+        #plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
+        auc = metrics.auc(c[0],c[1])
+        plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], auc))
+        print('%s AUC: %.2f' % (legends[k],auc))
+        #plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], metrics.auc(c[0],c[1])))
 
     plt.xlabel('False positive rate')
     plt.ylabel('True positive rate')
