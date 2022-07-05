@@ -19,10 +19,11 @@ class pfammsa(object):
 	data structure of pfam MSA
 
 	"""
-	def __init__(self, msafile, opt='ambaa'):
+	#def __init__(self, msafile, opt='ambaa'):
+	def __init__(self, msafile, opt='u'): # uppercase
 		self.msalist = []
 		count = 0
-
+		'''
 		if opt=='ambaa':
 			# convert all abnormal characters into '.'
 			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
@@ -31,6 +32,14 @@ class pfammsa(object):
 		else:
 			for head, seq in cp.fasta_iter(msafile):
 				#print '%d\n%s\n%s\n' % (count, head, seq)
+				self.msalist.append((head, seq))
+		'''
+		if opt=='u':
+			# convert to uppercase
+			for head, seq in cp.fasta_iter(msafile):
+				self.msalist.append((head, seq.upper()))
+		else:
+			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq))
 
 		self.msalen = len(self.msalist[0][1])
@@ -767,6 +776,31 @@ def getsinglemsa(arglist):
 
 	cp._info('save [%s] raw seq : %s , MSA seq : %s' % (head, outseqfile, outmsafile))
 
+# same as getsinglemsa but for rna
+def getsinglemsa_r(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py getsinglemsa_r msafile header out_prefix'
+	msafile = args[0]
+	header = args[1]
+	outprefix = args[2]
+
+	pfm = pfammsa(msafile, opt='rna')
+	outmsa=''
+	for s in pfm.msalist:
+		if header in s[0]:
+			outmsa = '>%s\n%s\n' % (s[0], s[1])
+			outseq = '>%s\n%s\n' % (s[0], s[1].translate(None, ''.join(cp.gaps)))
+			break
+	if outmsa=='':
+		cp._info('header not found.')
+		return
+
+	with open('%s_msa.fa' % outprefix, 'w') as fout:
+		fout.write(outstr)
+	with open('%s_seq.fa' % outprefix, 'w') as fout:
+		fout.write(outseq)
+	cp._info('save to %s_msa.fa %s_seq.fa' % (outprefix, outprefix))
+
+
 def getbatchmsa(arglist):
 	assert len(arglist) == 3, 'Usage: python utils_pfammsa.py getbatchmsa PF00000.txt header.list outprefix'
 
@@ -934,7 +968,7 @@ def msareduce_withmap(args):
 	rescol = zip(ress, cols)
 
 	# msa2score
-	pfm = pfammsa(msafile)
+	pfm = pfammsa(msafile, opt=mflag)
 	scoremat = pfm.scorebycols(scoretag, cols)
 
 	# output
@@ -2039,6 +2073,7 @@ def main():
 		'freqlookupscol': freqlookupscol,
 		'getcolumns': getcolumns, # get columns from MSA
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
+		'getsinglemsa_r': getsinglemsa_r, # get single rna MSA 
 		'getbatchmsa': getbatchmsa,
 		'getsinglemsacluster': getsinglemsacluster, 
 		'msa2rawseq': msa2rawseq, # convert aligned MSA to fasta raw sequences

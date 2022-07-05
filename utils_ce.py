@@ -302,7 +302,7 @@ masi1 msai2 sdii
 APC(a,b) = (MIax * MIbx) / avgMI
 output: single column MIp corresponding to the original order in SDII file (for paste to append)
 '''
-def _apc(cedict, idpairstub, colslist, c):
+def _apc(cedict, idpairstub, colslist):
     avgMI = sum(cedict.itervalues()) / len(cedict)
 
     # column-wise average
@@ -421,7 +421,7 @@ def adjustment(args):
     with open(outfile, 'w') as fout:
         flatstr = '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])
         fout.write('%s\n' % flatstr)
-    cp._info('save {rcw rcw_ce rcw2 rcw_ce2 ...} to %s' % outfile)
+    cp._info('save {apc mip i j avgMI_i avgMI_j total_avg, ...} to %s' % outfile)
 
 # copy adjustment 
 # just for apc3
@@ -445,7 +445,9 @@ def apc3(args):
     outlists = []
     for i in xrange(0, len(ceclist)):
         cedict = dict((k, cedicts[k][i]) for k in cedicts.keys())
-        outlist = _apc3c(cedict, idpairstub, colslist, adjmean_cutoff) # returns a list of pair tuple (apc value, final MIp)
+        # won't improve accuracy and too slow ...
+        #outlist = _apc3c(cedict, idpairstub, colslist, adjmean_cutoff) # returns a list of pair tuple (apc value, final MIp)
+        outlist = _apc3(cedict, idpairstub, colslist, adjmean_cutoff) # returns a list of pair tuple (apc value, final MIp)
         outlists.append(outlist)
 
     #print '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])

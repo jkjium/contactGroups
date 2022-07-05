@@ -565,7 +565,8 @@ def writeseqfa(arglist):
 
 	p = protein(pdbfile, chain=chainid)
 	fout = open(outfile, 'w')
-	fout.write('>%s/0-%d\n%s\n' % (head, len(p.seq), p.seq.lower()))
+	#fout.write('>%s/0-%d\n%s\n' % (head, len(p.seq), p.seq.lower()))
+	fout.write('>%s/0-%d\n%s\n' % (head, len(p.seq), p.seq.upper()))
 	fout.close()
 	cp._info('write sequence to %s, len %d' % (outfile, len(p.seq)))
 
