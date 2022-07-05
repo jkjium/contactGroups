@@ -19,25 +19,23 @@ class pfammsa(object):
 	data structure of pfam MSA
 
 	"""
-	#def __init__(self, msafile, opt='ambaa'):
-	def __init__(self, msafile, opt='u'): # uppercase
+	def __init__(self, msafile, opt='u'):
 		self.msalist = []
 		count = 0
 		'''
-		if opt=='ambaa':
+		if opt in ['ambaa', 'aa']:
 			# convert all abnormal characters into '.'
 			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
 			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq.translate(trans).upper()))
 		else:
 			for head, seq in cp.fasta_iter(msafile):
-				#print '%d\n%s\n%s\n' % (count, head, seq)
-				self.msalist.append((head, seq))
-		'''
-		if opt=='u':
-			# convert to uppercase
-			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq.upper()))
+		'''
+		if opt in ['u']:
+			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
+			for head, seq in cp.fasta_iter(msafile):
+				self.msalist.append((head, seq.upper())
 		else:
 			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq))
@@ -795,7 +793,7 @@ def getsinglemsa_r(args):
 		return
 
 	with open('%s_msa.fa' % outprefix, 'w') as fout:
-		fout.write(outstr)
+		fout.write(outmsa)
 	with open('%s_seq.fa' % outprefix, 'w') as fout:
 		fout.write(outseq)
 	cp._info('save to %s_msa.fa %s_seq.fa' % (outprefix, outprefix))
@@ -968,7 +966,7 @@ def msareduce_withmap(args):
 	rescol = zip(ress, cols)
 
 	# msa2score
-	pfm = pfammsa(msafile, opt=mflag)
+	pfm = pfammsa(msafile, opt=scoretag)
 	scoremat = pfm.scorebycols(scoretag, cols)
 
 	# output
