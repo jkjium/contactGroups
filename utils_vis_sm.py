@@ -527,6 +527,44 @@ def roc(args):
     print('save to %s' % outfile)
     plt.show()
 
+# calculate auc
+# input: 
+# tsv score file
+# evaluate columns {0,1,2}
+# tp column
+# tp cutoff 1 if prediction < cutoff else 0
+# outfile: .auc: 0.auc, 1.auc 2.auc
+def roc(args):
+    assert len(args) == 3, 'Usage: python utils_vis_sm.py roc roc_score_file 2,3,4 0 4.5 outfile'
+    infile = args[0]
+    legends = [s for s in args[1].split(',')]
+    outfile = args[2]
+
+    data = np.loadtxt(infile)
+    print(data.shape)
+    p = data.shape[1] # get how many scores
+
+    y = data[:,0]
+    curves = [metrics.roc_curve(y, data[:,i], pos_label=1) for i in xrange(1,p)]
+
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], 'k--')
+    for k in xrange(0, len(curves)):
+        c = curves[k]
+        #plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
+        auc = metrics.auc(c[0],c[1])
+        plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], auc))
+        print('%s AUC: %.2f' % (legends[k],auc))
+        #plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], metrics.auc(c[0],c[1])))
+
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC curve')
+    plt.legend(loc='best')
+    plt.savefig(outfile)
+    print('save to %s' % outfile)
+    plt.show()
+
 def _gridheatmap(data, row_labels, col_labels, ax=None,
             cbar_kw={}, cbarlabel="", **kwargs):
     """

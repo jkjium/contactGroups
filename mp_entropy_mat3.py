@@ -69,7 +69,7 @@ def worker(sdii_core, tasks, q):
 
 
 def listener(total, outfile, q):
-	cp._info('write to file [%s]' % outfile)
+	cp._info('write to file %s' % outfile)
 	fout = open(outfile, 'w')
 	count = 0
 	tcount = 0

@@ -352,7 +352,8 @@ aascore = {
 			'L': 1,'M': 1,'N': 12,'P': 7,'Q': 13,'R': 14,'S': 5,'T': 6,'V': 1,'W': 9,'Y': 8, 'B': 0
 			},
 	'rna' : {
-			'-':0, '.':0, 'M':0, 'n':0, 'N':0, 'R':0, 'W':0, 'Y':0, 
+			'-':0, '.':0, 'm':0, 'M':0, 'n':0, 'N':0, 'r':0, 'R':0, 'w':0, 'W':0, 'y':0, 'Y':0, 'k':0, 'K':0,
+			's':0, 'S':0, 'v':0, 'V':0, 'h':0, 'H':0, 'd':0, 'D':0, 'b':0, 'B':0,
 			'a':1, 'A':1, 'c':2, 'C':2, 'g':3, 'G':3, 'u':4, 'U':4
 			},
 	'null' : {}
@@ -657,6 +658,15 @@ def normminmax(nplist):
 
 def normmax(nplist):
 	return 1.0*(nplist)/np.max(nplist)
+
+# ordinary least square
+# beta = (X^T*X)^(-1)*X^T*y
+# input x: np.array (matrix)
+# input y: np.array response
+# return (m, b) # slope and intercept
+def ols(X, y):
+	return np.linalg.lstsq(np.vstack([X, np.ones(len(X))]).T, y, rcond=None)
+
 
 # given two strings
 # normal sequence & aligned sequence

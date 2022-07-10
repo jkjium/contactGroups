@@ -381,6 +381,7 @@ def _apc3(cedict, idstub, colslist):
         vpos[s[0]]+=v
         vpos[s[1]]+=v
         vpos[s[2]]+=v
+    outlist=[]
     for k in idstub:
         s = k.split(' ')
         outlist.append((vpos[s[0]]/nc, vpos[s[1]]/nc, vpos[s[2]]/nc, total_avg))
@@ -447,7 +448,7 @@ def apc3(args):
         cedict = dict((k, cedicts[k][i]) for k in cedicts.keys())
         # won't improve accuracy and too slow ...
         #outlist = _apc3c(cedict, idpairstub, colslist, adjmean_cutoff) # returns a list of pair tuple (apc value, final MIp)
-        outlist = _apc3(cedict, idpairstub, colslist, adjmean_cutoff) # returns a list of pair tuple (apc value, final MIp)
+        outlist = _apc3(cedict, idpairstub, colslist) # returns a list of pair tuple (apc value, final MIp)
         outlists.append(outlist)
 
     #print '\n'.join([' '.join([' '.join(['%.8f' % v for v in outlist[i]]) for outlist in outlists]) for i in xrange(0, len(idpairstub))])

@@ -35,7 +35,7 @@ class pfammsa(object):
 		if opt in ['u']:
 			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
 			for head, seq in cp.fasta_iter(msafile):
-				self.msalist.append((head, seq.upper())
+				self.msalist.append((head, seq.upper()))
 		else:
 			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq))
