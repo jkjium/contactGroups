@@ -150,9 +150,9 @@ def mdist(args):
 
     fout=open(outfile, 'w')
     for s in cp.loadtuples(sdiifile):
-        k1 = '%s %s' % (s[0], s[1])
-        k2 = '%s %s' % (s[1], s[2])
-        k3 = '%s %s' % (s[0], s[2])
+        k1 = '%s %s' % (s[0], s[1]) if int(s[0]) < int(s[1]) else '%s %s' % (s[1], s[0])
+        k2 = '%s %s' % (s[1], s[2]) if int(s[1]) < int(s[2]) else '%s %s' % (s[2], s[1])
+        k3 = '%s %s' % (s[0], s[2]) if int(s[0]) < int(s[2]) else '%s %s' % (s[2], s[0])
         md = (distd[k1]+distd[k2]+distd[k3])/3.0
         fout.write('%s %s %s %.8f\n' % (s[0], s[1], s[2], md))
     fout.close()

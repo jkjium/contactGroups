@@ -150,6 +150,32 @@ def barplot_bgdist(arglist):
     #plt.savefig(outfile)
     #cp._info('save to %s' % outfile)
 
+
+# plot side by side boxplot from general tsv file
+# input: read data from general tsv data
+# input: specify which column will be visualized {0,1,2}
+# input: lengends
+# input: output file
+# output: .png
+def box(args):
+    assert len(args) == 4, 'Usage: python utils_vis_sm.py box data.tsv 0,1,2 tc,sdii,ii outfile.png'
+    datafile = args[0]
+    datastr = np.genfromtxt(datafile,dtype='str')
+    dcols = [int(i) for i in args[1].split(',')]
+    data = datastr[:,dcols].astype(np.float)
+    legends = [s for s in args[2].split(',')]
+    outfile = args[3]
+
+    #plt.figure(figsize=(10, 6))
+    plt.boxplot(data,
+                #positions=[1, 1.6, 2.5, 3.1, 4, 4.6, 5.5, 6.1],
+                labels=legends)
+    #plt.xlim([0, 1.0])
+    #plt.title('boxplots')
+    #plt.legend(loc='best')
+    plt.savefig(outfile)
+    plt.show()
+
 def _augmented_dendrogram(*args, **kwargs):
     ddata=dendrogram(*args, **kwargs)
     if not kwargs.get('no_plot', False):
@@ -428,6 +454,31 @@ def hist_sbs(arglist):
     #fig.savefig('out.png')
     #cp._info('save to out.png')
 
+# plot side by side histogram from general tsv file
+# input: read data from general tsv data
+# input: specify which column will be visualized {0,1,2}
+# input: lengends
+# input: output file
+# output: .png
+def hists(args):
+    assert len(args) == 5, 'Usage: python utils_vis_sm.py hists data.tsv 0,1,2 tc,sdii,ii bins outfile.png'
+
+    datafile = args[0]
+    datastr = np.genfromtxt(datafile,dtype='str')
+    dcols = [int(i) for i in args[1].split(',')]
+    legends = [s for s in args[2].split(',')]
+    bins = int(args[3])
+    outfile = args[4]
+
+    for i in range(len(dcols)):
+        plt.hist(datastr[:,dcols[i]].astype(np.float), bins, alpha=0.5, label=legends[i])
+
+    plt.xlim([0, 1.0])
+    plt.title('AUC histograms')
+    plt.legend(loc='best')
+    plt.savefig(outfile)
+    plt.show()
+
 
 # generate simple signal plot (using plot) from two-column (space separted columns) file
 # column 1: x-tick
@@ -503,7 +554,7 @@ def roc(args):
     outfile = args[2]
 
     data = np.loadtxt(infile)
-    print(data.shape)
+    #print(data.shape)
     p = data.shape[1] # get how many scores
 
     y = data[:,0]
@@ -511,12 +562,14 @@ def roc(args):
 
     plt.figure(1)
     plt.plot([0, 1], [0, 1], 'k--')
+    auclist = []
     for k in xrange(0, len(curves)):
         c = curves[k]
         #plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
         auc = metrics.auc(c[0],c[1])
         plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], auc))
-        print('%s AUC: %.2f' % (legends[k],auc))
+        auclist.append('%.3f' % auc)
+        #print('%s AUC: %.2f' % (legends[k],auc))
         #plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], metrics.auc(c[0],c[1])))
 
     plt.xlabel('False positive rate')
@@ -524,8 +577,9 @@ def roc(args):
     plt.title('ROC curve')
     plt.legend(loc='best')
     plt.savefig(outfile)
-    print('save to %s' % outfile)
-    plt.show()
+    print('%s %s' %(outfile, ' '.join(auclist)))
+    #print('save to %s' % outfile)
+    #plt.show()
 
 # calculate auc
 # input: 
@@ -534,7 +588,8 @@ def roc(args):
 # tp column
 # tp cutoff 1 if prediction < cutoff else 0
 # outfile: .auc: 0.auc, 1.auc 2.auc
-def roc(args):
+
+def auc(args):
     assert len(args) == 3, 'Usage: python utils_vis_sm.py roc roc_score_file 2,3,4 0 4.5 outfile'
     infile = args[0]
     legends = [s for s in args[1].split(',')]
