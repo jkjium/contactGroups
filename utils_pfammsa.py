@@ -966,7 +966,8 @@ def msareduce_withmap(args):
 	rescol = zip(ress, cols)
 
 	# msa2score
-	pfm = pfammsa(msafile, opt=scoretag)
+	#pfm = pfammsa(msafile, opt=scoretag)
+	pfm = pfammsa(msafile)
 	scoremat = pfm.scorebycols(scoretag, cols)
 
 	# output
