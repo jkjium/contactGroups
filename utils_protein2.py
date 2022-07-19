@@ -384,6 +384,27 @@ def seqaafreq(arglist):
 		fout.write('%s\n' % outstr)
 	cp._info('save to %s' % outfile)
 
+# save atom information according to the residue number in scoremat map
+# scoremat map format: 
+# resi resn msai msan
+# 10 R 10 R
+# output pdb with the same residue order in the map
+def splitpdbwithmap(args):
+	assert len(args)==4, 'Usage: python utils_protein2.py splitpdbwithmap pdbfile chainID mapfile outfile'
+	pdbfile = args[0]
+	chainid = args[1]
+	mapfile = args[2]
+	outfile = args[3]
+
+	p = protein(pdbfile)
+	# key: 'A196'
+	# protein.py: 99 resAtomDict
+	resistub = ['%s%s' % (chainid, s[0]) for s in cp.loadtuples(mapfile)]
+	with open(outfile, 'w') as fout:
+		for k in resistub:
+			# write residue
+			fout.write(''.join([a.writeAtom() for a in p.resAtomsDict[k]]))
+	cp._info('save mapped pdb to %s' % outfile)
 
 # cut pdb using one sequence segment
 def splitpdbbyseq(arglist):
