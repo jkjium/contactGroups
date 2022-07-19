@@ -97,6 +97,43 @@ def analysis(args):
     np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
 
     cp._info('save %s.gnm.{tick, adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
+
+
+# gnm using external contact map
+def analysis_ctmat(args):
+    assert len(args) ==1, 'Usage: python utils_gnm.py analysis ctmatfile outprefix'
+    ctmatfile = args[0]
+
+    #p = protein(pdbfile)
+    ctmat = np.loadtxt(ctmatfile)
+    g = gnm(ctmat=ctmat)
+    outticks = '%s.gnm.tick' % ctmatfile
+    with open(outticks, 'w') as fout:
+        fout.write('%s\n' % (' '.join([str(a.resSeq) for a in p.ca])))
+    '''
+    dcmat = g.calcdyncc(mode_list)
+    dfmat = g.calcdistflucts(mode_list)
+    msf = g.calcmsf(mode_list)
+
+    outadjmat = '%s.gnm.adjmat.txt' % pdbfile
+    np.savetxt(outadjmat, g.ctmat, fmt='%d')
+    outdcmat = '%s.gnm.dcmat.txt' % pdbfile
+    np.savetxt(outdcmat, dcmat, fmt='%.3f')
+
+    outdfmat = '%s.gnm.dfmat.txt' % pdbfile
+    np.savetxt(outdfmat, dfmat, fmt='%.3f')
+
+    outmsf = '%s.gnm.msf.txt' % pdbfile
+    np.savetxt(outmsf, msf, fmt='%.3f')
+    '''
+
+    outmodes = '%s.gnm.modes.txt' % ctmatfile
+    np.savetxt(outmodes, g.modes, fmt='%.3f')
+
+    outfreqs = '%s.gnm.freqs.txt' % ctmatfile
+    np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
+
+    cp._info('save %s.gnm.{tick, adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % ctmatfile)
     
 
 def foo(args):
