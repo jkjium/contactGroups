@@ -24,7 +24,7 @@ def mat2flat(args):
     
 
 # calculate (accumulative) overlaps between two sets of vectors
-# kuse: Vector of values for the number of modes to use in accumulative overlap 
+# kuse: a vector of values for the number of modes to use in accumulative overlap 
 def _modeoverlap(m1, m2, kuse):
     print(m1.shape)
     print(m2.shape)
@@ -33,7 +33,7 @@ def _modeoverlap(m1, m2, kuse):
 
 # output mode (accumulative) overlaps
 def modeoverlap(args):
-    assert len(args) == 6, 'Usage: python utils_mat.py modeoverlap mat1 col_range1{1:10} mat2 col_range2{6:16} co_grid outprefix'
+    assert len(args) == 6, 'Usage: python utils_mat.py modeoverlap modes1.txt col_range1{1:10} mat2 col_range2{6:16} co_grid outprefix'
     matfile1 = args[0]
     mode_range1 = map(int, args[1].split(':'))
     matfile2 = args[2]
@@ -45,14 +45,41 @@ def modeoverlap(args):
     mat2 = np.loadtxt(matfile1)
 
     # get focused modes to start comparison
-    modes1 = mat[:,mode_range1[0]:mode_range1[1]]
-    modes2 = mat[:,mode_range2[0]:mode_range2[1]]
+    modes1 = mat1[:,mode_range1[0]:mode_range1[1]]
+    modes2 = mat2[:,mode_range2[0]:mode_range2[1]]
 
-    o, co = _modeoverlap(modes1, modes2, cogrid)
-
-
+    o, co, rmsip = _modeoverlap(modes1, modes2, cogrid)
 
 
+# rmsip Amadei, A. et al. (1999)
+def _rmsip(m1, m2):
+    n = m1.shape[1] # number of modes
+    m1 *= 1 / (m1 ** 2).sum(0) ** 0.5
+    m2 *= 1 / (m2 ** 2).sum(0) ** 0.5
+    overlaps = np.dot(m1.T, m2)
+    return np.sqrt(np.power(overlaps, 2).sum() / n)
+
+# calculate rmsip
+def rmsip(args):
+    assert len(args) == 4, 'Usage: python utils_mat.py rmsip mode1.txt mode2.txt mode_range{1:10} outfile'
+    matfile1 = args[0]
+    matfile2 = args[1]
+    m_range = args[2]
+    mode_range = map(int, m_range.split(':'))
+    outfile = args[3]
+
+    # load mode matrices
+    mat1 = np.loadtxt(matfile1)
+    mat2 = np.loadtxt(matfile2)
+
+    modes1 = mat1[:, mode_range[0]:mode_range[1]]
+    modes2 = mat2[:, mode_range[0]:mode_range[1]]
+
+    rmsip = _rmsip(modes1, modes2)
+    outstr = 'rmsip %s %s %s %.4f' % (matfile1, matfile2, m_range, rmsip)
+    print(outstr)
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % outstr)
 
 # use trimtick to reduce fulltick matrix
 # deal with dimension matching between dynmat and cemat
