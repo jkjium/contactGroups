@@ -53,7 +53,11 @@ def modeoverlap(args):
 
 # rmsip Amadei, A. et al. (1999)
 def _rmsip(m1, m2):
-    n = m1.shape[1] # number of modes
+    #print(m1.ndim) # single vector
+    if m1.ndim==1: # single vector
+	return np.dot(m1.T,m2)
+
+    n = m1.shape[1]
     m1 *= 1 / (m1 ** 2).sum(0) ** 0.5
     m2 *= 1 / (m2 ** 2).sum(0) ** 0.5
     overlaps = np.dot(m1.T, m2)
@@ -72,11 +76,33 @@ def rmsip(args):
     mat1 = np.loadtxt(matfile1)
     mat2 = np.loadtxt(matfile2)
 
-    modes1 = mat1[:, mode_range[0]:mode_range[1]]
-    modes2 = mat2[:, mode_range[0]:mode_range[1]]
+    modes1 = mat1[:, mode_range[0]:mode_range[1]+1] if mode_range[0]< mode_range[1] else mat1[:,mode_range[0]]
+    modes2 = mat2[:, mode_range[0]:mode_range[1]+1] if mode_range[0]< mode_range[1] else mat2[:,mode_range[0]]
 
     rmsip = _rmsip(modes1, modes2)
     outstr = 'rmsip %s %s %s %.4f' % (matfile1, matfile2, m_range, rmsip)
+    print(outstr)
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % outstr)
+
+# calculate rmsip for a set of mode ranges
+def rmsip_range(args):
+    assert len(args) == 4, 'Usage: python utils_mat.py rmsip mode1.txt mode2.txt mode_range_set{1,2,3,5,10,20} outfile'
+    matfile1 = args[0]
+    matfile2 = args[1]
+    mode_range = map(int, args[2].split(',')) # [1,2,3,5,10,20]
+    outfile = args[3]
+
+    # load mode matrices
+    mat1 = np.loadtxt(matfile1)
+    mat2 = np.loadtxt(matfile2)
+    rmsiplist = []
+    for r in mode_range:
+        range_start = 1
+        modes1 = mat1[:, range_start:r+1] if range_start < r else mat1[:,range_start]
+        modes2 = mat2[:, range_start:r+1] if range_start < r else mat2[:,range_start]
+        rmsiplist.append(_rmsip(modes1, modes2))
+    outstr = '%s %s %s' % (matfile1, matfile2, ' '.join(['%.4f' % c for c in rmsiplist]))
     print(outstr)
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % outstr)

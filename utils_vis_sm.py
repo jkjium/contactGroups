@@ -176,6 +176,27 @@ def box(args):
     plt.savefig(outfile)
     plt.show()
 
+# boxplot for dynamic overlap only
+# column id: 0,1,2,3,4,5 (1,2,3,5,10,20)
+def rmsipbox(args):
+    assert len(args) == 2, 'Usage: python utils_vis_sm.py rmsipbox column_id outfile'
+    c = int(args[0])
+    outfile = args[1]
+    s1 = np.loadtxt('slice.1.txt') # > 0.95
+    s2 = np.loadtxt('slice.2.txt') # 0.9 0.95
+    s3 = np.loadtxt('slice.3.txt') # 0.8 0.9
+    s4 = np.loadtxt('slice.4.txt') # 0.7 0.8
+    s5 = np.loadtxt('slice.5.txt') # < 0.7
+
+    legends = ['>0.95','0.9-0.95','0.8-0.9','0.7-0.8','<0.7']
+    #data = np.vstack((s1[:,c],s2[:,c],s3[:,c],s4[:,c],s5[:,c])).T
+    plt.boxplot([s1[:,c],s2[:,c],s3[:,c],s4[:,c],s5[:,c]],
+                #positions=[1, 1.6, 2.5, 3.1, 4, 4.6, 5.5, 6.1],
+                labels=legends)
+    plt.show()
+    plt.savefig(outfile)
+
+
 def _augmented_dendrogram(*args, **kwargs):
     ddata=dendrogram(*args, **kwargs)
     if not kwargs.get('no_plot', False):
@@ -804,7 +825,7 @@ def heatmap(args):
     outfile = args[0]+'.png'
     fig.savefig(outfile)
     cp._info('save figure to %s' % outfile)
-    #plt.show()                        
+    plt.show()                        
 
 
 def heatmap_colorgrid(args):

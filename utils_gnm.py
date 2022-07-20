@@ -21,7 +21,7 @@ class gnm:
             self.ctmat = (self.spdmat <= self.cutoff**2).astype(int)
         else:
             self.ctmat = ctmat
-            cp._info('External contact map used.')
+            #cp._info('External contact map used.')
 
         np.fill_diagonal(self.ctmat, 0)
         D = np.diag(np.sum(self.ctmat, axis=0))
@@ -30,7 +30,7 @@ class gnm:
 
         # modes
         e, v = np.linalg.eigh(self.kirchhoff)
-        self.modes = v
+        self.modes = v # when using skip the first one
         self.frequencies = e
 
     '''
@@ -91,10 +91,10 @@ def analysis(args):
     np.savetxt(outmsf, msf, fmt='%.3f')
 
     outmodes = '%s.gnm.modes.txt' % pdbfile
-    np.savetxt(outmodes, g.modes, fmt='%.3f')
+    np.savetxt(outmodes, g.modes, fmt='%.8f')
 
     outfreqs = '%s.gnm.freqs.txt' % pdbfile
-    np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
+    np.savetxt(outfreqs, g.frequencies, fmt='%.8f')
 
     cp._info('save %s.gnm.{tick, adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % pdbfile)
 
@@ -107,9 +107,6 @@ def analysis_ctmat(args):
     #p = protein(pdbfile)
     ctmat = np.loadtxt(ctmatfile)
     g = gnm(ctmat=ctmat)
-    outticks = '%s.gnm.tick' % ctmatfile
-    with open(outticks, 'w') as fout:
-        fout.write('%s\n' % (' '.join([str(a.resSeq) for a in p.ca])))
     '''
     dcmat = g.calcdyncc(mode_list)
     dfmat = g.calcdistflucts(mode_list)
@@ -128,12 +125,102 @@ def analysis_ctmat(args):
     '''
 
     outmodes = '%s.gnm.modes.txt' % ctmatfile
-    np.savetxt(outmodes, g.modes, fmt='%.3f')
+    np.savetxt(outmodes, g.modes, fmt='%.8f')
 
     outfreqs = '%s.gnm.freqs.txt' % ctmatfile
-    np.savetxt(outfreqs, g.frequencies, fmt='%.3f')
+    np.savetxt(outfreqs, g.frequencies, fmt='%.8f')
+    # ticks are in 11AS_B-PF03590.dcaper.ccmat.tick from utils_ce.py cflat2ccmat
+    # gnm tick needs to be converted with awk '{for(i=1;i<=NF;i++) print $i}' 11AS_B-PF03590.pdb.gnm.tick > new.tick
+    cp._info('save %s.gnm.{adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % ctmatfile)
 
-    cp._info('save %s.gnm.{tick, adjmat, dcmat, dfmat, msf, modes, freqs}.txt' % ctmatfile)
+# gnm using correlation matrix with ctmat cutoff
+def analysis_cemat0(args):
+    assert len(args) ==2, 'Usage: python utils_gnm.py analysis ctmatfile outprefix'
+    cematfile = args[0]
+    cutoff = float(args[1])
+    outprefix = '%s.c%.4f' % (cematfile, cutoff)
+
+    #p = protein(pdbfile)
+    cemat = np.loadtxt(cematfile)
+    ctmat = (cemat <= cutoff).astype(int)
+
+    g = gnm(ctmat=ctmat)
+
+    outadjmat = '%s.gnm.adjmat.txt' % outprefix
+    np.savetxt(outadjmat, g.ctmat, fmt='%d')
+    '''
+    dcmat = g.calcdyncc(mode_list)
+    dfmat = g.calcdistflucts(mode_list)
+    msf = g.calcmsf(mode_list)
+
+    outdcmat = '%s.gnm.dcmat.txt' % pdbfile
+    np.savetxt(outdcmat, dcmat, fmt='%.3f')
+
+    outdfmat = '%s.gnm.dfmat.txt' % pdbfile
+    np.savetxt(outdfmat, dfmat, fmt='%.3f')
+
+    outmsf = '%s.gnm.msf.txt' % pdbfile
+    np.savetxt(outmsf, msf, fmt='%.3f')
+    '''
+
+    outmodes = '%s.gnm.modes.txt' % outprefix
+    np.savetxt(outmodes, g.modes, fmt='%.8f')
+
+    outfreqs = '%s.gnm.freqs.txt' % outprefix
+    np.savetxt(outfreqs, g.frequencies, fmt='%.8f')
+    # ticks are in 11AS_B-PF03590.dcaper.ccmat.tick from utils_ce.py cflat2ccmat
+    # gnm tick needs to be converted with awk '{for(i=1;i<=NF;i++) print $i}' 11AS_B-PF03590.pdb.gnm.tick > new.tick
+    cp._info('save %s.gnm.{adjmat, modes, freqs}.txt' % outprefix)
+
+
+# gnm using correlation matrix with ctmat cutoff
+# cutoff_start: percentile cutoff {0.04}. Iterate start from this value until a connected graph is found
+# offset: construct ctmat using the minimum cutoff_start + offset that makes the new ctmat a connected graph
+def analysis_cemat(args):
+    assert len(args) ==4, 'Usage: python utils_gnm.py analysis cematfile cutoff_start offset searching_interval outprefix'
+    cematfile = args[0]
+    cutoff_start = float(args[1])
+    offset = float(args[2])
+    interval = float(args[3])
+
+    cemat = np.loadtxt(cematfile)
+    cutoff = 99
+    # iterate until a connected graph is found
+    #for c in range(cutoff_start, interval, 0.16):
+    for c in np.arange(cutoff_start, 0.20, interval):
+        print('iterating cutoff: %.2f' % c)
+        ctmat = (cemat <= c).astype(int)
+        g = gnm(ctmat=ctmat)
+	#print(g.frequencies[0:5])
+        if np.round(g.frequencies[1],8)!=0.0:
+            cutoff = c
+            break
+
+    # apply ctmat cutoff offset
+    if offset!=0:
+        cutoff+=offset
+        ctmat = (cemat <= (cutoff)).astype(int)
+        g = gnm(ctmat=ctmat)
+
+
+    outprefix = '%s.%.4f' % (cematfile, cutoff)
+    # outputs
+    # ctmat
+    outadjmat = '%s.gnm.adjmat.txt' % (outprefix, cutoff)
+    np.savetxt(outadjmat, g.ctmat, fmt='%d')
+
+    # full modes matrix (including the first one)
+    outmodes = '%s.gnm.modes.txt' % outprefix
+    np.savetxt(outmodes, g.modes, fmt='%.8f')
+
+    # frequencies (eigenvalues)
+    outfreqs = '%s.gnm.freqs.txt' % outprefix
+    np.savetxt(outfreqs, g.frequencies, fmt='%.8f')
+    # ticks are in 11AS_B-PF03590.dcaper.ccmat.tick from utils_ce.py cflat2ccmat
+    # gnm tick needs to be converted with awk '{for(i=1;i<=NF;i++) print $i}' 11AS_B-PF03590.pdb.gnm.tick > new.tick
+    cp._info('save %s.gnm.{adjmat, modes, freqs}.txt' % outprefix)
+
+
     
 
 def foo(args):
