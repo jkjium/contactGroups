@@ -9,7 +9,7 @@ from scipy.spatial.distance import squareform
 from sklearn import metrics
 
 colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', 
-'#60e6c1', '#d7295e', '#008ed0', '#747474']
+'#60e6c1', '#d7295e', '#008ed0', '#747474', '#e06ebf', '#3ef1f9', '#f9bfd7']
 colorscheme2 = ['#a93a28', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474', '#afc8cd',]
 #1c225c
 
