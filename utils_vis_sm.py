@@ -598,6 +598,8 @@ def roc(args):
     plt.title('ROC curve')
     plt.legend(loc='best')
     plt.savefig(outfile)
+    with open(infile+'.auc', 'w') as fout:
+        fout.write('%s %s\n' % (infile, ' '.join(auclist)) )
     print('%s %s' %(outfile, ' '.join(auclist)))
     #print('save to %s' % outfile)
     #plt.show()
