@@ -3,6 +3,71 @@ import numpy as np
 from sdii import sdii
 import itertools
 
+
+
+def dtc3(args):
+    assert len(args) == 2, 'Usage: python proc_sdiitest.py dtc entropy.mat outifle'
+    hmat = np.loadtxt(args[0])
+    outfile =args[1]
+    # conditional entropy 
+    # [(1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
+    m_ch1 = np.array([0,0,0,0,0,-1,1])
+    m_ch2 = np.array([0,0,0,0,-1,0,1])
+    m_ch3 = np.array([0,0,0,-1,0,0,1])
+    
+    ch1 = (hmat * m_ch1).sum(axis=1)
+    ch2 = (hmat * m_ch2).sum(axis=1)
+    ch3 = (hmat * m_ch3).sum(axis=1)
+    
+    dtc3 = hmat[:,6] - (ch1+ch2+ch3)
+    
+    np.savetxt(outfile, dtc3.T, fmt='%.6f')
+    cp._info('save dct3 vec to %s' % outfile)   
+
+
+def hxmall(args):
+    assert len(args) == 2, 'Usage: python proc_sdiitest.py hxm entropy.mat outfile'
+    hmat = np.loadtxt(args[0])
+    outfile = args[1]
+    # [(1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
+    m_h2i_123= np.array([1,1,1,-1,-1,-1,1])
+    m_h2i_12 = np.array([1,1,0,-1,0,0,0])
+    m_h2i_13 = np.array([1,0,1,0,-1,0,0])
+    m_h2i_23 = np.array([0,1,1,0,0,-1,0])
+    m_h2g_123= np.array([1,1,1,0,0,0,-1])
+
+    #print(hmat)
+    #print(hmat * m_h2i_123)
+
+    # output: [(1, 2), (1, 3), (2, 3), (1, 2, 3), d3, d2, d1,t(1,2,3)]
+    # interaction information
+    imat_12  = (hmat * m_h2i_12).sum(axis=1)
+    imat_13  = (hmat * m_h2i_13).sum(axis=1)
+    imat_23  = (hmat * m_h2i_23).sum(axis=1)
+    imat_123 = (hmat * m_h2i_123).sum(axis=1)
+    # total correlation
+    gmat_123 = (hmat * m_h2g_123).sum(axis=1)
+
+    # differential interaction information
+    dii_3 = imat_123 - imat_12
+    dii_2 = imat_123 - imat_13
+    dii_1 = imat_123 - imat_23
+    
+    # dual_total correlation
+    m_ch1 = np.array([0,0,0,0,0,-1,1])
+    m_ch2 = np.array([0,0,0,0,-1,0,1])
+    m_ch3 = np.array([0,0,0,-1,0,0,1])
+    
+    ch1 = (hmat * m_ch1).sum(axis=1)
+    ch2 = (hmat * m_ch2).sum(axis=1)
+    ch3 = (hmat * m_ch3).sum(axis=1)
+    
+    dtc3 = hmat[:,6] - (ch1+ch2+ch3)
+
+    imat = np.vstack((imat_12,imat_13,imat_23,imat_123, dii_3, dii_2, dii_1, gmat_123, dtc3))
+    np.savetxt(outfile, imat.T, fmt='%.6f')
+    cp._info('save II to %s' % outfile)
+
 # kjia@kjia-PC ~/workspace/src 2022-05-02 00:05:14
 # $ awk '{print $1,$2,$3}' t.hlist > t.hlist.idx
 # $ awk '{print $4,$5,$6,$7,$8,$9,$10}' t.hlist > t.hlist.mat
@@ -84,6 +149,7 @@ def entropy_mat(args):
     with open('t.hlist', 'w') as fout:
         fout.write('%s\n' % '\n'.join(retlist))
     cp._info('save to t.hlist')
+
 
 # calculate average dii 
 # input: 100k.hlist.idx, 100k.hlist.multi
