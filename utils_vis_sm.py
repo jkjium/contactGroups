@@ -166,7 +166,7 @@ def box(args):
     legends = [s for s in args[2].split(',')]
     outfile = args[3]
 
-    #plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 5))
     plt.boxplot(data,
                 #positions=[1, 1.6, 2.5, 3.1, 4, 4.6, 5.5, 6.1],
                 labels=legends)

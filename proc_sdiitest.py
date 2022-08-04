@@ -118,31 +118,36 @@ def hxm(args):
 # 0 2 3 1.918296 0.000000 0.650022 1.918296 2.251629 0.650022 2.251629
 # 1 2 3 1.459148 0.000000 0.650022 1.459148 1.792481 0.650022 1.79248
 # python proc_sdiitest.py entropy_mat t.score.rna
-def entropy_mat(args):
+def hmat_test(args):
+    assert len(args) == 2, 'Usage: python proc_sdiitest.py entropy_mat_test scorefile order'
     datafile = args[0]
+    order = int(args[1])
     #outfile = args[1]
     d = np.loadtxt(datafile, delimiter=',')
+    ncol = d.shape[1]
     s = sdii(d)
     s.isWeighted = False
     # generate variable set in the order of :
     # 1,2,3,12,13,23,123 \n
     # 1,2,4,12,14,24,124 \n
     # ...
-    varset = [0,1,2,3]
-    triple_var = list(itertools.chain.from_iterable([itertools.combinations(varset, 3)]))
-    print('all triplets: \n', triple_var)
+    varset = list(range(ncol))
+    vargroup = list(itertools.chain.from_iterable([itertools.combinations(varset, order)]))
+    print('%s choose %d:' % (' '.join(['%d' % i for i in varset]), order))
+    print(vargroup)
+    print
     retlist = []
-    for v3 in triple_var: # iterate variable triplets
-        idx = ' '.join(['%d' % i for i in v3])
+    for vs in vargroup: # iterate variable triplets
+        idx = ' '.join(['%d' % i for i in vs])
         # generate power set
-        spectrum_idx_list = list(itertools.chain.from_iterable(itertools.combinations(v3, i) for i in range(1,4)))
+        spectrum_idx_list = list(itertools.chain.from_iterable(itertools.combinations(vs, i) for i in range(1,order+1)))
         # calculate(hash) entropy of each set in the order of 1,2,3,12,13,23,123
-        entropy_spectrum = map(s.hashed_entropy, spectrum_idx_list)
-        retlist.append('%s %s' % (idx, ' '.join(['%.6f' % e for e in entropy_spectrum])))
+        #entropy_spectrum = map(s.hashed_entropy, spectrum_idx_list)
+        #retlist.append('%s %s' % (idx, ' '.join(['%.6f' % e for e in entropy_spectrum])))
         # debug print out
         print(idx)
         print(spectrum_idx_list)
-        print(entropy_spectrum)
+        #print(entropy_spectrum)
     for e in retlist:
         print(e)
     # output file
