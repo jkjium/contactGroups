@@ -171,6 +171,8 @@ def box(args):
                 #positions=[1, 1.6, 2.5, 3.1, 4, 4.6, 5.5, 6.1],
                 labels=legends)
     #plt.xlim([0, 1.0])
+    #plt.xticks(fontsize=20)
+    #plt.yticks(fontsize=20)							
     #plt.title('boxplots')
     #plt.legend(loc='best')
     plt.savefig(outfile)
@@ -193,6 +195,9 @@ def rmsipbox(args):
     plt.boxplot([s1[:,c],s2[:,c],s3[:,c],s4[:,c],s5[:,c]],
                 #positions=[1, 1.6, 2.5, 3.1, 4, 4.6, 5.5, 6.1],
                 labels=legends)
+    plt.ylim([0, 1.0])
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)						   
     plt.show()
     plt.savefig(outfile)
 
@@ -821,7 +826,8 @@ def heatmap(args):
     # Let the horizontal axes labeling appear on top.
 
     #plt.xticks(rotation=90)
-    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)    
+    #ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False) 
+	ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False, labelsize=15) 
 
     fig.tight_layout()
     outfile = args[0]+'.png'

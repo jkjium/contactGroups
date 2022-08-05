@@ -50,6 +50,50 @@ def modeoverlap(args):
 
     o, co, rmsip = _modeoverlap(modes1, modes2, cogrid)
 
+# combine upper tri of m1 with lower tri of m2
+def combinetriangle(args):
+    assert len(args) == 3, 'Usage: python utils_mat.py combinetriangle m1file m2file outfile'
+    m1file = args[0]
+    m2file = args[1]
+    outfile = args[2]
+
+    m1 = np.loadtxt(m1file)
+    m2 = np.loadtxt(m2file)
+    upper = np.triu(m1)
+    lower = np.tril(m2)
+    outmat = upper+lower
+    np.savetxt(outfile, outmat)
+    cp._info('Save combined mat to %s' % outfile)
+
+# eigen decompose the correlation matrix directly
+# as a PCA for ce matrix then compare it with gnm modes
+def cepca(args):
+    assert len(args) == 2, 'Usage: python utils_mat.py cepca ccmat.txt outprefix'
+    ccmatfile = args[0]
+    outprefix = args[1]
+
+    data = np.loadtxt(ccmatfile) # must be a symmetrical (square) matrix
+    X = cp.rankminmax(data) + np.identity(len(data)) # convert to correlation matrix 
+    e, v = np.linalg.eig(X)
+
+    outfile = '%s.pca.modes.txt' % outprefix
+    np.savetxt(outfile, v, fmt='%.8f')
+
+    outfile = '%s.pca.eigen.txt' % outprefix
+    np.savetxt(outfile, e, fmt='%.8f')
+
+    cp._info('save to %s.pca.{modes, eigen}.txt' % outprefix)
+
+def _cumulovelap(m1,m2):
+    #print(m1.ndim) # single vector
+    if m1.ndim==1: # single vector
+	return np.absolute(np.dot(m1.T,m2))
+
+    n = m1.shape[1]
+    m1 *= 1 / (m1 ** 2).sum(0) ** 0.5
+    m2 *= 1 / (m2 ** 2).sum(0) ** 0.5
+    overlaps = np.dot(m1.T, m2)
+    return np.sqrt(np.power(overlap, 2).cumsum(axis=overlap.ndim-1))
 
 # rmsip Amadei, A. et al. (1999)
 def _rmsip(m1, m2):
