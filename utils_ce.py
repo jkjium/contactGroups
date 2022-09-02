@@ -462,7 +462,7 @@ def apc3(args):
 # rank ce value as percentage or L / x
 # extended from utils_ps3.py appendrankp
 def cerankl(args):
-    assert len(args) != 3, 'Usage: python utils_ce.py cerankl cefile collist{1,2,3,} outfile'
+    assert len(args) != 4, 'Usage: python utils_ce.py cerankl cefile collist{1,2,3,} L outfile'
     from scipy.stats import rankdata
 
     infile = args[0]
