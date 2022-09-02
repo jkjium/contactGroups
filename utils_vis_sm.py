@@ -506,6 +506,47 @@ def hists(args):
     plt.show()
 
 
+# histogram as type='step'
+# and vertical line highlighted
+# input: histogram data, datafile, .tsv
+# input: target column ID
+# input: vline coordinates and labels, .vec2
+# input: outputfile name
+def histv(args):
+    assert len(args) == 5, 'Usage: python utils_vis_sm.py histv tsvfile target_column{0} bin_size vlinefile outfile'
+
+    datafile = args[0]
+    dcol = int(args[1])
+    bins = int(args[2])
+    vlinefile = args[3]
+    outfile = args[4]
+
+    # tsv file may contain strings in other columns
+    datastr = np.genfromtxt(datafile,dtype='str')
+    data = datastr[:,dcol].astype(np.float)
+    # spline
+    n, x, _ = plt.hist(data, bins, histtype='step', density=True)
+    '''
+    import scipy.stats as stats
+    density = stats.gaussian_kde(data)
+    plt.plot(x, density(x))
+    '''
+
+    vlines = cp.loadtuples(vlinefile)
+    # label value
+    for v in vlines:
+        plt.axvline(x=float(v[1]), color='r', ls=':', lw=0.5, label=v[0])
+
+    '''
+    plt.xlim([0, 1.0])
+    plt.title('AUC histograms')
+    plt.legend(loc='best')
+    '''
+    #plt.savefig(outfile)
+    plt.show()
+
+
+
 # generate simple signal plot (using plot) from two-column (space separted columns) file
 # column 1: x-tick
 # column 2: values
@@ -827,7 +868,7 @@ def heatmap(args):
 
     #plt.xticks(rotation=90)
     #ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False) 
-	ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False, labelsize=15) 
+    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False, labelsize=15) 
 
     fig.tight_layout()
     outfile = args[0]+'.png'
