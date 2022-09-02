@@ -327,6 +327,38 @@ def _apc(cedict, idpairstub, colslist):
             k = '%d %d' % (colslist[p], colslist[q])
             if k in cedict:
                 MIp = cedict[k] - apc
+                MIpdict[k] = (apc, MIp)
+                # output spectrum
+                #MIpdict[k] = (apc, MIp, p, q, MIax[colslist[p]], MIax[colslist[q]], avgMI)
+                #print '%s %.8f %.8f %.8f\n' % (k, cedict[k], apc, MIp)
+    return [MIpdict[k] for k in idpairstub]
+
+# same as _apc0 but output full information
+def _apc_full(cedict, idpairstub, colslist):
+    avgMI = sum(cedict.itervalues()) / len(cedict)
+
+    # column-wise average
+    MIax = {}
+    for i in range(0, len(colslist)):
+        marginMI = 0.0
+        for j in range(0, len(colslist)):
+            if i == j:
+                continue
+            k = ('%s %s' % (colslist[i], colslist[j])) if i < j else ('%s %s' % (colslist[j], colslist[i]))
+            if k in cedict:
+                marginMI+= cedict[k]
+        MIax[colslist[i]] = marginMI / (len(colslist)-1)
+    
+    # calculate MIp
+    MIpdict={}
+    MIp = 0.0
+    MIplist=[]
+    for p in xrange(0, len(colslist)):
+        for q in xrange(p+1, len(colslist)):
+            apc = (MIax[colslist[p]] * MIax[colslist[q]])/avgMI
+            k = '%d %d' % (colslist[p], colslist[q])
+            if k in cedict:
+                MIp = cedict[k] - apc
                 #MIpdict[k] = (apc, MIp)
                 # output spectrum
                 MIpdict[k] = (apc, MIp, p, q, MIax[colslist[p]], MIax[colslist[q]], avgMI)
@@ -392,7 +424,7 @@ def _apc3(cedict, idstub, colslist):
 Input: a space separted file, column id(s) for calculating RCW
 Output: ssv file in the format of {rcw rcw_ce | rcw2 rcw_ce2 | ...}
 '''
-adj_func_dict = {'rcw': _rcw, 'apc': _apc, 'apc3': _apc3}
+adj_func_dict = {'rcw': _rcw, 'apc': _apc, 'apc3': _apc3, 'apc_full': _apc_full}
 
 def adjustment(args):
     assert len(args) == 5, 'Usage: python utils_ce.py adjustment infile.ssv stub_columns{0,1} apc ce_columns{2,3,5} outfile'
