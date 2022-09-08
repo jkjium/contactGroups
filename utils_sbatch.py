@@ -3,7 +3,7 @@ import numpy as np
 import sys
 
 
-def _sbatchstr(name, cmd, hours):
+def _sbatchstr(name, cmd, hours, partition):
 	sbatch=[]
 	sbatch.append('#!/bin/bash')
 	sbatch.append('#SBATCH --nodes=1')
@@ -15,6 +15,9 @@ def _sbatchstr(name, cmd, hours):
 
 	sbatch.append('#SBATCH --output=job.%s.out' % name)
 	sbatch.append('#SBATCH --error=job.%s.err\n' % name)
+
+	if partition!=None:
+		sbatch.append('#SBATCH --partition=%s' % partition)
 
 	# module
 	sbatch.append('module load py-numpy/1.15.2-py2-fdkji5s')
@@ -28,10 +31,12 @@ def _sbatchstr(name, cmd, hours):
 def sbatchfiles(args):
 	assert len(args)==2, 'Usage: python sbatch2.py sbatchfiles job.stub hours'
 	hours = int(args[1])
+	partition = args[2] if len(args) == 3 else None
+
 	for j in cp.loadtuples(args[0], delimiter=','): # name, cmd
 		name = j[0]
 		cmd = j[1]
-		sbatchstr = _sbatchstr(name, cmd, hours)
+		sbatchstr = _sbatchstr(name, cmd, hours, partition)
 		outfile = '%s.sh' % name
 		with open(outfile, 'w') as fout:
 			fout.write('%s\n\n' % ('\n'.join(sbatchstr)))
