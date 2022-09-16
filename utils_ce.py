@@ -491,32 +491,6 @@ def apc3(args):
     cp._info('save {m1,m2,m3,total_m}, {...} to %s' % outfile)
 
 
-# rank ce value as percentage or L / x
-# extended from utils_ps3.py appendrankp
-def cerankl(args):
-    assert len(args) != 4, 'Usage: python utils_ce.py cerankl cefile collist{1,2,3,} L outfile'
-    from scipy.stats import rankdata
-
-    infile = args[0]
-    cols = [int(c) for c in args[1].split(',')]
-    L = float(args[2])
-    outfile = args[3]
-
-    def _func_rl(x, L):
-        return L / (rankdata(-x) / len(x))
-
-    data = np.loadtxt(infile)
-    n = data.shape[0]
-    outlist = []
-    for i in cols:
-        p = rankdata(-data[:,i]) / n
-        outlist.append( L/p )
-
-    outnplist = np.array(outlist)
-    np.savetxt(outfile, outnplist.T, fmt='%.6f')
-    cp._info('save L/x rank to %s' % outfile)
-    
-
 # generate ccmatrix for downstream analysis {EC analysis}
 # input:
 # index_colids: columns that gives tuple id, {resi or msai}, works for pair and triplets ..
