@@ -944,6 +944,19 @@ def msa2rawseq(args):
 		fout.write('%s\n' % '\n'.join(outlist))
 	cp._info('save seqs to %s with duplication removal opt %s' % (outfile, opt))
 
+# reduce (MSA) sequences to integer representation without any filtering
+def seqreduce(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py seqreduce infile aa outfile'
+	infile = args[0] 
+	aatag = args[1]
+	outfile =args[2]
+
+	pfm = pfammsa(infile)
+	with open(outfile, 'w') as fout:
+		for s in pfm.msalist:
+			fout.write('>%s\n%s\n' % (s[0],','.join(['%d' % cp.aascore['aa'][a] for a in s[1]])))
+	cp._info('save seq scores to %s' % outfile)
+
 
 # reduce a pfammsa by resimap columns
 # input: msafile mapfile outputprefix
@@ -2086,6 +2099,7 @@ def main():
 		'retitle': retitle, # format header for dca calculation
 		'samplebyhamming': samplebyhamming,
 		'sampleu': sampleu, # sample sequences uniformly
+		'seqreduce': seqreduce, # map seq to integer without filtering
 		'scol2resi': scol2resi,
 		'scoreentropy': scoreentropy,
 		'scoreentropyall': scoreentropyall, # output all position entropy

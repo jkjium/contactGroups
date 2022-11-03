@@ -1,6 +1,43 @@
 import commp as cp
 import numpy as np
 
+# plot mean ppv for 12 methods
+# input: rfam.39.mppvs.plt
+def plotppv(args):
+    import matplotlib.pyplot as plt
+    colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474', '#e06ebf', '#3ef1f9', '#f9bfd7']
+    legends = {4:'TC', 5:'TC.apc', 6:'TC.asc', 7:'SDII', 8:'SDII.apc', 9:'SDII.asc', 10:'II', 11:'II.apc', 12:'II.asc', 13:'DTC', 14:'DTC.apc', 15:'DTC.asc'}
+    d = np.loadtxt(args[0]) # first column indicates method id
+    x = np.linspace(0.0, 1.0, 500)
+    for i in range(len(d)):
+        plt.plot(x, d[i,1:], label=legends[d[i,0]], color=colorscheme1[i])
+    #plt.plot(d[1:])
+    # finishing plots
+    #print(x)
+    #plt.xticks(x)
+    plt.xlabel('ranking ratio')
+    plt.ylabel('ppv')
+    plt.legend(loc='best')
+    plt.tight_layout()
+    plt.show()
+
+# calculate column-wised mean for .ppvs
+# input: .ppvs 39 families x 500 sample ppv(vs_ranks) values
+# output: .mppv, single line file
+# out format: method_id 500_mean_ppvs
+def mppv(args):
+    assert len(args) == 1, 'Usage: python proc_apc3.py mppv .ppvfile'
+    infile = args[0]
+    d = np.loadtxt(infile)
+    out = d.mean(axis=0)
+    sarr = infile.split('.')
+    method_id = sarr[1]
+    outstr = ' '.join(['%.6f' % v for v in out])
+    outfile = infile + '.mppv'
+    with open(outfile, 'w') as fout:
+        fout.write('%s %s\n' % (method_id, outstr))
+    cp._info('save to %s' % outfile)
+
 # prepare data for plotting accumulative_accuracy_ratio vs ranking_ratio(top X percentage ranked)
 # extended from utils_ps3.py appendrankp
 # input: ce value file(.vec15), ce value indeces {1,2,3},  response_index, response_cutoff
@@ -33,15 +70,14 @@ def rankp(args):
         # sort vec2 by rank values
         # s: vec2: 01, sorted_rank
         s = r[r[:,1].argsort()]
-
         total_contact = sum(r[:,0]) # sum number of TRUE values
+        cp._info('total contact: %d' % total_contact)
         
         # sL: 01, rank ratio (high to low order)
         #sL = np.c_[s[:,0], s[:,1]/L]
         sL = np.c_[s[:,0], s[:,1]/n] # sL[:,1] in [1/n, 1]
 
         # calculate accumulative number of contact
-        cp._info('calculating accumulative contact numbers')
         a = np.cumsum(sL[:,0])
 
         # outplt: x-axis: sorted_rank_ratio y-axis:accumulative_accuracy_ratio
@@ -51,8 +87,8 @@ def rankp(args):
         sample_idx = np.round(np.linspace(0, len(outplt) - 1, num_sample)).astype(int)
         outdata = outplt[sample_idx,1]
         outfile = '%s.%d.ppv' % (infile,cols[i])
+        cp._info('%s :: saving %dth ppv to %s' % (infile, cols[i],outfile))
         np.savetxt(outfile, outdata, fmt='%.6f', newline = " ")
-        cp._info('%s :: save %dth ppv to %s' % (infile, cols[i],outfile))
 
         '''
         # plot ppv vs sorted_rank for debugging
