@@ -301,6 +301,68 @@ def outsimilar(arglist):
 		fout.write('%s\n' % outstr)
 	cp._info('save to %s' %  outfile)
 
+# find most similar sequence in MSA
+# output resimap ppl script based on the similar seq
+# pdb.fasta filename must be in "XXXX.pdb.fa" format
+# msafile filename must be in "XXXXX.fa" format
+'''
+$ python utils_protein2.py writeseqfa 2ahi_A.pdb
+$ pfamscan 2ahi_A.pdb.fa -json > 2ahi_A.pdb.fa.json
+#$ python utils_embossalign.py findsimilar 2ahi_A.pdb.fa PF00870_ncbi.txt > 2ahi_PF00870_ncbi.report &
+$ python utils_pfammsa.py getsinglemsa PF00870_ncbi.txt 1GZH_C/6-194 PF00870.1gzh_c
+$ pfamscan PF00870.1gzh_c_seq.fa -json > PF00870.1gzh_c_seq.fa.json
+$ python utils_resimap.py resi2msa 2ahi_A.pdb A 2ahi_A.pdb.fa 2ahi_A.pdb.fa.json PF00870.1gzh_c_MSA.fa PF00870.1gzh_c_seq.fa.json PF00870
+'''
+def mapshbysimilar(arglist):
+	if len(arglist)!= 3:
+		cp._err('Usage: python utils_embossalign.py mapshbysimilar pdb.fasta MSAfile out_resimap.sh')
+
+	targetfile = arglist[0] # input seq file
+	msafile = arglist[1]
+	outfile = arglist[2]
+
+	target = ''
+	for h, s in cp.fasta_iter(targetfile):
+		target = s.translate(None, ''.join(cp.gaps)).lower()
+	if target == '':
+		cp._err('error in targetfile: %s\n%s' % (targetfile, cp.loadlines(targetfile)))
+
+	ealist = []
+	msadict = {}
+	pid=0.0
+	mea = type('embossalign', (object,), {})()
+	for s in cp.fasta_iter(msafile):
+		# remove gaps
+		msadict[s[0]] = s[1]
+		msaseq = s[1].translate(None, ''.join(cp.gaps)).lower()
+		alignflat = getflat('%s::%s' % (targetfile, '.'.join(s[0].split())), align_exec(target, msaseq))
+		ea = embossalign(alignflat)
+		print(ea.pid)
+
+		if ea.pid > pid:
+			pid = ea.pid
+			mea = ea
+		if ea.pid > 99.0:
+			mea = ea
+			break
+	#title:      2LXC_A.pdb.fa::E7KHZ8_YEASA/70-151
+	cp._info(mea.name)
+	pdbname = mea.name.split('.')[0] #2LXC_A
+	chainid = pdbname[-1] # A
+	msaname = msafile[:-3] # remove '.fa' : PF00000
+	msaseqname = mea.name.split('::')[1] # E7KHZ8_YEASA/70-151
+	outstr = '%s %s %.2f' % (targetfile, mea.name.split('::')[1], mea.pid)
+	cp._info(outstr)
+
+	outsh = []
+	outsh.append('pfamscan %s -json > %s.json' % (targetfile, targetfile))
+	outsh.append('python utils_pfammsa.py getsinglemsa %s %s %s.%s' % (msafile, msaseqname, msaname, pdbname))
+	outsh.append('pfamscan %s.%s_seq.fa -json > %s.%s_seq.fa.json' % (msaname, pdbname, msaname, pdbname))
+	outsh.append('python utils_resimap.py resi2msa %s.pdb %s %s %s.json %s.%s_MSA.fa %s.%s_seq.fa.json %s' % (pdbname, chainid, targetfile, targetfile, msaname, pdbname, msaname, pdbname, msaname))
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outsh))
+	cp._info('save resimap ppl script to %s' %  outfile)
+
 
 
 def help(d):
@@ -361,6 +423,7 @@ def main():
 	dispatch = {
 		'findsimilar': findsimilar,
 		'outsimilar': outsimilar,
+		'mapshbysimilar': mapshbysimilar,
 		'test':test
 	}
 
