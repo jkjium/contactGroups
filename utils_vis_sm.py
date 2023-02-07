@@ -634,7 +634,7 @@ def roc(args):
         c = curves[k]
         #plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
         auc = metrics.auc(c[0],c[1])
-        plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], auc))
+        plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (AUC: %.3f)' % (legends[k], auc))
         auclist.append('%.3f' % auc)
         #print('%s AUC: %.2f' % (legends[k],auc))
         #plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], metrics.auc(c[0],c[1])))

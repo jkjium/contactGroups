@@ -51,6 +51,7 @@ def _sbatchstr(name, cmd, hours, partition=None):
 
 	return sbatch
 
+# job.stub: name, cmd
 def py(args):
 	assert len(args)==2, 'Usage: python sbatch2.py sbatchfiles job.stub hours'
 	hours = int(args[1])
@@ -60,6 +61,46 @@ def py(args):
 		name = j[0]
 		cmd = j[1]
 		sbatchstr = _sbatchstr(name, cmd, hours, partition)
+		outfile = '%s.sh' % name
+		with open(outfile, 'w') as fout:
+			fout.write('%s\n\n' % ('\n'.join(sbatchstr)))
+		cp._info('save to %s\n' % outfile)
+
+def _Rsbatchstr(name, cmd, hours, partition=None):
+	sbatch=[]
+	sbatch.append('#!/bin/bash')
+	sbatch.append('#SBATCH --nodes=1')
+	sbatch.append('#SBATCH --cpus-per-task=8')
+	sbatch.append('#SBATCH --mem=128G')
+	
+	sbatch.append('\n#SBATCH --time=%d:0:0\n' % hours)
+	print('%s %d' % (name, hours))
+
+	sbatch.append('#SBATCH --output=job.%s.out' % name)
+	sbatch.append('#SBATCH --error=job.%s.err\n' % name)
+
+	if partition!=None:
+		sbatch.append('#SBATCH --partition=%s' % partition)
+
+	# module
+	sbatch.append('module load r')
+
+	# cmd
+	sbatch.append(cmd)
+
+	return sbatch
+
+# job.stub: name, cmd
+# generate r sbatches
+def r(args):
+	assert len(args)==2, 'Usage: python sbatch.py r job.stub hours'
+	hours = int(args[1])
+	partition = args[2] if len(args) == 3 else None
+
+	for j in cp.loadtuples(args[0], delimiter=','): # name, cmd
+		name = j[0]
+		cmd = j[1]
+		sbatchstr = _Rsbatchstr(name, cmd, hours, partition)
 		outfile = '%s.sh' % name
 		with open(outfile, 'w') as fout:
 			fout.write('%s\n\n' % ('\n'.join(sbatchstr)))
