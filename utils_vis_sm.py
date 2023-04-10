@@ -53,16 +53,16 @@ def barplot(args):
         data.append(float(sarr[0]))
         ticks.append(sarr[1])
 
-    print(data)
-    print(ticks)
+    #print(data)
+    #print(ticks)
 
-    fig, ax = plt.subplots(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(18,5))
 
     n = len(data)
     index = np.arange(n)
-    bar_width = 0.5
+    bar_width = 0.7
     #opacity = 0.4
-    outbar = plt.bar(index, data, bar_width, color = colorscheme1[0])
+    outbar = plt.bar(index, data, bar_width, color = colorscheme1[2])
     #plot.xlabel('xlabel')
     #plot.ylabel('ylabel')
     plt.xticks(index + bar_width/2, ticks, rotation='vertical')
@@ -292,7 +292,7 @@ def dendrogram_mat(arglist):
     plt.xticks(fontsize=10)
     plt.tight_layout()
     plt.savefig(outfile)
-    #plt.show()
+    plt.show()
 
     '''
     dists = squareform(mat)
@@ -634,6 +634,7 @@ def roc(args):
         c = curves[k]
         #plt.plot(c[0], c[1], color=colorscheme1[k], label=legends[k])
         auc = metrics.auc(c[0],c[1])
+        #plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (%.2f)' % (legends[k], auc))
         plt.plot(c[0], c[1], color=colorscheme1[k], label='%s (AUC: %.3f)' % (legends[k], auc))
         auclist.append('%.3f' % auc)
         #print('%s AUC: %.2f' % (legends[k],auc))
@@ -853,15 +854,17 @@ def heatmap(args):
     cbar.ax.set_ylabel('colorbar', rotation=-90, va="bottom")
 
     # show every 10 count of ticks
-    ax.set_xticks(np.arange(1, data.shape[1]+1,10))
-    ax.set_yticks(np.arange(1, data.shape[0]+1,10)) 
-    #ax.set_xticks(np.arange(1, data.shape[1]+1))
-    #ax.set_yticks(np.arange(1, data.shape[0]+1)) 
+    #ax.set_xticks(np.arange(1, data.shape[1]+1,10))
+    #ax.set_yticks(np.arange(1, data.shape[0]+1,10)) 
     # ... and label them with the respective list entries.
-    ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)], rotation=90)
-    ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
-    #ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1])])
-    #ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0])])
+    #ax.set_xticklabels([xticktext[i-1] for i in np.arange(1, data.shape[1]+1,10)], rotation=90)
+    #ax.set_yticklabels([yticktext[i-1] for i in np.arange(1, data.shape[0]+1,10)])
+
+    # show all the ticks
+    ax.set_xticks(np.arange(0, data.shape[1]))
+    ax.set_yticks(np.arange(0, data.shape[0])) 
+    ax.set_xticklabels([xticktext[i] for i in np.arange(0, data.shape[1])], rotation=90)
+    ax.set_yticklabels([yticktext[i] for i in np.arange(0, data.shape[0])])
     #ax.set_yticklabels(yticktext) 
 
     # Let the horizontal axes labeling appear on top.
