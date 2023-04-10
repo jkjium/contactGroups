@@ -514,7 +514,7 @@ def apc3(args):
 # 460
 # 461
 def cflat2ccmat(args):
-    assert len(args) == 4, 'Usage: python utils_ce.py cflat2ccmat .cflatfile index.cols{0,1} cevalue.col{13} outprefix {.tick, .ccmat}'
+    assert len(args) == 4, 'Usage: python utils_ce.py cflat2ccmat .cflatfile index.cols{0,1} cevalue.col{13} outprefix {.tick, .n.ccmat, .ccmat}'
     cflatfile = args[0]
     index_colids = [int(i) for i in args[1].split(',')]
     value_colid = int(args[2])
@@ -551,13 +551,17 @@ def cflat2ccmat(args):
                 v = 0.0
             ccmat[i,j] = ccmat[j,i] = v
 
-    # output files
+    # output raw matrix file
     outccmatfile = '%s.ccmat' % outprefix
-    np.savetxt(outccmatfile, ccmat, fmt='%.4f')
+    np.savetxt(outccmatfile, ccmat, fmt='%.6f')
+    # output normalized matrix file
+    outnccmatfile = '%s.n.ccmat' % outprefix
+    np.savetxt(outnccmatfile, cp.normminmax(ccmat), fmt='%.6f')
+    # output tick file
     outtickfile = '%s.ccmat.tick' % outprefix
     np.savetxt(outtickfile, np.array(idlist), fmt='%i')
 
-    cp._info('save to %s{.ccmat, .ccmat.tick}' % outprefix)
+    cp._info('save to %s{.ccmat, .n.ccmat .ccmat.tick}' % outprefix)
 
 def topsetsdii3(args):
     assert len(args) == 4, 'Usage: python utils_ce.py topsetsdii3 sdii3.file msailist.file threshold outfile'
