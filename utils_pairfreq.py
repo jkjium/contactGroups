@@ -5,6 +5,34 @@ import collections
 import itertools
 import math
 
+
+def bg400(args):
+	assert len(args) == 3, 'Usage: python utils_pairfreq.py bg400 scorefile scolfile outfile'
+	scorefile = args[0]
+	scolfile = args[1]
+	outfile = args[2]
+
+	score = np.loadtxt(scorefile, delimiter=',')
+
+	eij = collections.defaultdict(float)
+	# iterate each column pair
+	for line in cp.loadlines(scolfile):
+		# # m1 m2 i1 i2 zscore p-rank
+		sarr = line.split(' ')	
+		c1 = int(sarr[2])
+		c2 = int(sarr[3])
+
+		aafreq = collections.Counter(['%s%s' % (cp.scoreaa['aa'][e[0]], cp.scoreaa['aa'][e[1]]) for e in score[:,[c1,c2]]])
+		for k in aafreq:
+			eij[k]+=aafreq[k]
+
+
+	total = sum([eij[k] for k in eij if '.' not in k])
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(['bg %s %.8f' % (k, eij[k]/total) for k in eij if '.' not in k])))
+		cp._info('save to %s' % outfile)
+
+
 # caluclate weighted background frequencies
 # frequencies are normalized into sum of 1
 def bgdists(arglist):
@@ -409,6 +437,7 @@ def single_210x400(arglist):
 			#print k, ' '.join(['%s:%.2f' % (a,nd[a]) if a in nd else '%s:0' % (a) for a in cp.aat01])
 			fout.write('%.4f %.4f %s %s\n' % (std, H, k, ' '.join(['%.2f' % (nd[a]) if a in nd else '0.00' for a in cp.aat01])))
 
+
 # new functions for deriving 400 x 400 matrix
 # parallel to tupleqij
 # calculate foreground probabilities of 400 (AA -> AA)
@@ -447,8 +476,155 @@ def qij400(args):
 		cp._info('%s zero total: %f' % (freq2file, total))
 
 
+# generate flat 400x400 subsitution scores
+# input: combined eij qij file (multiple Pfams)
+def sm400(args):
+		assert len(args) == 2, 'Usage: python utils_pairfreq.py sm400 combine.wfreq outsmcorefile'
+
+		wfreqfile = args[0] 
+		outfile = args[1]
+
+		qij = collections.defaultdict(float)
+		eij = collections.defaultdict(float)
+
+		cp._info('loading wfreqs ...')
+		for s in cp.loadtuples(wfreqfile):
+			if s[0] == 'bg': 
+				eij[s[1]]+=float(s[2])
+			if s[0] == 'fg': 
+				qij[s[1]]+=float(s[2])
+
+		# convert accumulative frequency into probability
+		# background probability
+		cp._info('calculating eij ...')
+		total_e = sum(eij.values())
+		for k in eij:
+				eij[k]=eij[k]/total_e
+		# substitution probability
+		cp._info('calculating qij ...')
+		total_q = sum(qij.values())
+		for k in qij:
+				qij[k]=qij[k]/total_q
+
+		# calculate log-odds ratio
+		cp._info('calculating scores ...')
+		sm = collections.defaultdict(float)
+		aa2 = eij.keys()
+		for i in range(len(aa2)):
+			for j in range(len(aa2)):
+				A = aa2[i]
+				B = aa2[j]
+				if A == B:
+					sm[A+B] = math.log(qij[A+B]/(eij[A]*eij[B]),2)
+				else:
+					#print A,B, eij[A], eij[B], eij[A]*eij[B],qij[A+B]
+					sm[A+B] = math.log(qij[A+B]/(2*eij[A]*eij[B]),2)
+
+		# output flat
+		cp._info('output scores ...')
+		aa4 = sm.keys()
+		aa4.sort()
+		with open(outfile, 'w') as fout:
+			fout.write('%s\n' % '\n'.join(['%s %.8f' % (e, sm[e]) for e in aa4]))
+		cp._info('save 400x400 flat to %s' % outfile)
 
 
+# load cao 400x400 matrix and convert into flat key-value format
+def flat_caomat(args):
+	assert len(args) == 2, 'Usage: python flat_caomat caomat.txt outflatmat.txt'
+	filename = args[0]
+	outfile = args[1]
+	res  = "ARNDCQEGHILKMFPSTWYV"
+	cao_file = open(filename, 'r')
+	cao_lines = cao_file.readlines()
+
+	#should be alphabet length (26)
+	caomat = np.zeros(26*26*26*26).reshape(26,26,26,26)
+	caoval = np.array([])
+	for i in range(0,len(cao_lines)):
+		l = np.fromstring( cao_lines[i], dtype=float, sep=', ' )
+		caoval = np.concatenate([caoval,l])
+	z = 0
+	outdict = {}
+	for i in range(0,len(res)):
+		a = ord(res[i]) - ord('A')
+		for j in range(0,len(res)):
+			b = ord(res[j]) - ord('A')
+			for k in range(0,len(res)):
+				c = ord(res[k]) - ord('A')
+				for l in range(0,len(res)):
+					d = ord(res[l]) - ord('A')
+					aa = res[i]
+					ab = res[j]
+					ac = res[k]
+					ad = res[l]
+					key = '%s%s%s%s' % (aa,ab,ac,ad)
+					#caomat[a][b][c][d] = caoval[z] + 2.8
+					outdict[key] = caomat[a][b][c][d] = caoval[z] + 2.8
+					z += 1
+	#non residue's are already zero, we begin with np.zeros
+	#return caomat
+	k = outdict.keys()
+	k.sort()
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(['%s %.8f' % (aa4, outdict[aa4]) for aa4 in k]))
+	cp._info('save caomat to %s' % outfile)
+
+# load sm400 from .vec2 flat format into numpy instance
+def _load_sm400(filename):
+	res  = "ARNDCQEGHILKMFPSTWYV"
+	sm400dict = dict((t[0], float(t[1])) for t in cp.loadtuples(filename))
+	sm400mat = np.zeros(26*26*26*26).reshape(26,26,26,26)
+	for i in range(0,len(res)):
+		a = ord(res[i]) - ord('A')
+		for j in range(0,len(res)):
+			b = ord(res[j]) - ord('A')
+			for k in range(0,len(res)):
+				c = ord(res[k]) - ord('A')
+				for l in range(0,len(res)):
+					d = ord(res[l]) - ord('A')
+					aa = res[i]
+					ab = res[j]
+					ac = res[k]
+					ad = res[l]
+					key = '%s%s%s%s' % (aa,ab,ac,ad)
+					sm400mat[a][b][c][d] = sm400dict[key]
+	return sm400mat	
+
+def _load_caomat(filename):
+	res  = "ARNDCQEGHILKMFPSTWYV"
+	cao_file = open(filename, 'r')
+	cao_lines = cao_file.readlines()
+
+	#should be alphabet length (26)
+	caomat = np.zeros(26*26*26*26).reshape(26,26,26,26)
+	caoval = np.array([])
+	for i in range(0,len(cao_lines)):
+		l = np.fromstring( cao_lines[i], dtype=float, sep=', ' )
+		caoval = np.concatenate([caoval,l])
+	z = 0
+	outdict = {}
+	for i in range(0,len(res)):
+		a = ord(res[i]) - ord('A')
+		for j in range(0,len(res)):
+			b = ord(res[j]) - ord('A')
+			for k in range(0,len(res)):
+				c = ord(res[k]) - ord('A')
+				for l in range(0,len(res)):
+					d = ord(res[l]) - ord('A')
+					caomat[a][b][c][d] = caoval[z] + 2.8
+					z += 1
+	#non residue's are already zero, we begin with np.zeros
+	return caomat
+
+# test whether _load_sm400 (from .vec2) and the orignal _load_caomat (from cao120) yield the same sm400 numpy instance
+def testmat(args):
+	assert len(args) == 2, 'Usage: python utils_pairfreq.py testmat cao120 cao120.vec2'
+	caomat = _load_caomat(args[0])
+	caovec2 = _load_sm400(args[1])
+	#print(np.array_equal(np.round(caomat, 4), np.round(caovec2,4)))
+	np.savetxt('out.caomat', caomat, fmt='%.4f')
+	np.savetxt('out.caovec2', caovec2, fmt='%.4f')
 
 
 if __name__ == '__main__':
