@@ -385,10 +385,29 @@ def outblast62(arglist):
 
 
 # output emboss sm format with b62 edge
+# aa index: A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  Z  X  *
 def outembossfromcore(core, outname):
 	cp.b62edge[:20, :20] = core
 	with open(outname, 'w') as fout:
 		fout.write(cp.smstr(cp.b62edge, cp.smaa1))
+
+# output emboss float sm format with b62 edge
+# aa index: A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  Z  X  *
+def outembossfromcoref(core, outname):
+	cp.b62edge[:20, :20] = core
+	with open(outname, 'w') as fout:
+		fout.write(cp.smstrf(cp.b62edge, cp.smaa1))
+
+# wrapper of outembossfromcoref()
+def outemboss(args):
+	assert len(args) == 3, 'Usage: python utils_sm.py outemboss sm.core "," outfile'
+	corefile = args[0]
+	d = args[1]
+	outfile = args[2]
+
+	core = np.loadtxt(corefile, delimiter=d)
+	outembossfromcoref(core, outfile)
+	cp._info('save to %s' % outfile)
 
 
 def outnpcore(arglist):
@@ -455,6 +474,7 @@ def main():
 		'outblast62':	outblast62,
 		'outnpcore':	outnpcore, # write core 20x20 matrix
 		'outflatfull':	outflatfull, # output .vec file {with all 20x20 AA score_value} 
+		'outemboss':	outemboss, # output emboss sm format by input the core 20x20 (squared matrix) values
 		'printflatten':	printflatten, 
 		'scalepn':		scalepn,
 		'stat':			stat,
