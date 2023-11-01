@@ -13,6 +13,21 @@ colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d',
 colorscheme2 = ['#a93a28', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474', '#afc8cd',]
 #1c225c
 
+'''
+a93a28 red
+afc8cd fadeblue
+008ed0 lightblue
+cbc96d yellow-green
+60e6c1 lightgreen
+d7295e magenta-red
+747474 gray
+e06ebf magenta
+3ef1f9 cyan
+f9bfd7 salmon
+266674 darkblue
+fb8c32 orange
+'''
+
 # 1: tsv data file
 # 2: index for x,y,color value
 # 3: outfile name

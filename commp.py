@@ -944,6 +944,10 @@ def smstr(npsm, alphabet):
 	return '   %s\n' % ('  '.join(alphabet)) + ''.join([('%s %s\n' % (alphabet[i], ' '.join(['%2i'%n for n in npsm[i,:]]))) for i in xrange(len(alphabet))])
 
 
+# generate sm string
+def smstrf(npsm, alphabet):
+	return '   %s\n' % ('  '.join(alphabet)) + ''.join([('%s %s\n' % (alphabet[i], ' '.join(['%.2f'%n for n in npsm[i,:]]))) for i in xrange(len(alphabet))])
+
 # called in posmap_subseq()
 # return a list of tuples: [(idx_long, idx_short), (, ), ...]
 def subseq_align(longseq, shortseq, prefix):

@@ -2,6 +2,56 @@ import commp as cp
 from utils_pfammsa import pfammsa
 import collections
 
+def btk(args):
+    #assert 
+    fafile = args[0] # PF07714_append_1k2p.fa
+    ctfile = args[1] # contact.txt
+    mapfile =args[2]
+    targetfile = args[3]
+    outfile = args[4]
+
+    pfm = pfammsa(fafile)
+    r2mmap=dict((t[0], t[2]) for t in cp.loadtuples(mapfile))
+    m2rmap=dict((int(t[2]), int(t[0])) for t in cp.loadtuples(mapfile))
+    ctmlist = [(int(r2mmap[t[0]]), int(r2mmap[t[1]])) for t in cp.loadtuples(ctfile) if (t[0] in r2mmap) and (t[1] in r2mmap)] # contact list in MSA ID
+    cp._info('%d contacts loaded.' % len(ctmlist))
+
+    targets = [t[0] for t in cp.loadtuples(targetfile)]
+    cp._info('%d targets loaded.' % len(targets))
+    # get 1k2p msa seq 
+    btk_seq = pfm.msalist[0][1]
+    outlist = []
+    for m in pfm.msalist:
+        msa_seq = m[1]
+        for c in ctmlist:
+            k1 = '%s%s%s%s' % (btk_seq[c[0]], btk_seq[c[1]], msa_seq[c[0]], msa_seq[c[1]])
+            k2 = '%s%s%s%s' % (btk_seq[c[1]], btk_seq[c[0]], msa_seq[c[1]], msa_seq[c[0]])
+            k3 = '%s%s%s%s' % (msa_seq[c[0]], msa_seq[c[1]], btk_seq[c[0]], btk_seq[c[1]])
+            k4 = '%s%s%s%s' % (msa_seq[c[1]], msa_seq[c[0]], btk_seq[c[1]], btk_seq[c[0]])
+            if k1 in targets or k2 in targets or k3 in targets or k4 in targets:
+                outlist.append('%d %d %s' % (m2rmap[c[0]], m2rmap[c[1]], k1))
+                print('%d %d %s' % (m2rmap[c[0]], m2rmap[c[1]], k1))
+                btk_out='%s [%s] %s [%s] %s' % (btk_seq[:c[0]], btk_seq[c[0]], btk_seq[c[0]:c[1]], btk_seq[c[1]], btk_seq[c[1]:])
+                seq_out='%s [%s] %s [%s] %s' % (msa_seq[:c[0]], msa_seq[c[0]], msa_seq[c[0]:c[1]], msa_seq[c[1]], msa_seq[c[1]:])
+                btk_str=''
+                seq_str=''
+                for i in range(len(btk_out)):
+                    if btk_out[i]=='.' and seq_out[i]=='.':
+                        continue
+                    btk_str+=btk_out[i]
+                    seq_str+=seq_out[i]
+                outlist.append('>BTK_HUMAN\n%s' % btk_str)
+                outlist.append('>%s\n%s' % (m[0], seq_str))
+                print('>BTK_HUMAN\n%s' % btk_str)
+                print('>%s\n%s' % (m[0], seq_str))
+    '''
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save to %s' % outfile)
+    '''
+
+
+# find amino acid flips
 def cm(args):
     assert len(args) == 3, 'Usage: python proc_cm.py cm PF00186.fa PF00186.vec19 PF00186.cm'
     fafile = args[0]
