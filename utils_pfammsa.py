@@ -1176,6 +1176,20 @@ def retitle(args):
 			count+=1
 	cp._info('save retitle msa to %s' % outfile)
 
+def remove_duplicate(args):
+    assert len(args) == 2, 'Usage: python utils_pfammsa.py remove_duplicate infile.fasta outfile'
+    infile = args[0]
+    outfile = args[1]
+
+    c = 0
+    seqs = set()
+    for s in cp.fasta_iter(infile):
+        seqs.add('>%s\n%s' % (s[0], s[1]))
+        c+=1
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % ('\n'.join(list(seqs))))
+    cp._info('save %d / %d sequences in %s' % (c,len(seqs),outfile))
+
 # sample an MSA by cluster information
 # hamming distance based clustering
 # distance cutoff < 1.0, 0.3 = 70% similarity
@@ -2097,6 +2111,7 @@ def main():
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
 		'retitle': retitle, # format header for dca calculation
+		'remove_duplicate': remove_duplicate,
 		'samplebyhamming': samplebyhamming,
 		'sampleu': sampleu, # sample sequences uniformly
 		'seqreduce': seqreduce, # map seq to integer without filtering

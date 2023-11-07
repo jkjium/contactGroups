@@ -6,9 +6,11 @@ from itertools import groupby
 import operator as op
 
 import numpy as np
+'''
 from scipy.cluster.hierarchy import dendrogram
 from scipy.cluster.hierarchy import linkage
 from scipy.cluster.hierarchy import fcluster
+'''
 
 import itertools
 import inspect
@@ -612,6 +614,7 @@ def hamming_diff(s1,s2):
 #					           idx1       idx2        dist       # of elements
 # linkage matrix Z elements: [ 14.     ,  79.     ,   0.05914,   2.     ]
 # All indices idx >= len(X) actually refer to the cluster formed in Z[idx - len(X)]																   
+'''
 def hamming_weight(x, max_d):
 	linkage_matrix = linkage(x, "single", metric='hamming')
 	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
@@ -623,6 +626,7 @@ def hamming_cluster(x, max_d):
 	linkage_matrix = linkage(x, "single", metric='hamming')
 	clusters = fcluster(linkage_matrix, max_d, criterion='distance')
 	return clusters
+'''
 
 # convert square formed matrix to flat list form
 # names is a list of column names ordered according to matrix column indices
