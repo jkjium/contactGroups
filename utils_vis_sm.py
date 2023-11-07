@@ -1,12 +1,15 @@
 import sys
-import commp as cp
+#import commp as cp
+import commp3 as cp
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
+'''
 from scipy.cluster.hierarchy import dendrogram
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
-from sklearn import metrics
+'''
+#from sklearn import metrics
 
 colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', 
 '#60e6c1', '#d7295e', '#008ed0', '#747474', '#e06ebf', '#3ef1f9', '#f9bfd7']
@@ -27,7 +30,7 @@ f9bfd7 salmon
 266674 darkblue
 fb8c32 orange
 '''
-
+		  
 # 1: tsv data file
 # 2: index for x,y,color value
 # 3: outfile name
@@ -415,7 +418,7 @@ def bar_sbs(arglist):
     spnum = int(arglist[2])
     n_groups=itv= (totalnum / spnum) +1
 
-    print n_groups
+    print(n_groups)
 
     # x-tick
     xt = cp.loadlines(arglist[3])
@@ -469,7 +472,7 @@ def hist(arglist):
     n_bins = int(arglist[1])
     x = np.loadtxt(datafile)
     n = x.shape[0]
-    print n
+    print(n)
     fig, axs = plt.subplots(tight_layout=True)
     axs.hist(x, bins=n_bins)
     plt.show()
@@ -483,8 +486,8 @@ def hist_sbs(arglist):
     datafile2 = arglist[1]
     data1 = np.loadtxt(datafile1)
     data2 = np.loadtxt(datafile2)
-    print data1.shape
-    print data2.shape
+    print(data1.shape)
+    print(data2.shape)
     x = data1
     y = data2
     n_bins = 50
@@ -580,7 +583,7 @@ def signalplot(arglist):
         ticklist.append(int(sarr[0]))
         valuelist.append(float(sarr[1]))
 
-    print '%d records loaded.' % (len(valuelist))
+    print('%d records loaded.' % (len(valuelist)))
 
     fig, ax = plt.subplots(figsize=(14,3),tight_layout=True)
     ax.plot(ticklist, valuelist, label="score")
@@ -618,7 +621,7 @@ def signalplotws(arglist):
     ax.plot(ticklist, valuelist, label="score")
     ax.grid(True)
     ax.legend()
-    print outfile, dstart, dend
+    print(outfile, dstart, dend)
     plt.axvline(dstart, linestyle='--', c='r')
     plt.axvline(dend, linestyle='--', c='r')
 
@@ -817,6 +820,8 @@ def _grid_annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
 # heatmap procedure
 # colorscheme1 = ['#a93a28', '#afc8cd', '#266674', '#fb8c32', '#cbc96d', '#60e6c1', '#d7295e', '#008ed0', '#747474']
+# data file: square matrix
+# tick: single column data
 def heatmap(args):
     if len(args) < 3:
         cp._err('Usage: python utils_vis_sm.py heatmap data_npmat.txt xtick.vec ytick.vec range={-1,1}')
@@ -1010,9 +1015,9 @@ class seq(object):
 
 def t_seq(args):
     res = {'resi': '30', 'resn': 'LYS' }
-    print res['resi']
+    print(res['resi'])
     sq = seq(res)
-    print repr(sq)
+    print(repr(sq))
 
 def seqdraw(args):
     # import matplotlib.pyplot as plt
@@ -1026,7 +1031,7 @@ def seqdraw(args):
 
     #seqs = [seq(__parseseq(line)) for line in cp.loadlines('t_seqdraw.data')]
     seqs = [seq(__parseseq(line)) for line in cp.loadlines('3k54_seqdraw.data')]
-    print len(seqs)
+    print(len(seqs))
 
     sscolor = {'s':'#ff39ff', 'h':'#39ffff', 'l': '#ff9999'}
 
