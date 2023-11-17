@@ -37,13 +37,13 @@ def _filter_spmat(gnnm, thr=0.25):
     gnnm.data[gnnm.data < thresholds[x]] = 0 
     gnnm.eliminate_zeros()
 	
-	# make symmetrical
+	# patching values by letting (i,j)=(j,i)!=0 
     x,y = gnnm.nonzero()
     z = gnnm.data
     gnnm = gnnm.tolil()
     gnnm[y,x] = z
     gnnm.tocsr()
-    return gnnm    
+    return gnnm # symmetrical
 
 
 def foo(args):
