@@ -1,4 +1,73 @@
 import commp3 as cp
+import numpy as np
+
+# call samap main procedure
+# sn1,sn2: species names
+# sf1,sf2: sam object file names
+# map_p: homolog graph path
+# resolutions: leiden clustering resolution for each species
+# assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
+# sm = _run_samap_with_sam_obs('ad', '00.adsp.adig.counts_pr.h5ad', 'sp', '00.adsp.spis.counts_pr.h5ad', map_p='maps')
+def _run_samap_with_sam_obs(sn1, sf1, sn2, sf2, map_p='maps/', resolutions=None, assignments=None):
+    from samap.mapping import SAMAP
+    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot, chord_plot, CellTypeTriangles, ParalogSubstitutions, FunctionalEnrichment, convert_eggnog_to_homologs, GeneTriangles)
+    from samap.utils import save_samap, load_samap
+    from samalg import SAM
+    import pandas as pd
+
+    cp._info('loading SAM objects.')
+    sam1 = SAM()
+    sam1.load_data(sf1)
+    sam2 = SAM()
+    sam2.load_data(sf2)
+    sams = {sn1: sam1, sn2: sam2}
+
+    cp._info('running SAMap ...')
+    sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
+
+    # neigh_from_keys = {'bf':True, 'mm':True}
+    neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
+    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys)
+    #save_samap(sm, 'ad_nv.samap.pkl')
+    cp._info('done.')
+    return sm
+
+
+
+
+# !! incomplete
+# convert prost output to blast fmt6 format
+# adig-s0001.g1.t2        Hvul_1_1.g28296                         5523.5  1.12e-10
+# ['adig-s0001.g1.t2', 'Hvul_1_1.g28296', '', '', '', '5523.5', '1.12e-10'] 
+# blast -outfmt 6 # https://www.metagenomics.wiki/tools/blast/blastn-output-format-6
+# 1      2      3      4      5        6       7      8     9     10    11    12
+# qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore
+def prost2fmt6(args):
+    assert len(args) == 2, 'Usage: python proc_coral_samap.py prost2fmt6 prost.out.tsv ad_to_hy.txt'
+    infile = args[0]
+    outfile = args[1]
+
+    max_d = 0.0
+    for t in cp.loadtuples(infile, delimiter='\t'):
+        d = float(t[5])
+        if d > max_d: max_d = d
+    print(max_d)
+
+    pr = np.genfromtxt(infile, dtype='str')
+    print(pr)
+    print(pr[:,2].astype(float))
+    max_d = np.max(pr[:,2].astype(float))
+    print(np.max(pr[:,2].astype(float)))
+
+    pr[:,2]=np.power(-np.log(pr[:,3].astype(float)), 2)
+    print(pr)
+    # !! incomplete
+
+##-------------------------------------------------------------------------------------
+# gene_align_*: remove abnormal AA alphabets gaps = ['.','-',' ','*']
+#             : reformat fasta headers; unique ID + transcription ID
+##-------------------------------------------------------------------------------------
+#
 # kjia@DESKTOP-L0MMU09 ~/workspace/samap_coral/stage.nv_ad 2023-12-16 17:23:01
 # $ awk '{print substr($1,1,5)}' nvec.genes.tsv|sort|uniq -c
 #   33973 Nvec_

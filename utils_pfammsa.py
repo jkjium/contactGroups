@@ -1,12 +1,11 @@
 import sys
 import operator
-import commp as cp
+import commp3 as cp
 import numpy as np
 import collections
 import string
 import math
 
-import correlation as corr
 
 
 
@@ -25,7 +24,7 @@ class pfammsa(object):
 		'''
 		if opt in ['ambaa', 'aa']:
 			# convert all abnormal characters into '.'
-			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
+			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in range(len(cp.ambaa))]))
 			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq.translate(trans).upper()))
 		else:
@@ -33,7 +32,8 @@ class pfammsa(object):
 				self.msalist.append((head, seq.upper()))
 		'''
 		if opt in ['u']:
-			trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in xrange(len(cp.ambaa))]))
+			#trans = string.maketrans(''.join(cp.ambaa), ''.join(['.' for i in range(len(cp.ambaa))]))
+			trans = str.maketrans(''.join(cp.ambaa), ''.join(['.' for i in range(len(cp.ambaa))]))
 			for head, seq in cp.fasta_iter(msafile):
 				self.msalist.append((head, seq.upper()))
 		else:
@@ -49,7 +49,7 @@ class pfammsa(object):
 
 	def dump(self):
 		for s in self.msalist:
-			print ">%s\n%s\n" % (s[0], s[1])
+			print(">%s\n%s\n" % (s[0], s[1]))
 
 	# return ith column AA list
 	def msacol(self, i):
@@ -95,8 +95,8 @@ class pfammsa(object):
 				scores[t].append([cp.aascore[t][a] for a in s[1]])
 
 		# calculate gap percentage. 0 is reserved for gap
-		# generating cp.aascore: //print repr([cp.freq(self.msacol(i))['.']/float(self.msanum) for i in xrange(0, self.msalen)])
-		idx_rc = [i for i in xrange(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff] # allow at most "gapcutoff" % of gap existing in the column
+		# generating cp.aascore: //print repr([cp.freq(self.msacol(i))['.']/float(self.msanum) for i in range(0, self.msalen)])
+		idx_rc = [i for i in range(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff] # allow at most "gapcutoff" % of gap existing in the column
 
 		# output column reduced scores
 		scores_rc = {}
@@ -122,7 +122,7 @@ class pfammsa(object):
 		k = pfreq.keys()
 		#print repr(k)
 		# count pair substitutions 
-		pairsubcount = [('%s%s' % (k[i],k[j]), pfreq[k[i]]*(pfreq[k[j]]-1)/2) if k[i] == k[j] else ('%s%s' % (k[i],k[j]), pfreq[k[i]]*pfreq[k[j]]) for i in xrange(0, len(k)) for j in xrange(i, len(k))]
+		pairsubcount = [('%s%s' % (k[i],k[j]), pfreq[k[i]]*(pfreq[k[j]]-1)/2) if k[i] == k[j] else ('%s%s' % (k[i],k[j]), pfreq[k[i]]*pfreq[k[j]]) for i in range(0, len(k)) for j in range(i, len(k))]
 		#print repr(pairsubcount)
 
 		# combining equivalent quad
@@ -147,10 +147,10 @@ def aafreq(arglist):
 	msafile = arglist[0]
 	pfm = pfammsa(msafile)
 	if arglist[1] == 'all':
-		collist = [i for i in xrange(pfm.msalen)]
+		collist = [i for i in range(pfm.msalen)]
 	else:
 		collist = [int(i) for i in arglist[1].split(',')]
-	print repr(collist)
+	print(repr(collist))
 
 	freqdict = pfm.aafreq(collist)
 	freqsum = sum(freqdict.values())
@@ -251,7 +251,7 @@ def cekidera(arglist):
 	# calculate mean, std of 10 kidera factors for each tuple 
 	outlistlist = []
 	m = pfammsa(msafile)
-	for i in xrange(0, 10): # 10 kidera factors
+	for i in range(0, 10): # 10 kidera factors
 		# prepare kidera single key-value table
 		kd = dict((k, cp.kidera[k][i]) for k in cp.kidera)
 
@@ -403,7 +403,7 @@ def concatinatemsa(args):
 	taxA = set(taxdictA.keys())
 	taxB = set(taxdictB.keys())
 	commontax = taxA.intersection(taxB)
-	print commontax
+	print(commontax)
 	cp._info('Found %d species in %s, %d speces in %s, common species: %d' % (len(taxA), msafileA, len(taxB), msafileB, len(commontax)))
 
 	# concatinate sequences
@@ -531,7 +531,7 @@ def entropyfromfile(arglist):
 
 	rcols = [int(j) for j in np.loadtxt(rcolfile, delimiter=',')]
 	# reverse index
-	colidx_dict = dict((int(rcols[i]), i) for i in xrange(len(rcols)))
+	colidx_dict = dict((int(rcols[i]), i) for i in range(len(rcols)))
 
 	#print colidx_dict
 
@@ -545,14 +545,16 @@ def entropyfromfile(arglist):
 				continue
 			sarr = line.split(' ')
 			cols.append([colidx_dict[int(i)] for i in sarr if int(i) in colidx_dict])
-	print cols
-	print corr.entropy(score[:,cols[0]].T)
+	print(cols)
+	
+	import correlation as corr
+	print(corr.entropy(score[:,cols[0]].T))
 	#H = ['%s %.4f' % (' '.join(['%d' % rcols[k] for k in i]), corr.entropy(score[:,i].T)) for i in cols]
-	#H = ['%s %.4f' % (cols[i[0]], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
+	#H = ['%s %.4f' % (cols[i[0]], corr.entropy(score[:,[i]].T)) for i in range(len(cols))]
 	'''
 	#print score[:,0] # not working!!
 	#print score[:,[0]] # must in this format!!
-	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
+	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in range(len(cols))]
 	with open(outfile, 'w') as fout:
 		fout.write('\n'.join(H))
 	cp._info('save to %s' % outfile)
@@ -576,7 +578,7 @@ def entropyall(arglist):
 	print score[:,0] # not working!!
 	print score[:,[0]] # must in this format!!
 	'''
-	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in xrange(len(cols))]
+	H = ['%d %.4f' % (cols[i], corr.entropy(score[:,[i]].T)) for i in range(len(cols))]
 	with open(outfile, 'w') as fout:
 		fout.write('\n'.join(H))
 	cp._info('save to %s' % outfile)
@@ -611,8 +613,8 @@ def scoreentropy(args):
 	scorefile = args[0]
 	outfile =args[1]
 	score = np.loadtxt(scorefile, delimiter=',')
-	hlist = ['%d %.8f' % (i, cp.entropy([score[:,i]])) for i in xrange(0, score.shape[1])]
-	print '%s %.8f' % (scorefile, sum(hlist)/score.shape[1])
+	hlist = ['%d %.8f' % (i, cp.entropy([score[:,i]])) for i in range(0, score.shape[1])]
+	print('%s %.8f' % (scorefile, sum(hlist)/score.shape[1]))
 	with open(outfile, 'w') as fout:
 		fout.write('%s\n' % '\n'.join(hlist))
 
@@ -653,9 +655,9 @@ def freqlookup(arglist):
 	with open(outfile, 'w') as fp:
 		for s in cp.ncrset(len(colidx), order):
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
-				#print '%s %s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join(['%d' % f for f in c]), ','.join([str(a) for a in lookup]))	
-				#print '%s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), ','.join([str(a) for a in lookup]))	
-				fp.write('%s %s %.4f %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), float(len(lookup))/len(data), ','.join([str(a) for a in lookup])))
+				#print '%s %s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in range(order)]), ','.join(['%d' % f for f in c]), ','.join([str(a) for a in lookup]))	
+				#print '%s %s %s' % ('-'.join([str(i) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in range(order)]), ','.join([str(a) for a in lookup]))	
+				fp.write('%s %s %.4f %s\n' % ('-'.join([str(colidx[i]) for i in s]), ''.join([cp.scoreaa['aa'][c[i]] for i in range(order)]), float(len(lookup))/len(data), ','.join([str(a) for a in lookup])))
 	cp._info('save to %s' % outfile)
 
 
@@ -674,7 +676,7 @@ def freqlookupscol(arglist):
 	# load score
 	data = np.loadtxt(scorefile, delimiter=',')
 	rcol = np.loadtxt(rcolfile, delimiter=',')
-	colmap = dict((int(rcol[i]), i) for i in xrange(len(rcol)))
+	colmap = dict((int(rcol[i]), i) for i in range(len(rcol)))
 
 	# load column tuple
 	# 274-474 359-366 386-400
@@ -706,7 +708,7 @@ def freqlookupscol(arglist):
 			#print repr(t), repr(s)
 			for (c,lookup) in cp.freqlookup(data[:,s].T):
 				fp.write('%s %s %s %s %.4f %s\n' % (scorefile, '-'.join([str(i) for i in t]), '-'.join([str(msai2resi[i]) for i in t]),
-												''.join([cp.scoreaa['aa'][c[i]] for i in xrange(order)]), 
+												''.join([cp.scoreaa['aa'][c[i]] for i in range(order)]), 
 												float(len(lookup))/len(data), 
 												','.join([str(a) for a in lookup])))
 
@@ -885,7 +887,7 @@ def hamming_similarity(arglist):
 		cp._err('Usage: python utils_pfammsa.py hamming_similarity msaseq1 msaseq2')
 	msaseq1 = arglist[0]
 	msaseq2 = arglist[1]
-	print '%.2f' % (cp.hamming_similarity(msaseq1, msaseq2))
+	print('%.2f' % (cp.hamming_similarity(msaseq1, msaseq2)))
 
 # improved version of utils_msa.MSAReduction()
 # input : PF0000.txt, scoretags, gapcutoff(max gap percentage), weightcutoff
@@ -902,7 +904,7 @@ def msareduce(arglist):
 
 	pfm = pfammsa(msafile)
 	#pfm.dump()
-	# idx_rc = [i for i in xrange(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff] # allow at most "gapcutoff" % of gap existing in the column
+	# idx_rc = [i for i in range(0, self.msalen) if cp.freq(cp.column(scores[scoretags[0]],i))[0]/float(self.msanum) < gapcutoff] # allow at most "gapcutoff" % of gap existing in the column
 	scores, idx_rc = pfm.msareduce(scoretags, gapcutoff, weightcutoff)
 
 	# output column
@@ -1038,7 +1040,7 @@ def msareduce_byseq(args):
 	with open(outprefix+'.r.msa', 'w') as fout:
 		if len(scoremat.shape) == 2: # multiple sequences
 			nrow, ncol = scoremat.shape
-			for i in xrange(0, nrow):
+			for i in range(0, nrow):
 				title = 'msaseq_%d/0-%d' % (i, ncol-1)
 				msaseq = [cp.scoreaa[scoretag][a] for a in scoremat[i]]
 				fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
@@ -1059,7 +1061,7 @@ def nongaprate(args):
 	scoremat = pfm.scorebycols('bin', [i for i in range(pfm.msalen)] )
 	#summary = scoremat.mean(0) # columnwise mean
 	summary = scoremat.mean() # columnwise mean
-	print summary
+	print(summary)
 	'''
 	outlist = ['%.4f' % m for m in summary]
 	with open(outfile, 'w') as fout:
@@ -1279,11 +1281,11 @@ def scol2resi(arglist):
 				scolset.add(sarr[1])
 
 	if len(scolset) == 0:
-		print '%s -1' % (mapfile)
+		print('%s -1' % (mapfile))
 	else:
 		resi = [int(resimap[c]) for c in scolset]
 		resi.sort()
-		print '%s %s' % (mapfile, ' '.join([str(r) for r in resi]))
+		print('%s %s' % (mapfile, ' '.join([str(r) for r in resi])))
 
 # input: msa file, score tag, column file {single column list} outfilename
 # output: a .score file 
@@ -1342,7 +1344,7 @@ def score2msa(arglist):
 	if len(score.shape) == 2:
 		nrow = score.shape[0]
 		ncol = score.shape[1]
-		for i in xrange(0, nrow):
+		for i in range(0, nrow):
 			title = '%s_%d/0-%d' % (titleprefix, i, ncol-1)
 			msaseq = [cp.scoreaa[dicttype][a] for a in score[i]]
 			fout.write('>%s\n%s\n' % (title, ''.join(msaseq)))
@@ -1506,11 +1508,11 @@ def wfreq(arglist):
 	wsmdict = collections.defaultdict(float)
 	for c in wscoldict: # {'205': [('C', 0.7), ('D', 0.5)], '207': [('C', 1.0)]}
 		wfl = wscoldict[c]
-		for i in xrange(len(wfl)):
+		for i in range(len(wfl)):
 			A = wfl[i][0] # amino acid name
 			if A in cp.abaa:
 				continue
-			for j in xrange(i+1, len(wfl)):
+			for j in range(i+1, len(wfl)):
 				B = wfl[j][0]
 				if B in cp.abaa:
 					continue
@@ -1554,7 +1556,7 @@ def wfreqcs(arglist):
 	cp._info('Counting conditional substitutions from %s %d ...' % (psfile, opt))
 
 	csdict = {} # csdict[condition][singlet substitution count], len(csdict) == 210
-	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in range(len(cp.aas01)) for j in range(i,len(cp.aas01))]
 	for aa in AAidx:
 		csdict[aa] = collections.defaultdict(float)
 
@@ -1632,7 +1634,7 @@ def wfreqcs_1(arglist):
 
 	cp._info('csdict: %d' % len(csdict))
 
-	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+	AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in range(len(cp.aas01)) for j in range(i,len(cp.aas01))]
 
 	cp._info('Writing outfile %s ... ' % outfile)
 	with open(outfile ,'w') as fout:
@@ -1695,11 +1697,11 @@ def wfreqs(arglist):
 	wsmdict = collections.defaultdict(float)
 	for c in wscoldict: # {'205': [('C', 0.7), ('D', 0.5)], '207': [('C', 1.0)]}
 		wfl = wscoldict[c]
-		for i in xrange(len(wfl)):
+		for i in range(len(wfl)):
 			A = wfl[i][0]
 			if A in cp.abaa:
 				continue
-			for j in xrange(i+1, len(wfl)):
+			for j in range(i+1, len(wfl)):
 				B = wfl[j][0]
 				if B in cp.abaa:
 					continue
@@ -1931,7 +1933,7 @@ def wfreqcsfgdist(arglist):
 		for k in qij:
 				qij[k]=qij[k]/total_q
 
-		AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+		AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in range(len(cp.aas01)) for j in range(i,len(cp.aas01))]
 		with open(outfile, 'w') as fp:
 			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
 		cp._info('save %s foreground distribution to %s' % (cs, outfile))
@@ -1966,7 +1968,7 @@ def wfreqcsfgdist_1(arglist):
 		for k in qij:
 				qij[k]=qij[k]/total_q
 
-		AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in xrange(len(cp.aas01)) for j in xrange(i,len(cp.aas01))]
+		AAidx = ['%s%s' % (cp.aas01[i], cp.aas01[j]) for i in range(len(cp.aas01)) for j in range(i,len(cp.aas01))]
 		with open(outfile, 'w') as fp:
 			fp.write('%s\n' % (' '.join(['%.4f' % qij[k] for k in AAidx])))
 		cp._info('save %s foreground distribution to %s' % (cs, outfile))
@@ -2076,7 +2078,7 @@ def test(arglist):
 
 def main():
 	if len(sys.argv)<2:
-		print 'Usage: python utils_pfammsa.py cmd pdbfile [args ...]'
+		print('Usage: python utils_pfammsa.py cmd pdbfile [args ...]')
 		return
 
 	dispatch = {
@@ -2139,7 +2141,7 @@ def main():
 	}
 
 	if sys.argv[1] not in dispatch:
-		print 'invalid cmd: %s' % sys.argv[1]
+		print('invalid cmd: %s' % sys.argv[1])
 		return
 	else:
 		dispatch[sys.argv[1]](sys.argv[2:])
