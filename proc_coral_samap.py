@@ -1,6 +1,21 @@
 import commp3 as cp
 import numpy as np
 
+# bipartite apc procedure
+# apc_rc = ((row_sum/col_n) outer (col_sum/row_n))/total_sum
+# sm: numpy array score matrix; (pandas.to_numpy())
+# r row by c column score matrix
+# plt.figure(figsize=(8,6));plt.scatter(sm.flatten(), apc.flatten());plt.show()
+def _apc_rc(sm):
+    r,c = sm.shape
+    '''
+    row_mean = sm.sum(axis=1) / c # individual row mean
+    col_mean = sm.sum(axis=0) / r # individual column mean
+    apc = np.outer(row_mean, col_mean) / (sm.sum() / (r*c))
+    '''
+    return np.outer(sm.sum(axis=1)/c, sm.sum(axis=0)/r) / (sm.sum()/(r*c))
+
+
 # call samap main procedure
 # sn1,sn2: species names
 # sf1,sf2: sam object file names

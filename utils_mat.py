@@ -1,7 +1,39 @@
 import numpy as np
-import commp as cp
+import commp3 as cp
 
-# convert square matrix to flat file
+# convert flat back to symmetrical matrix
+# must be space separated file
+def flat2smat(args):
+    assert len(args) == 5, 'Usage: python utils_mat.py flat2smat flatfile id_cols{0,1} value_col{2} tick_order_file outfile'
+    infile = args[0]
+    idx_cols = [int(c) for c in args[1].split(',')]
+    val_col = int(args[2])
+    idx_names = [n.strip() for n in cp.loadlines(args[3]) if n.strip()]
+    outfile = args[4]
+
+    vdict = {}
+    for t in cp.loadtuples(infile):
+        k = ' '.join([t[i] for i in idx_cols])
+        v = float(t[val_col])
+        vdict[k] = v
+
+    outmat = np.zeros((len(idx_names), len(idx_names)))
+    for r in range(len(idx_names)):
+        for c in range(len(idx_names)):
+            if r==c: continue
+            k1 = '%s %s' % (idx_names[r], idx_names[c])
+            k2 = '%s %s' % (idx_names[c], idx_names[r])
+            if k1 in vdict:
+                outmat[r,c]=vdict[k1]
+            elif k2 in vdict:
+                outmat[c,r]=vdict[k2]
+            else:
+                cp._info('ERR:: key [%s],[%s] not in vdict' % (k1,k2))
+                return
+    np.savetxt(outfile, outmat, fmt='%.8f') 
+    cp._info('save square matrix to %s' % outfile)
+
+# convert symmetrical square matrix to flat file
 def mat2flat(args):
     assert len(args) >= 3, 'Usage: python utils_mat.py mat2flat mat.file name.file outfile'
     matfile = args[0]
@@ -16,7 +48,7 @@ def mat2flat(args):
     outlist = []
     for i in range(n):
         for j in range(i+1,n):
-            outlist.append('%s %s %.4f' % (name[i], name[j], mat[i,j]))
+            outlist.append('%s %s %.8f' % (name[i], name[j], mat[i,j]))
 
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % ('\n'.join(outlist)))
@@ -87,7 +119,7 @@ def cepca(args):
 def _cumulovelap(m1,m2):
     #print(m1.ndim) # single vector
     if m1.ndim==1: # single vector
-	return np.absolute(np.dot(m1.T,m2))
+        return np.absolute(np.dot(m1.T,m2))
 
     n = m1.shape[1]
     m1 *= 1 / (m1 ** 2).sum(0) ** 0.5
@@ -99,7 +131,7 @@ def _cumulovelap(m1,m2):
 def _rmsip(m1, m2):
     #print(m1.ndim) # single vector
     if m1.ndim==1: # single vector
-	return np.dot(m1.T,m2)
+        return np.dot(m1.T,m2)
 
     n = m1.shape[1]
     m1 *= 1 / (m1 ** 2).sum(0) ** 0.5

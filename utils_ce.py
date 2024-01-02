@@ -258,7 +258,8 @@ def _ce2dict(celines, keyclist, ceclist):
 
         # get all column index in the infile
         for c in keyclist:
-            idxset.add(int(sarr[int(c)]))
+            #idxset.add(int(sarr[int(c)]))
+            idxset.add(sarr[int(c)])
 
     colslist = list(idxset)
     colslist.sort()
