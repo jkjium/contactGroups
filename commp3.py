@@ -622,8 +622,8 @@ def mat2flat(mat, names, sym=True):
 # jaccard distance for two sets
 def jaccard(a, b):
     c = a.intersection(b)
-    print(repr(a), repr(b))
-    print(repr(c))
+    #print(repr(a), repr(b))
+    #print(repr(c))
     return 1 - (float(len(c)) / (len(a) + len(b) - len(c)))
 
 

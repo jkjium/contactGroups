@@ -462,6 +462,10 @@ def bar_sbs(arglist):
 
    # fig.savefig(outname)
 
+# x: single column data
+def _hist(x, n_bins):
+    fig, axs = plt.subplots(tight_layout=True)
+    axs.hist(x, bins=n_bins)
 
 # generate histogram from data.list
 # input: one column (float number) data
@@ -473,8 +477,9 @@ def hist(arglist):
     x = np.loadtxt(datafile)
     n = x.shape[0]
     print(n)
-    fig, axs = plt.subplots(tight_layout=True)
-    axs.hist(x, bins=n_bins)
+    #fig, axs = plt.subplots(tight_layout=True)
+    #axs.hist(x, bins=n_bins)
+    _hist(x, n_bins)
     plt.show()
 
 # generate side-by-side histogram from data2.list

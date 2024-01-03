@@ -1,5 +1,42 @@
 import commp3 as cp
 import numpy as np
+from itertools import groupby
+from scipy.spatial import distance
+
+# tb: tuples from blast [(ad1, sp1), ...,]
+# tp: tuples from prost [(ad1, sp1), ...,]
+def _hits_comparison(tb, tp): 
+    # get full set of protein ids
+    bids = set([t[0] for t in tb])
+    pids = set([t[0] for t in tp])
+    #all_ids = list(bids.union(pids))
+    all_ids = list(bids.intersection(pids))
+    all_ids.sort()
+
+    # get [id: set(), ... ]
+    # adig-s0001.g2:                                                                                     
+    #    {'Hvul_g19544_1', 'Hvul_g24627_1', 'Hvul_g23353_1', 'Hvul_g15694_1', 'Hvul_1_1', 'Hvul_g10035_1', 'Hv
+    #    ul_g15458_1', 'Hvul_g24294_1', 'Hvul_g28163_1', 'Hvul_g30764_1', 'Hvul_g30759_1', 'Hvul_g7895_1', 'Hv
+    #    ul_2_1', 'Hvul_g11044_1', 'Hvul_g27920_1', 'Hvul_g28153_1', 'Hvul_g15015_1', 'Hvul_g24626_1', 'Hvul_g
+    #    30756_1', 'Hvul_g24628_1', 'Hvul_g10034_1', 'Hvul_g22665_1'}
+
+    dd = dict((x[0], set([i[1] for i in x[1]])) for x in groupby(tb, lambda t: t[0]))
+    dp = dict((x[0], set([i[1] for i in x[1]])) for x in groupby(tp, lambda t: t[0]))
+
+    # iterate all ids
+    return [(i,cp.jaccard(dd.get(i, set([])), dp.get(i,set([])))) for i in all_ids]
+    
+
+# 1. blast map
+# 2. prost map
+def maps_comparison(args):
+    assert len(args)==3, 'Usage: python maps_comparsion map.blast.txt map.prost.txt outfile'
+    tb = [(t[0],t[1]) for t in cp.loadtuples(args[0], delimiter='\t')]
+    tp = [(t[0],t[1]) for t in cp.loadtuples(args[1], delimiter='\t')]
+    with open(args[2], 'w') as fp:
+        fp.write('\n'.join(['%s %.8f' % (t[0], t[1]) for t in _hits_comparison(tb, tp)]))
+    cp._info('save jaccard distances to %s' % args[2])
+    
 
 # bipartite apc procedure
 # apc_rc = ((row_sum/col_n) outer (col_sum/row_n))/(total_sum/(col_n*row_n))
@@ -197,8 +234,6 @@ def gene_align_adig(args):
 
 
 
-def foo(args):
-    print(args)
 
 if __name__=='__main__':
     cp.dispatch(__name__)
