@@ -2,10 +2,10 @@ import commp3 as cp
 import numpy as np
 
 # bipartite apc procedure
-# apc_rc = ((row_sum/col_n) outer (col_sum/row_n))/total_sum
+# apc_rc = ((row_sum/col_n) outer (col_sum/row_n))/(total_sum/(col_n*row_n))
 # sm: numpy array score matrix; (pandas.to_numpy())
 # r row by c column score matrix
-# plt.figure(figsize=(8,6));plt.scatter(sm.flatten(), apc.flatten());plt.show()
+# import matplotlib.pyplot as plt;plt.figure(figsize=(8,6));plt.scatter(sm.flatten(), apc.flatten());plt.show()
 def _apc_rc(sm):
     r,c = sm.shape
     '''
@@ -14,6 +14,23 @@ def _apc_rc(sm):
     apc = np.outer(row_mean, col_mean) / (sm.sum() / (r*c))
     '''
     return np.outer(sm.sum(axis=1)/c, sm.sum(axis=0)/r) / (sm.sum()/(r*c))
+
+# apc procedure for symmetrical matrix
+# apc_ij  = mean_i * mean_j / mean_overall
+# apc = (col_sum / (row_n-1)) outer (col_sum / (row_n-1)) / (total_sum / ((col_n^2-col_n))
+# input: sm: numpy array score matrix
+# validation:
+# awk '{print $5,$6,$7,$13,$7-$13}' PF01245-6TPQ_i-r2m2i2-mizp3-dcazp3-mipzp3-dcapzp3-dist.vec19 > PF01245-6TPQ_i.i2.mi.mip.apc.txt
+# python utils_ce.py cflat2ccmat PF01245-6TPQ_i.i2.mi.mip.apc.txt 0,1 2 PF01245
+# sm = = np.loadtxt('PF01245.ccmat')
+# apc = _apc_sym(sm)
+# $ grep "0.240928" PF012*.txt   
+# 1 2 0.571829 0.330901 0.240928 
+# apc values agree with APC column in PF01245-6TPQ_i.i2.mi.mip.apc.txt 
+# import matplotlib.pyplot as plt;plt.figure(figsize=(8,6));plt.scatter(mi, apc);plt.show()
+def _apc_sym(sm):
+    return np.outer(sm.sum(axis=0)/(sm.shape[0]-1), sm.sum(axis=0)/(sm.shape[0]-1)) / (sm.sum()/(np.square(sm.shape[0])-sm.shape[0]))
+
 
 
 # call samap main procedure
