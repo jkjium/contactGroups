@@ -1,5 +1,7 @@
 import commp3 as cp
 import numpy as np
+import scanpy as sc
+import pandas as pd
 from itertools import groupby
 from scipy.spatial import distance
 
@@ -69,6 +71,40 @@ def _apc_sym(sm):
     return np.outer(sm.sum(axis=0)/(sm.shape[0]-1), sm.sum(axis=0)/(sm.shape[0]-1)) / (sm.sum()/(np.square(sm.shape[0])-sm.shape[0]))
 
 
+# append clustering assignments to an h5ad file
+def _append_assignments(h5, clusterfile=None, cluster_colnames=['cell type'], index_name='index'):
+    cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
+    cluster_assignments.index.name = index_name 
+    h5.obs=h5.obs.merge(cluster_assignments, how='left', left_index=True, right_index=True)    
+
+# convert .mtx {rowname,colname}.tsv files into an h5ad object
+# clusterfile: .tsv file without header line
+# the h5 and cluster info have the same index name
+def _mtx2h5ad(mtxfile, cellname_file, genename_file, index_name='index'):
+    # generating h5ad object
+    h5 = sc.read(mtxfile).transpose()
+    cellnames = pd.read_csv(cellname_file, header=None, sep='\t', index_col=0)
+    cellnames.index.name = index_name
+    genenames = pd.read_csv(genename_file, header=None, sep='\t', index_col=0)
+    genenames.index.name = index_name
+    h5.obs = cellnames
+    h5.var = genenames
+    #h5.write_h5ad(adig.counts.h5ad.h5ad')
+    return h5
+
+# generate h5ad file from mtx file for coral project
+# python proc_coral_samap.py h5gen_mtx_cluster adig.counts.mtx adig.colnames.txt adig.rownames.txt ad_cluster_jake.tsv jake adig.counts.c_jake.h5ad
+# >>> from proc_coral_samap import _mtx2h5ad, _append_assignments
+# >>> h = _mtx2h5ad('adig.counts.mtx', 'adig.colnames.txt', 'adig.rownames.txt')
+# >>> _append_assignments(h, 'ad_cluster_jake.tsv', ['jake'])
+# h5.write_h5ad('adig.counts.c_jake.h5ad'
+def h5gen_mtx_cluster(args):
+    assert len(args) == 6, 'Usage: python proc_coral_samap h5adgen mtxfile cellname_file genename_file cluster_file cluster_id outfile'
+    h5 = _mtx2h5ad(args[0], args[1], args[2])
+    _append_assignments(h5, args[3], [args[4]])
+    h5.write_h5ad(args[5])
+    cp._info('save to %s' % args[5])
+
 
 # call samap main procedure
 # sn1,sn2: species names
@@ -92,6 +128,7 @@ def _run_samap_with_sam_obs(sn1, sf1, sn2, sf2, map_p='maps/', resolutions=None,
     sams = {sn1: sam1, sn2: sam2}
 
     cp._info('running SAMap ...')
+    # keys = {"bf":"cluster", "mm":"tissue_celltype"}
     sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
 
     # neigh_from_keys = {'bf':True, 'mm':True}
