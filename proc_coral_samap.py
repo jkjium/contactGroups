@@ -72,12 +72,15 @@ def _apc_sym(sm):
 
 
 # append clustering assignments to an h5ad file
-def _append_assignments(h5, clusterfile=None, cluster_colnames=['cell type'], index_name='index'):
+def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered'):
     cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
     cluster_assignments.index.name = index_name 
     h5.obs=h5.obs.merge(cluster_assignments, how='left', left_index=True, right_index=True)    
+    for c in cluster_colnames:
+        h5.obs[c].fillna(unclustered_label, inplace=True)
 
-# convert .mtx {rowname,colname}.tsv files into an h5ad object
+
+# convert RDS converted .mtx {rowname,colname}.tsv files into an h5ad object
 # clusterfile: .tsv file without header line
 # the h5 and cluster info have the same index name
 def _mtx2h5ad(mtxfile, cellname_file, genename_file, index_name='index'):
