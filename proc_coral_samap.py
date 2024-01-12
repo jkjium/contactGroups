@@ -1,10 +1,9 @@
 import commp3 as cp
 import numpy as np
-import scanpy as sc
 import pandas as pd
 from itertools import groupby
 from scipy.spatial import distance
-
+# apc procedure fucntions ---------------------------------------------------------------
 # tb: tuples from blast [(ad1, sp1), ...,]
 # tp: tuples from prost [(ad1, sp1), ...,]
 def _hits_comparison(tb, tp): 
@@ -71,6 +70,7 @@ def _apc_sym(sm):
     return np.outer(sm.sum(axis=0)/(sm.shape[0]-1), sm.sum(axis=0)/(sm.shape[0]-1)) / (sm.sum()/(np.square(sm.shape[0])-sm.shape[0]))
 
 
+# h5ad assembling functions  ---------------------------------------------------------------
 # append clustering assignments to an h5ad file
 def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered'):
     cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
@@ -84,6 +84,7 @@ def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_n
 # clusterfile: .tsv file without header line
 # the h5 and cluster info have the same index name
 def _mtx2h5ad(mtxfile, cellname_file, genename_file, index_name='index'):
+    import scanpy as sc
     # generating h5ad object
     h5 = sc.read(mtxfile).transpose()
     cellnames = pd.read_csv(cellname_file, header=None, sep='\t', index_col=0)
@@ -108,10 +109,76 @@ def h5gen_mtx_cluster(args):
     h5.write_h5ad(args[5])
     cp._info('save to %s' % args[5])
 
+# alignment score functions --------------------------------------------------------------
+# For generate heatmap
+# $ ls *prost*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" outfile"}'
+# $ ls *blast*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" outfile"}'
+# outfile: tsv file of combined alignment scores with column ordered by cell type (family) labels
+# visualize using the following R code
+'''
+library(pheatmap)
+infile="outfile"
+h=pheatmap(t(read.table(infile, row.names=1, header=TRUE, sep='\t')),cluster_rows=F)
+source("save_pheatmap.R")
+save_pheatmap(h, paste(infile,".png",sep=""), width=12,height=8)
+'''
+def combine_scorefiles(args):
+    assert len(args)==2, 'Usage: python proc_coral_samap.py combine_scores_tsv "list of .tsv files" outfile'
+    tsvfiles = [fn.strip() for fn in args[0].split(' ') if fn!='']
+    cp._info('%s files loaded.' % len(tsvfiles))
+    outfile = args[1]
+
+    scores = pd.concat([pd.read_csv(fn, sep='\t', index_col=0).iloc[:72,72:] for fn in tsvfiles], axis=1)
+    c=list(scores.columns)
+    c.sort(key=lambda n: n.split('_')[1]) # sort by call type families
+    scores[c].to_csv(outfile, sep='\t', index=True, header=True)
+    cp._info('save all scores %s to %s' % (scores[c].shape, outfile))
+
+
+# samap general pipeline functions -------------------------------------------------------
+# for stage3.sandbox
+# run samap for all ad vs {sp, hy, xe, nv}
+def _ppl_run_samaps(map_opt='blast'):
+    maps = 'maps.'+map_opt+'/'
+    samaps={}
+
+    assignments = {'ad':'Jake', 'sp':'cell_type_family'}
+    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'sp', '01.spis.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
+    save_samap(sm, '02.adsp.samap.jake_cell_type_family.'+map_opt+'.pkl')
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
+    MappingTable.to_csv('02.adsp.alignment_score.ad_jake.sp_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
+    samaps['adsp'] = sm
+
+
+    assignments = {'ad':'Jake', 'hy':'cell_type_family'}
+    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'hy', '01.hvul.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
+    save_samap(sm, '02.adhy.samap.jake_cell_type_family.'+map_opt+'.pkl')
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
+    MappingTable.to_csv('02.adhy.alignment_score.ad_jake.hy_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
+    samaps['adhy'] = sm
+
+
+    assignments = {'ad':'Jake', 'xe':'cell_type_family'}
+    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'xe', '01.xesp.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
+    save_samap(sm, '02.adxe.samap.jake_cell_type_family.'+map_opt+'.pkl')
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
+    MappingTable.to_csv('02.adxe.alignment_score.ad_jake.xe_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
+    samaps['adxe'] = sm
+
+
+    assignments = {'ad':'Jake', 'nv':'cell_type_family'}
+    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'nv', '01.nvec.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
+    save_samap(sm, '02.adnv.samap.jake_cell_type_family.'+map_opt+'.pkl')
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
+    MappingTable.to_csv('02.adnv.alignment_score.ad_jake.nv_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
+    samaps['adnv'] = sm
+
+    return samaps
+    
 
 # call samap main procedure
 # sn1,sn2: species names
-# sf1,sf2: sam object file names
+# sf1,sf2: sam object file names .h5ad (with pre-calculated clustering assignments)
 # map_p: homolog graph path
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
@@ -130,7 +197,7 @@ def _run_samap_with_sam_obs(sn1, sf1, sn2, sf2, map_p='maps/', resolutions=None,
     sam2.load_data(sf2)
     sams = {sn1: sam1, sn2: sam2}
 
-    cp._info('running SAMap ...')
+    cp._info('running SAMap %s%s...' % (sn1,sn2))
     # keys = {"bf":"cluster", "mm":"tissue_celltype"}
     sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
 
@@ -138,12 +205,11 @@ def _run_samap_with_sam_obs(sn1, sf1, sn2, sf2, map_p='maps/', resolutions=None,
     neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
     sm.run(pairwise=True, neigh_from_keys=neigh_from_keys)
     #save_samap(sm, 'ad_nv.samap.pkl')
-    cp._info('done.')
+    cp._info('SAMap %s%s done.' %(sn1,sn2))
     return sm
 
 
-
-
+# homology graph fucntions -------------------------------------------------------------
 # !! incomplete
 # convert prost output to blast fmt6 format
 # adig-s0001.g1.t2        Hvul_1_1.g28296                         5523.5  1.12e-10
@@ -271,7 +337,6 @@ def gene_align_adig(args):
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
     cp._info('save to %s' % outfile)
-
 
 
 
