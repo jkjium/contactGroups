@@ -1,8 +1,22 @@
-import commp3 as cp
+import commp as cp
 import numpy as np
 import pandas as pd
 from itertools import groupby
 from scipy.spatial import distance
+
+try:
+    import scanpy as sc
+    from samap.mapping import SAMAP
+    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
+    from samap.utils import save_samap, load_samap
+    from samalg import SAM    
+    from bokeh.plotting import show
+    import holoviews as hv
+except ImportError:
+    cp._info('ignore absent libraries')
+
+
+
 # apc procedure fucntions ---------------------------------------------------------------
 # tb: tuples from blast [(ad1, sp1), ...,]
 # tp: tuples from prost [(ad1, sp1), ...,]
@@ -69,8 +83,23 @@ def _apc_rc(sm):
 def _apc_sym(sm):
     return np.outer(sm.sum(axis=0)/(sm.shape[0]-1), sm.sum(axis=0)/(sm.shape[0]-1)) / (sm.sum()/(np.square(sm.shape[0])-sm.shape[0]))
 
-
+############################################################################################
 # h5ad assembling functions  ---------------------------------------------------------------
+############################################################################################
+
+# slice adata obj by labels of cluster_name in obs 
+# all columms in var will be removed
+# h5: input anndata object
+# target_obs_column:'Jake'
+# labels = ['Jake_10', 'Jake_17', 'Jake_20', 'Jake_22', 'Jake_27', 'Jake_46', 'Jake_54']; corresponds to xe_gastrodermis cell type family
+# return: new anndata object contains expression counts for selected cells
+def _slice_by_cluster(h5, target_obs_column, labels, obs_droplist):
+    c = h5.obs[target_obs_column]
+    filters = c[c.isin(labels)].index 
+    sub_h5 = h5[filters]
+    return sc.AnnData(X=sub_h5.X, obs=sub_h5.obs.drop(columns=obs_droplist),  var=sub_h5.var.drop(columns=sub_h5.var.columns))
+
+
 # append clustering assignments to an h5ad file
 def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered'):
     cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
@@ -109,7 +138,12 @@ def h5gen_mtx_cluster(args):
     h5.write_h5ad(args[5])
     cp._info('save to %s' % args[5])
 
+
+
+############################################################################################
 # alignment score functions --------------------------------------------------------------
+############################################################################################
+
 # For generate heatmap
 # $ ls *prost*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" outfile"}'
 # $ ls *blast*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" outfile"}'
@@ -135,9 +169,13 @@ def combine_scorefiles(args):
     cp._info('save all scores %s to %s' % (scores[c].shape, outfile))
 
 
+############################################################################################
 # samap general pipeline functions -------------------------------------------------------
+############################################################################################
+
 # for stage3.sandbox
 # run samap for all ad vs {sp, hy, xe, nv}
+# havn't tested yet!!!
 def _ppl_run_samaps(map_opt='blast'):
     maps = 'maps.'+map_opt+'/'
     samaps={}
@@ -207,6 +245,61 @@ def _run_samap_with_sam_obs(sn1, sf1, sn2, sf2, map_p='maps/', resolutions=None,
     #save_samap(sm, 'ad_nv.samap.pkl')
     cp._info('SAMap %s%s done.' %(sn1,sn2))
     return sm
+
+# extended from _run_samap_with_sam_obs
+# allow running samap from non-SAM objs
+def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resolutions=None, assignments=None):
+    from samap.mapping import SAMAP
+    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
+    from samap.utils import save_samap, load_samap
+    from samalg import SAM
+    import pandas as pd
+
+    if samobj:
+        cp._info('loading SAM objects.')
+        sam1 = SAM()
+        sam1.load_data(fn1)
+        sam2 = SAM()
+        sam2.load_data(fn2)
+        sams = {sn1: sam1, sn2: sam2}
+    else:
+        cp._info('loading from non-SAM h5 files')
+        sams = {sn1:fn1, sn2:fn2}
+
+    cp._info('running SAMap %s%s...' % (sn1,sn2))
+    # keys = {"bf":"cluster", "mm":"tissue_celltype"}
+    sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
+
+    # neigh_from_keys = {'bf':True, 'mm':True}
+    neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
+    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys)
+    #save_samap(sm, 'ad_nv.samap.pkl')
+    cp._info('SAMap %s%s done.' %(sn1,sn2))
+    return sm
+
+# iterate resolution parameters for leiden_clusters
+# comparison between ad_['Jake_10', 'Jake_17', 'Jake_20', 'Jake_22', 'Jake_27', 'Jake_46', 'Jake_54'] and xe_gastrodermis
+# seq = np.arange(1,20,4)/10
+# for s in seq: _iter_res(s)
+def _iter_res(c1='leiden_clusters', c2='leiden_clusters', res1=3, res2=3, output='png'):
+    cp._info('resolution iteration: ad: %s res %.2f, xe: %s res %.2f' % (c1, res1, c2, res2))
+
+    assignments={'ad': c1, 'xe': c2}
+    resolutions={'ad':res1,'xe':res2}
+
+    sm = _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', resolutions=resolutions, assignments=assignments)
+
+    D,MappingTable = get_mapping_scores(sm,{'ad':c1,'xe':c2},n_top = 0)
+    tsvfile = '02.adxe.xe_gastrodermis.leiden.ad_%.2f_xe_%.2f.tsv' % (res1,res2)
+    #MappingTable.to_csv(tsvfile, sep='\t', index=True, header=True)
+    #cp._info('save to %s' % tsvfile)
+
+    sk = sankey_plot(MappingTable, align_thr=0.00, species_order = ['ad','xe'])
+    hv.save(sk, tsvfile+'.'+output, fmt=output)
+    cp._info('save sankey to %s.%s' % (tsvfile, output))
+    del sk
+    return (tsvfile, MappingTable)
+
 
 
 # homology graph fucntions -------------------------------------------------------------
@@ -339,6 +432,9 @@ def gene_align_adig(args):
     cp._info('save to %s' % outfile)
 
 
+
+def foo(args):
+    print(args)
 
 if __name__=='__main__':
     cp.dispatch(__name__)
