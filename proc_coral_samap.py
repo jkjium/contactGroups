@@ -6,7 +6,7 @@ from scipy.spatial import distance
 
 try:
     import scanpy as sc
-    from samap.mapping import SAMAP
+    from samap.mapping import SAMAP, prepare_SAMap_loadings
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
     from samap.utils import save_samap, load_samap
     from samalg import SAM    
@@ -87,6 +87,33 @@ def _apc_sym(sm):
 # h5ad assembling functions  ---------------------------------------------------------------
 ############################################################################################
 
+# generate sam h5ad file from expression counts
+def _samh5ad(h5file,outfile):
+    sam = SAM()
+    sam.load_data(h5file)
+    sam.preprocess_data(
+        sum_norm="cell_median",
+        norm="log",
+        thresh_low=0.0,
+        thresh_high=0.96,
+        min_expression=1,
+    )
+    sam.run(
+        preprocessing="StandardScaler",
+        npcs=100,
+        weight_PCs=False,
+        k=20,
+        n_genes=3000,
+        weight_mode='rms'
+    )
+    sam.leiden_clustering(res=3)
+    
+    if "PCs_SAMap" not in sam.adata.varm.keys():
+        prepare_SAMap_loadings(sam)  
+
+    sam.save_anndata(outfile)
+    cp._info('save sam h5ad to %s' % outfile)
+
 # slice adata obj by labels of cluster_name in obs 
 # all columms in var will be removed
 # h5: input anndata object
@@ -101,6 +128,7 @@ def _slice_by_cluster(h5, target_obs_column, labels, obs_droplist):
 
 
 # append clustering assignments to an h5ad file
+# nan will be renamed by unclustered_label
 def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered'):
     cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
     cluster_assignments.index.name = index_name 
@@ -145,8 +173,9 @@ def h5gen_mtx_cluster(args):
 ############################################################################################
 
 # For generate heatmap
-# $ ls *prost*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" outfile"}'
-# $ ls *blast*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" outfile"}'
+# k=len(np.unique(s.sams['ad'].adata.obs['leiden_clusters']))
+# $ ls *prost*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" k outfile"}'
+# $ ls *blast*family*|awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" k outfile"}'
 # outfile: tsv file of combined alignment scores with column ordered by cell type (family) labels
 # visualize using the following R code
 '''
@@ -156,15 +185,18 @@ h=pheatmap(t(read.table(infile, row.names=1, header=TRUE, sep='\t')),cluster_row
 source("save_pheatmap.R")
 save_pheatmap(h, paste(infile,".png",sep=""), width=12,height=8)
 '''
+# separator indicate the number of Jake's clusters; all data it is 72; gastrodermis cells: 9 (['Jake_10', 'Jake_17', 'Jake_20', 'Jake_22', 'Jake_27', 'Jake_46', 'Jake_54', |  'Jake_64', 'Jake_25'])
 def combine_scorefiles(args):
-    assert len(args)==2, 'Usage: python proc_coral_samap.py combine_scores_tsv "list of .tsv files" outfile'
+    assert len(args)==3, 'Usage: python proc_coral_samap.py combine_scores_tsv "list of .tsv files" separator{72} outfile'
     tsvfiles = [fn.strip() for fn in args[0].split(' ') if fn!='']
     cp._info('%s files loaded.' % len(tsvfiles))
-    outfile = args[1]
+    s=int(args[1])
+    outfile = args[2]
 
-    scores = pd.concat([pd.read_csv(fn, sep='\t', index_col=0).iloc[:72,72:] for fn in tsvfiles], axis=1)
+    #scores = pd.concat([pd.read_csv(fn, sep='\t', index_col=0).iloc[:72,72:] for fn in tsvfiles], axis=1)
+    scores = pd.concat([pd.read_csv(fn, sep='\t', index_col=0).iloc[:s,s:] for fn in tsvfiles], axis=1)
     c=list(scores.columns)
-    c.sort(key=lambda n: n.split('_')[1]) # sort by call type families
+    c.sort(key=lambda n: n.split('_')[1:]) # sort by call type families
     scores[c].to_csv(outfile, sep='\t', index=True, header=True)
     cp._info('save all scores %s to %s' % (scores[c].shape, outfile))
 
@@ -173,81 +205,13 @@ def combine_scorefiles(args):
 # samap general pipeline functions -------------------------------------------------------
 ############################################################################################
 
-# for stage3.sandbox
-# run samap for all ad vs {sp, hy, xe, nv}
-# havn't tested yet!!!
-def _ppl_run_samaps(map_opt='blast'):
-    maps = 'maps.'+map_opt+'/'
-    samaps={}
-
-    assignments = {'ad':'Jake', 'sp':'cell_type_family'}
-    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'sp', '01.spis.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
-    save_samap(sm, '02.adsp.samap.jake_cell_type_family.'+map_opt+'.pkl')
-    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
-    MappingTable.to_csv('02.adsp.alignment_score.ad_jake.sp_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
-    samaps['adsp'] = sm
-
-
-    assignments = {'ad':'Jake', 'hy':'cell_type_family'}
-    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'hy', '01.hvul.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
-    save_samap(sm, '02.adhy.samap.jake_cell_type_family.'+map_opt+'.pkl')
-    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
-    MappingTable.to_csv('02.adhy.alignment_score.ad_jake.hy_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
-    samaps['adhy'] = sm
-
-
-    assignments = {'ad':'Jake', 'xe':'cell_type_family'}
-    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'xe', '01.xesp.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
-    save_samap(sm, '02.adxe.samap.jake_cell_type_family.'+map_opt+'.pkl')
-    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
-    MappingTable.to_csv('02.adxe.alignment_score.ad_jake.xe_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
-    samaps['adxe'] = sm
-
-
-    assignments = {'ad':'Jake', 'nv':'cell_type_family'}
-    sm = _run_samap_with_sam_obs('ad', '01.adig.counts_pr.cluster_info.h5ad', 'nv', '01.nvec.counts_pr.cluster_info.h5ad', map_p=maps, assignments=assignments)
-    save_samap(sm, '02.adnv.samap.jake_cell_type_family.'+map_opt+'.pkl')
-    D,MappingTable = get_mapping_scores(sm,assignments,n_top = 0)
-    MappingTable.to_csv('02.adnv.alignment_score.ad_jake.nv_cell_type_family.'+map_opt+'.tsv', sep='\t', index=True, header=True)
-    samaps['adnv'] = sm
-
-    return samaps
-    
-
 # call samap main procedure
 # sn1,sn2: species names
 # sf1,sf2: sam object file names .h5ad (with pre-calculated clustering assignments)
 # map_p: homolog graph path
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
-# sm = _run_samap_with_sam_obs('ad', '00.adsp.adig.counts_pr.h5ad', 'sp', '00.adsp.spis.counts_pr.h5ad', map_p='maps')
-def _run_samap_with_sam_obs(sn1, sf1, sn2, sf2, map_p='maps/', resolutions=None, assignments=None):
-    from samap.mapping import SAMAP
-    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot, chord_plot, CellTypeTriangles, ParalogSubstitutions, FunctionalEnrichment, convert_eggnog_to_homologs, GeneTriangles)
-    from samap.utils import save_samap, load_samap
-    from samalg import SAM
-    import pandas as pd
-
-    cp._info('loading SAM objects.')
-    sam1 = SAM()
-    sam1.load_data(sf1)
-    sam2 = SAM()
-    sam2.load_data(sf2)
-    sams = {sn1: sam1, sn2: sam2}
-
-    cp._info('running SAMap %s%s...' % (sn1,sn2))
-    # keys = {"bf":"cluster", "mm":"tissue_celltype"}
-    sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
-
-    # neigh_from_keys = {'bf':True, 'mm':True}
-    neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
-    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys)
-    #save_samap(sm, 'ad_nv.samap.pkl')
-    cp._info('SAMap %s%s done.' %(sn1,sn2))
-    return sm
-
-# extended from _run_samap_with_sam_obs
-# allow running samap from non-SAM objs
+# _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', assignments=assignments)
 def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resolutions=None, assignments=None):
     from samap.mapping import SAMAP
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
@@ -297,9 +261,7 @@ def _iter_res(c1='leiden_clusters', c2='leiden_clusters', res1=3, res2=3, output
     sk = sankey_plot(MappingTable, align_thr=0.00, species_order = ['ad','xe'])
     hv.save(sk, tsvfile+'.'+output, fmt=output)
     cp._info('save sankey to %s.%s' % (tsvfile, output))
-    del sk
     return (tsvfile, MappingTable)
-
 
 
 # homology graph fucntions -------------------------------------------------------------
@@ -430,6 +392,135 @@ def gene_align_adig(args):
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
     cp._info('save to %s' % outfile)
+
+# append meta_cell assignments to ../stage2.blast/01.xxxx.counts_pr.cluster_info.h5ad
+# change assignment name to have cell type family appended at the end
+# slice expression data by labels=['gastrodermis', 'alga-hosting_cells']
+# save to h5ad file for samap ppl
+def _proc_stage4_prepare_h5(h5file, meta_assignment_file, outfile):
+    s=sc.read_h5ad(h5file)
+    _append_assignments(s,meta_assignment_file,cluster_colnames=['metacell'])
+    # change cluster name
+    # s.obs['cell_type']=s.obs['cell_type'].astype(str)+' ('+s.obs['cell_type_family'].astype(str)+')'
+    s.obs['metacell']=s.obs['metacell'].astype(str)+' ('+s.obs['cell_type'].astype(str)+')'
+    # slice expression data
+    target = 'cell_type_family'
+    labels=['gastrodermis', 'alga-hosting_cells']
+    n=_slice_by_cluster(s, target, labels, ['leiden_clusters'])
+    # save to h5 file
+    n.write_h5ad(outfile)
+    cp._info('save to %s' % outfile)
+
+# append cell type label to metacell labels
+def _proc_anno_metacell():
+    sam = SAM()
+    sam.load_data('01.hvul.sam.gastodermis.all_info.h5ad')
+    sam.adata.obs['metacell']=sam.adata.obs['metacell'].astype(str)+' ('+sam.adata.obs['cell_type'].astype(str)+')'
+    sam.save_anndata('01.hvul.sam.gastodermis.all_info.h5ad-1')
+
+    sam = SAM()
+    sam.load_data('01.nvec.sam.gastodermis.all_info.h5ad')
+    sam.adata.obs['metacell']=sam.adata.obs['metacell'].astype(str)+' ('+sam.adata.obs['cell_type'].astype(str)+')'
+    sam.save_anndata('01.nvec.sam.gastodermis.all_info.h5ad-1')
+
+    sam = SAM()
+    sam.load_data('01.spis.sam.gastodermis.all_info.h5ad')
+    sam.adata.obs['metacell']=sam.adata.obs['metacell'].astype(str)+' ('+sam.adata.obs['cell_type'].astype(str)+')'
+    sam.save_anndata('01.spis.sam.gastodermis.all_info.h5ad-1')
+
+    sam = SAM()
+    sam.load_data('01.xesp.sam.gastodermis.all_info.h5ad')
+    sam.adata.obs['metacell']=sam.adata.obs['metacell'].astype(str)+' ('+sam.adata.obs['cell_type'].astype(str)+')'
+    sam.save_anndata('01.xesp.sam.gastodermis.all_info.h5ad-1')
+
+# prepend sid to all the clusters 
+def _proc_prepend_sid(samap_file):
+    sm = load_samap(samap_file)
+    for sid in sm.sams.keys():
+        for col in sm.sams[sid].adata.obs:
+            sm.sams[sid].adata.obs[col]= sid +'_'+ sm.sams[sid].adata.obs[col].astype(str)
+    return sm
+
+# append cell_type annotation to leiden clusters
+# target_label: 'leiden_clusters'
+# anno_label: 'cell_type'
+def _proc_append_anno(samap_file, target_label, anno_label):
+    # 02.adhy.samap.blast.gastrodermis.leiden.pkl
+    sm=load_samap(samap_file)
+    pid = samap_file.split('.')[1]
+    cp._info('pid: %s' % pid)
+
+    s1 = sm.sams[pid[:2]].adata.obs
+    if anno_label in s1:
+        s1[target_label]=s1[target_label].astype(str)+' ('+s1[anno_label].astype(str)+')'
+
+    s2 = sm.sams[pid[2:]].adata.obs
+    if anno_label in s2:
+        s2[target_label]=s2[target_label].astype(str)+' ('+s2[anno_label].astype(str)+')'
+
+    return sm
+
+# alns = dict((pc._proc_calc_alignments(pc._proc_anno_leiden(sf), sf+'.alignment.tsv')) for sf in samap_files)
+# alns for plot sankey plot
+def _proc_calc_alignments(sm, outfile):
+    ks = list(sm.sams.keys())
+    ks.sort()
+    pid = ''.join(ks)
+    assignments = dict((k,'leiden_clusters') for k in sm.sams.keys())
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = -1)
+    MappingTable.to_csv(outfile, sep='\t', index=True, header=True)
+    return pid, (D, MappingTable)
+
+
+# for stage3.gastrodermis comparison
+# run samap for all ad vs {sp, hy, xe, nv}
+# label: {'cell_type', 'metacell', 'cell_type_family'}
+# map_opt: {'blast', 'prost'}
+def _proc_gastrodermis(map_opt='blast', label='cell_type'):
+    maps= 'maps.%s/' % map_opt
+    alignments={}
+
+    assignments = {'ad':'Jake', 'sp':label} if label!=None else None
+    outprefix = '02.adsp.samap.%s.gastrodermis.jake_%s' % (map_opt, label) if label!=None else '02.adsp.samap.%s.gastrodermis.leiden' % (map_opt)
+    sm = _run_samap_with_h5('ad', '01.adig.sam.gastodermis.all_info.h5ad', 'sp', '01.spis.sam.gastodermis.all_info.h5ad', samobj=True, map_p=maps, assignments=assignments)
+    save_samap(sm, outprefix+'.pkl')
+    if label==None:
+        assignments={'ad':'leiden_clusters', 'sp': 'leiden_clusters'}
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = -1)
+    MappingTable.to_csv(outprefix+'.alignment_score.tsv', sep='\t', index=True, header=True)
+    alignments['adsp'] = (D, MappingTable)
+
+    assignments = {'ad':'Jake', 'hy':label} if label!=None else None
+    outprefix = '02.adhy.samap.%s.gastrodermis.jake_%s' % (map_opt, label) if label!=None else '02.adhy.samap.%s.gastrodermis.leiden' % (map_opt)
+    sm = _run_samap_with_h5('ad', '01.adig.sam.gastodermis.all_info.h5ad', 'hy', '01.hvul.sam.gastodermis.all_info.h5ad', samobj=True, map_p=maps, assignments=assignments)
+    save_samap(sm, outprefix+'.pkl')
+    if label==None:
+        assignments={'ad':'leiden_clusters', 'hy': 'leiden_clusters'}
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = -1)
+    MappingTable.to_csv(outprefix+'.alignment_score.tsv', sep='\t', index=True, header=True)
+    alignments['adhy'] = (D, MappingTable)
+
+    assignments = {'ad':'Jake', 'xe':label} if label!=None else None
+    outprefix = '02.adxe.samap.%s.gastrodermis.jake_%s' % (map_opt, label) if label!=None else '02.adxe.samap.%s.gastrodermis.leiden' % (map_opt)
+    sm = _run_samap_with_h5('ad', '01.adig.sam.gastodermis.all_info.h5ad', 'xe', '01.xesp.sam.gastodermis.all_info.h5ad', samobj=True, map_p=maps, assignments=assignments)
+    save_samap(sm, outprefix+'.pkl')
+    if label==None:
+        assignments={'ad':'leiden_clusters', 'xe': 'leiden_clusters'}
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = -1)
+    MappingTable.to_csv(outprefix+'.alignment_score.tsv', sep='\t', index=True, header=True)
+    alignments['adxe'] = (D, MappingTable)
+
+    assignments = {'ad':'Jake', 'nv':label} if label!=None else None
+    outprefix = '02.adnv.samap.%s.gastrodermis.jake_%s' % (map_opt, label) if label!=None else '02.adnv.samap.%s.gastrodermis.leiden' % (map_opt)
+    sm = _run_samap_with_h5('ad', '01.adig.sam.gastodermis.all_info.h5ad', 'nv', '01.nvec.sam.gastodermis.all_info.h5ad', samobj=True, map_p=maps, assignments=assignments)
+    save_samap(sm, outprefix+'.pkl')
+    if label==None:
+        assignments={'ad':'leiden_clusters', 'nv': 'leiden_clusters'}
+    D,MappingTable = get_mapping_scores(sm,assignments,n_top = -1)
+    MappingTable.to_csv(outprefix+'.alignment_score.tsv', sep='\t', index=True, header=True)
+    alignments['adnv'] = (D, MappingTable)
+
+    return alignments
 
 
 
