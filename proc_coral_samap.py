@@ -236,7 +236,8 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resoluti
 
     # neigh_from_keys = {'bf':True, 'mm':True}
     neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
-    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys)
+    #sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False)
+    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False) # umap is false for debugging
     #save_samap(sm, 'ad_nv.samap.pkl')
     cp._info('SAMap %s%s done.' %(sn1,sn2))
     return sm
