@@ -1,5 +1,48 @@
 import numpy as np
-import commp3 as cp
+import commp as cp
+
+# for bipartite matrix
+# col1 vs col2 strictly in flat file
+# compatible with string col ids
+# r: x label array (from file)
+# c: y label array (from file)
+# v: float valued array (from file)
+# ouput: xtick, ytick, (sparse) matrix
+def _flat2mat_bipartite(r, c, v):
+    ur, iur = np.unique(r, return_inverse=True) # ur: unique row label; iur: replace each r element with their unique label index
+    uc, iuc = np.unique(c, return_inverse=True) # ur: unique row label; iur: replace each r element with their unique label index
+    import scipy as sp
+    outmat = sp.sparse.coo_matrix((v, (iur, iuc)), shape=(len(ur), len(uc))).tocsr()
+    return ur,uc,outmat
+
+#  python utils_mat.py flat2mat_bipartite _corr.txt 0,1 2 sparse
+def flat2mat_bipartite(args):
+    assert len(args) == 4, 'Usage: python utils_mat.py flat2mat flatefile id_cols{0,1} value_col{2} save_opt{full, sparse}'
+    infile = args[0]
+    ics = [int(c) for c in args[1].split(',')]
+    vc = int(args[2])
+    opt = args[3]
+
+    flatdata = np.genfromtxt(infile, delimiter=' ', dtype='str')
+    r = flatdata[:,ics[0]]
+    c = flatdata[:,ics[1]]
+    v = flatdata[:, vc].astype(float)
+    ur,uc,outmat = _flat2mat_bipartite(r, c, v)
+
+    # output
+    outprefix = infile + '.mat'
+    if opt == 'full':
+        np.savetxt(outprefix+'.txt', outmat.A, fmt='%.8f')
+    else:
+        import dill
+        cp._info('save matrix to csr pkl.')
+        with open(outprefix+'.pkl', 'wb') as fout:
+            dill.dump(outmat, fout)
+    np.savetxt(outprefix+'.rtick.txt', ur, fmt='%s')
+    np.savetxt(outprefix+'.ctick.txt', uc, fmt='%s')
+    cp._info('save to %s.{rtick, ctick}.txt {sparse}}' % outprefix)
+
+
 
 # convert flat back to symmetrical matrix
 # must be space separated file

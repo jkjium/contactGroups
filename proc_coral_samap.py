@@ -1,6 +1,7 @@
 import commp as cp
 import numpy as np
 import pandas as pd
+import scipy as sp
 from itertools import groupby
 from scipy.spatial import distance
 
@@ -53,9 +54,45 @@ def maps_comparison(args):
     cp._info('save jaccard distances to %s' % args[2])
     
 
+############################################################################################
+# apc functions  ---------------------------------------------------------------
+############################################################################################
+#$ python proc_coral_samap.py ut_gene_corr _corr.txt
+def ut_gene_corr(args):
+    assert len(args) == 1, 'Usage: python proc_coral_samap.py ut_gene_corr t.txt'
+    out=_proc_gene_corr_apc(args[0])
+    print(out)
+
+# input: gene correlation flat file
+# output: np.array: g1, g2, corr_value, apc_value
+# outflat = pc._proc_gene_corr_apc('_corr.txt')
+# import matplotlib.pyplot as plt
+# plt.scatter(outflat[:,2].astype(float),outflat[:,3].astype(float)
+# plt.show()
+# no sign of apc
+def _proc_gene_corr_apc(corrflat):
+    # load flat data
+    flatdata = np.genfromtxt(corrflat, delimiter=' ', dtype='str')
+    r = flatdata[:,0]
+    c = flatdata[:,1]
+    v = flatdata[:,2].astype(float)
+    # calculate apc in matrix form
+    ur, iur = np.unique(r, return_inverse=True) # ur: unique row label; iur: replace each r element with their unique label index
+    uc, iuc = np.unique(c, return_inverse=True) # ur: unique row label; iur: replace each r element with their unique label index
+    import scipy as sp
+    outmat = sp.sparse.coo_matrix((v, (iur, iuc)), shape=(len(ur), len(uc))).tocsr()    
+    apcmat = _apc_rc(outmat.A)
+    # output flat format for visualization
+    #apcflat = np.array(['%.8f %s %s' % (apcmat[i[0], i[1]],ur[i[0]], uc[i[1]]) for i in zip(iur, iuc)])
+    apcflat = np.array([apcmat[i[0], i[1]] for i in zip(iur, iuc)])
+    outflat = np.hstack((flatdata, apcflat[:,None]))
+    return outflat
+
+
+
 # bipartite apc procedure
 # apc_rc = ((row_sum/col_n) outer (col_sum/row_n))/(total_sum/(col_n*row_n))
-# sm: numpy array score matrix; (pandas.to_numpy())
+# sm (score matrix): numpy array score matrix; (pandas.to_numpy())
 # r row by c column score matrix
 # import matplotlib.pyplot as plt;plt.figure(figsize=(8,6));plt.scatter(sm.flatten(), apc.flatten());plt.show()
 def _apc_rc(sm):
@@ -67,10 +104,10 @@ def _apc_rc(sm):
     '''
     return np.outer(sm.sum(axis=1)/c, sm.sum(axis=0)/r) / (sm.sum()/(r*c))
 
-# apc procedure for symmetrical matrix
+# symmetrical matrix apc
 # apc_ij  = mean_i * mean_j / mean_overall
 # apc = (col_sum / (row_n-1)) outer (col_sum / (row_n-1)) / (total_sum / ((col_n^2-col_n))
-# input: sm: numpy array score matrix
+# input: sm (score matrix): numpy array score matrix
 # validation:
 # awk '{print $5,$6,$7,$13,$7-$13}' PF01245-6TPQ_i-r2m2i2-mizp3-dcazp3-mipzp3-dcapzp3-dist.vec19 > PF01245-6TPQ_i.i2.mi.mip.apc.txt
 # python utils_ce.py cflat2ccmat PF01245-6TPQ_i.i2.mi.mip.apc.txt 0,1 2 PF01245
