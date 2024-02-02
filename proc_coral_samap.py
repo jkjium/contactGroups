@@ -163,6 +163,13 @@ def _slice_by_cluster(h5, target_obs_column, labels, obs_droplist):
     sub_h5 = h5[filters]
     return sc.AnnData(X=sub_h5.X, obs=sub_h5.obs.drop(columns=obs_droplist),  var=sub_h5.var.drop(columns=sub_h5.var.columns))
 
+# slice data by randomly sample n cells
+# n = uniformly sample without replacement (no repeat)
+def _slice_by_random(h5, n_cell, obs_droplist):
+    filters = np.random.sample(list(range(n_cell)))
+    sub_h5 = h5[filters]
+    return sc.AnnData(X=sub_h5.X, obs=sub_h5.obs.drop(columns=obs_droplist),  var=sub_h5.var.drop(columns=sub_h5.var.columns))
+
 
 # append clustering assignments to an h5ad file
 # nan will be renamed by unclustered_label
@@ -561,6 +568,45 @@ def _proc_gastrodermis(map_opt='blast', label='cell_type'):
     return alignments
 
 
+# save: samap.adata.obs["leiden_clusters_dk"] = pd.Categorical(pc._leiden(samap.adata.uns['Dk'],res=3))
+def _leiden(X, res=1, method="modularity", seed = 0):
+    if not sp.sparse.isspmatrix_csr(X):
+        X = sp.sparse.csr_matrix(X)
+
+    import igraph as ig
+    import leidenalg
+
+    sources, targets = X.nonzero()
+    weights = X[sources, targets]
+    if isinstance(weights, np.matrix):
+        weights = weights.A1
+    g = ig.Graph(directed=True)
+    g.add_vertices(X.shape[0])
+    g.add_edges(list(zip(sources, targets)))
+    try:
+        g.es["weight"] = weights
+    except BaseException:
+        pass
+
+    if method == "significance":
+        cl = leidenalg.find_partition(g, leidenalg.SignificanceVertexPartition,seed=seed)
+    else:
+        cl = leidenalg.find_partition(
+            g, leidenalg.RBConfigurationVertexPartition, resolution_parameter=res,seed=seed
+        )
+
+    return np.array(cl.membership)
+
+############################################################################################
+# visualization for debugging --------------------------------------------------------------
+############################################################################################
+def _heatmap(m):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    sns.set(font_scale=0.5)
+    fig, ax = plt.subplots(figsize=(14,11))
+    sns.heatmap(m, xticklabels=True, yticklabels=True, cmap='YlGnBu', linewidths=0.4, linecolor='lightgray')
+    plt.show()
 
 def foo(args):
     print(args)
