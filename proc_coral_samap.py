@@ -256,7 +256,7 @@ def combine_scorefiles(args):
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
 # _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', assignments=assignments)
-def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resolutions=None, assignments=None):
+def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resolutions=None, assignments=None, res_dk=1.0):
     from samap.mapping import SAMAP
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
     from samap.utils import save_samap, load_samap
@@ -276,7 +276,8 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resoluti
 
     cp._info('running SAMap %s%s...' % (sn1,sn2))
     # keys = {"bf":"cluster", "mm":"tissue_celltype"}
-    sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
+    #sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
+    sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments, res_dk=res_dk)
 
     # neigh_from_keys = {'bf':True, 'mm':True}
     neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
@@ -596,6 +597,20 @@ def _leiden(X, res=1, method="modularity", seed = 0):
         )
 
     return np.array(cl.membership)
+
+# calculate leiden cluster using given res
+# compare new calculated leiden clusters with leiden_clusters_dk
+# ARI and AMI are used for cluster similarity comparison
+def _leiden_comp(sam, res):
+    import sklearn.metrics as sk
+    sam.leiden_clustering(res=res)
+    # np conversion is not necessary for now
+    a = np.array(sam.adata.obs['leiden_clusters'])
+    b = np.array(sam.adata.obs['leiden_clusters_dk'])
+    #return [sk.adjusted_mutual_info_score(a,b), sk.adjusted_rand_score(a,b)]
+    #return (res, sk.adjusted_rand_score(a,b))
+    return (res, sk.adjusted_mutual_info_score(a,b))
+
 
 ############################################################################################
 # visualization for debugging --------------------------------------------------------------

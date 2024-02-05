@@ -517,6 +517,8 @@ def div0(a, b):
 
 # (joint) entropy calculation
 # input: a list of np.array()
+# marginal: [np.array([1,2,3,4,5])]
+# joint: np.vstack((np.array([1,2,3,4,5], np.array([6,7,8,9,10]))) # no transpose needed
 def entropy(X):
     return np.sum(-p * np.log2(p) if p > 0 else 0 for p in (np.mean(reduce(np.logical_and, (predictions == c for predictions, c in zip(X, classes)))) for classes in itertools.product(*[set(x) for x in X])))
 
