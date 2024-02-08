@@ -1368,6 +1368,11 @@ def splitofabyheader(args):
 		c+=1
 	cp._info('%s : save %d fa files' %(fafile, c))
 
+# slice .fas file into n smaller chunks
+# for HPC sbatch running 
+def slicefa(args):
+	pass
+
 
 # split fasta file into separate .fa file
 # filename: prefix.00001.fa
@@ -2122,6 +2127,7 @@ def main():
 		'scoreentropyall': scoreentropyall, # output all position entropy
 		'scoreweight': scoreweight,
 		'score2msa':score2msa, # for cad.ppi.2
+		'slicefa': slicefa, # slice .fas into smaller chunk (for HPC blasting)
 		'splitfa': splitfa,
 		'splitofabyheader': splitofabyheader,
 		'splithidfa': splithidfa,

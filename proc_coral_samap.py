@@ -4,6 +4,7 @@ import pandas as pd
 import scipy as sp
 from itertools import groupby
 from scipy.spatial import distance
+import matplotlib.pyplot as plt
 
 try:
     import scanpy as sc
@@ -282,7 +283,7 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resoluti
     # neigh_from_keys = {'bf':True, 'mm':True}
     neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
     #sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False)
-    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False) # umap is false for debugging
+    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=True) # umap is false for debugging
     #save_samap(sm, 'ad_nv.samap.pkl')
     cp._info('SAMap %s%s done.' %(sn1,sn2))
     return sm
@@ -613,7 +614,7 @@ def _leiden_comp(sam, res):
 
 
 ############################################################################################
-# visualization for debugging --------------------------------------------------------------
+# visualization related --------------------------------------------------------------
 ############################################################################################
 def _heatmap(m):
     import matplotlib.pyplot as plt
@@ -622,6 +623,52 @@ def _heatmap(m):
     fig, ax = plt.subplots(figsize=(14,11))
     sns.heatmap(m, xticklabels=True, yticklabels=True, cmap='YlGnBu', linewidths=0.4, linecolor='lightgray')
     plt.show()
+
+# generate cmap for csleiden sankey plot
+# two sids have identical cluster number
+# df = sm.sams['ad'].adata.obs['leiden_clusters_dk'] # either one of the sid
+# sid = 'ad'
+# cmap_id = 'glasbey_hv', 'jet'
+def _leiden_dk_sankey_cmap(sids, df, cmap_id='jet'):
+    # filter out singlet clusters in adata.obs assignment
+    c=df.value_counts()
+    singlets=list(c[c<=1].index)
+    filtered_assignments = df[~df.isin(singlets)]
+
+    # assign color code to each cluster label
+    clusters = np.unique(filtered_assignments)
+    from holoviews.plotting.util import process_cmap
+    color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True))
+
+    # generate cmap for samap.sankey()
+    # match ids in MappingTable
+    cmap={}
+    for sid in sids:
+        cmap.update(dict((sid+'_'+str(clusters[i]), color_bar[i]) for i in range(len(clusters))))
+    return cmap	
+
+# t-SNE umap plot
+# df = sm.sams['ad'].adata.obs['leiden_clusters_dk']
+# xumap = sm.sams['ad'].adata.obsm['X_umap']
+# cmap_id = 'glasbey_hv', 'jet'
+def _leiden_dk_scatter(df, xumap, cmap_id='jet'):
+# filter out singlet clusters in adata.obs assignment
+    c=df.value_counts()
+    singlets=list(c[c<=1].index)
+    filtered_assignments = df[~df.isin(singlets)]
+
+    # assign color code to each cluster label
+    clusters = np.unique(filtered_assignments)
+    from holoviews.plotting.util import process_cmap
+    color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True))
+    cmap = dict((clusters[i], color_bar[i]) for i in range(len(clusters)))
+
+    plt.figure()
+    axes = plt.gca()
+    dt=xumap[np.array(~df.isin(singlets))]
+    axes.scatter(dt[:,0],dt[:,1], s=10, linewidth=0.0, edgecolor='k', c=list(filtered_assignments.map(cmap)))
+    return axes
+    #plt.show()
 
 def foo(args):
     print(args)
