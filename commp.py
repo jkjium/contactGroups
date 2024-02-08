@@ -6,11 +6,13 @@ from itertools import groupby
 import operator as op
 
 import numpy as np
-'''
-from scipy.cluster.hierarchy import dendrogram
-from scipy.cluster.hierarchy import linkage
-from scipy.cluster.hierarchy import fcluster
-'''
+
+try:
+    from scipy.cluster.hierarchy import dendrogram
+    from scipy.cluster.hierarchy import linkage
+    from scipy.cluster.hierarchy import fcluster
+except ImportError:
+    cp._info('ignore absent libraries')
 
 import itertools
 import inspect
