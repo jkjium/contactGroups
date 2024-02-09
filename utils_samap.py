@@ -1,7 +1,66 @@
-import commp3 as cp
+import commp as cp
 import numpy as np
+import pandas as pd
 import scipy as sp
 from itertools import groupby
+from scipy.spatial import distance
+import matplotlib.pyplot as plt
+
+try:
+    import scanpy as sc
+    from samap.mapping import SAMAP, prepare_SAMap_loadings
+    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
+    from samap.utils import save_samap, load_samap
+    from samalg import SAM    
+    from bokeh.plotting import show
+    import holoviews as hv
+except ImportError:
+    cp._info('ignore absent libraries')
+
+
+# generate sam objects from anndata file
+def _generate_sam(h5file, leiden_res=3, outfile=None):
+    preprocessing= 'StandardScaler'
+    weight_PCs = False
+
+    # run SAM ppl
+    sam=SAM()
+    sam.load_data(h5file)
+    sam.preprocess_data(
+        sum_norm="cell_median",
+        norm="log",
+        thresh_low=0.0,
+        thresh_high=0.96,
+        min_expression=1,
+    )
+    sam.run(
+        preprocessing=preprocessing,
+        npcs=100,
+        weight_PCs= weight_PCs,
+        k=20,
+        n_genes=3000,
+        weight_mode='rms'
+    )
+
+    # calculating leiden clustering
+    sam.leiden_clustering(leiden_res)
+
+    # calculate A: weighed PCA
+    A, _ = sam.calculate_nnm(
+        n_genes=sam.adata.shape[1],
+        preprocessing=preprocessing,
+        npcs=300,
+        weight_PCs=weight_PCs,
+        sparse_pca=True,
+        update_manifold=False,
+        weight_mode='dispersion'
+    )
+    sam.adata.varm["PCs_SAMap"] = A
+
+    if outfile is not None: 
+        sam.save_anndata(outfile)
+        cp._info('save sam h5ad to %s' % outfile)
+
 
 # nptable: flat homology table
 # pl.dd_Smed_v4_424_0_1 hy.t18073aep 77.273 374 85 0 135 1256 240 1361 0.0 699
@@ -62,6 +121,26 @@ def ut_flat2spmat(args):
     np.savetxt('mygnnm.tick.txt', gns, fmt='%s')
     cp._info('To generate a heatmap: python utils_vis_sm.py heatmap mygnnm.txt mygnnm.tick.txt mygnnm.tick.txt')
 
+# append clustering assignments to an h5ad file
+# nan will be renamed by unclustered_label
+def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered'):
+    cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
+    cluster_assignments.index.name = index_name 
+    h5.obs=h5.obs.merge(cluster_assignments, how='left', left_index=True, right_index=True)    
+    for c in cluster_colnames:
+        h5.obs[c].fillna(unclustered_label, inplace=True)
+
+_pipeline_samap = {
+    # prepare sam objects
+    'prepare_input_sams': _generate_sam,
+    # optional 
+    'append_cluster_assignments': _append_assignments,
+    # homology hits from blast or prost
+    'generate_homology_graph': _flat2spmat,
+    # remove weak homologous gene connections 
+    'threshold_homology_graph': _filter_spmat,
+
+}
 
 if __name__=='__main__':
     cp.dispatch(__name__)

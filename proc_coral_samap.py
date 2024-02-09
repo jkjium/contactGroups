@@ -629,7 +629,7 @@ def _heatmap(m):
 # df = sm.sams['ad'].adata.obs['leiden_clusters_dk'] # either one of the sid
 # sid = 'ad'
 # cmap_id = 'glasbey_hv', 'jet'
-def _leiden_dk_sankey_cmap(sids, df, cmap_id='jet'):
+def _leiden_dk_sankey_cmap(sids, df, cmap_id='jet', color_scheme=None):
     # filter out singlet clusters in adata.obs assignment
     c=df.value_counts()
     singlets=list(c[c<=1].index)
@@ -638,30 +638,61 @@ def _leiden_dk_sankey_cmap(sids, df, cmap_id='jet'):
     # assign color code to each cluster label
     clusters = np.unique(filtered_assignments)
     from holoviews.plotting.util import process_cmap
-    color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True))
+    color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True)) if color_scheme==None else color_scheme
 
     # generate cmap for samap.sankey()
     # match ids in MappingTable
     cmap={}
     for sid in sids:
-        cmap.update(dict((sid+'_'+str(clusters[i]), color_bar[i]) for i in range(len(clusters))))
+        cmap.update(dict((sid+'_'+str(clusters[i]), color_bar[i % len(color_bar)]) for i in range(len(clusters))))
     return cmap	
 
-# t-SNE umap plot
+# df:cluster_assignments, pandas dataframe, sm.sams['ad'].adata.obs['leiden_clusters']
+# n=1 by defualt, for singlet clusters
+def _filter_small_clusters(df, n=1):
+    c=df.value_counts()
+    singlets=list(c[c<=n].index)
+    return df[~df.isin(singlets)]
+
+# df_focus: cmap will be generated based on the focused clusters
+# return cmap: {'xe_cnidocyte': '#7cae00',..., 'ad_17': '#cd9600'}
+def _sankey_cmap(sid1, df1_focus, sid2, df2, M=None, cmap_id='glasbey_hv', color_scheme=None):
+    from holoviews.plotting.util import process_cmap
+     # filter out singlet clusters in adata.obs assignment
+    clusters = np.unique(_filter_small_clusters(df1_focus))
+    clusters2 = np.unique(_filter_small_clusters(df2))
+
+    color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True)) if color_scheme==None else color_scheme
+    # generate cmap according to the focused sid;  prepend sid to match ids in the MappingTable
+    cmap=dict((sid1+'_'+str(clusters[i]), color_bar[i % len(color_bar)]) for i in range(len(clusters)))
+    if M is not None: # find max scores from focused clusters to assign the same color
+        sid_map = M.idxmax(axis=1).to_dict()
+        cmap.update(dict((sid2+'_'+str(clusters2[i]), cmap[sid_map[sid2+'_'+str(clusters2[i])]]) for i in range(len(clusters2))))
+    else: # assign non related color
+        cmap.update(dict((sid2+'_'+str(clusters2[i]), color_bar[i % len(color_bar)]) for i in range(len(clusters2))))
+    return cmap	   
+
+# t-SNE umap plot with color controlled by:
+# 1. cmap_id: matplotlib built-in color schemes like 'glasbey_hv', 'jet'; will be ignored when color_scheme is set
+# 2. color_scheme: a list of color names and used cyclically
+# 3. sankey_cmap: {'xe_cnidocyte': '#7cae00',..., 'ad_17': '#cd9600'}, cmap_id and color_scheme will be ignored
+#    use the color scheme calculated based on MappingTable scores (sankey input)
+#
 # df = sm.sams['ad'].adata.obs['leiden_clusters_dk']
 # xumap = sm.sams['ad'].adata.obsm['X_umap']
-# cmap_id = 'glasbey_hv', 'jet'
-def _leiden_dk_scatter(df, xumap, cmap_id='jet'):
-# filter out singlet clusters in adata.obs assignment
+def _colored_scatter(sid, df, xumap, cmap_id='jet', color_scheme=None, sankey_cmap=None):
+    from holoviews.plotting.util import process_cmap
     c=df.value_counts()
     singlets=list(c[c<=1].index)
     filtered_assignments = df[~df.isin(singlets)]
 
     # assign color code to each cluster label
     clusters = np.unique(filtered_assignments)
-    from holoviews.plotting.util import process_cmap
-    color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True))
-    cmap = dict((clusters[i], color_bar[i]) for i in range(len(clusters)))
+    if sankey_cmap==None:
+        color_bar = np.array(process_cmap(cmap_id, ncolors=len(clusters), categorical=True)) if color_scheme==None else color_scheme
+        cmap = dict((clusters[i], color_bar[i % len(color_bar)]) for i in range(len(clusters))) 
+    else:
+        cmap = dict((clusters[i], sankey_cmap[sid+'_'+str(clusters[i])]) for i in range(len(clusters)))
 
     plt.figure()
     axes = plt.gca()
