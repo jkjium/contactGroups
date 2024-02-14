@@ -345,7 +345,39 @@ def prost2fmt6(args):
 # gene_align_*: remove abnormal AA alphabets gaps = ['.','-',' ','*']
 #             : reformat fasta headers; unique ID + transcription ID
 ##-------------------------------------------------------------------------------------
-#
+# kjia@DESKTOP-L0MMU09 ~/workspace/library/dataset/new.nematostella
+# for new nematostella dataset
+# proteome
+# https://simrbase.stowers.org/files/pub/nematostella/Nvec/genomes/Nvec200/aligned/tcs_v2/20240221/NV2g.20240221.protein.fa
+# 
+# gene name mapping	
+# proteome header format in NV2g.20240221.protein.fa
+# NV2t025884002.1
+# NV2	dataset identifier
+# t	stands for transcript
+# 025884	gene number
+# 002	transcript number
+# .1	version 1
+# 
+# gene name format in GSE200198_alldata.genes.csv
+# NVE25884 from NV2t025884002.1
+# NVE + strip(025884) = NVE25884
+def gene_align_nv2(args):
+    assert len(args) == 2, 'Usage: python proc_coral_samap.py gene_align_nv2 NV2g.20240221.protein.fa 00.nv2.proteome.fa'
+    infile = args[0]
+    outfile = args[1]
+
+    outlist = []
+    for h,s in cp.fasta_iter(infile):
+        ts = s.translate(str.maketrans('','',''.join(cp.gaps))) # remove '.' at the end of some sequences
+        # h: NV2t025884002.1
+        new_h = 'NVE' + str(int(h[4:10])) + '_' + h[-5:]
+        outlist.append('>%s\n%s' % (new_h, ts))
+    
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save to %s' % outfile)
+   
 # kjia@DESKTOP-L0MMU09 ~/workspace/samap_coral/stage.nv_ad 2023-12-16 17:23:01
 # $ awk '{print substr($1,1,5)}' nvec.genes.tsv|sort|uniq -c
 #   33973 Nvec_
