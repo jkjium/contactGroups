@@ -18,6 +18,7 @@ except ImportError:
     cp._info('ignore absent libraries')
 
 
+_cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
 
 # apc procedure fucntions ---------------------------------------------------------------
 # tb: tuples from blast [(ad1, sp1), ...,]
@@ -656,6 +657,7 @@ def _filter_small_clusters(df, n=1):
 
 # df_focus: cmap will be generated based on the focused clusters
 # return cmap: {'xe_cnidocyte': '#7cae00',..., 'ad_17': '#cd9600'}
+# M: alignment scores returned from SAMap.analysis::get_mapping_scores()
 def _sankey_cmap(sid1, df1_focus, sid2, df2, M=None, cmap_id='glasbey_hv', color_scheme=None):
     from holoviews.plotting.util import process_cmap
      # filter out singlet clusters in adata.obs assignment
@@ -700,6 +702,123 @@ def _colored_scatter(sid, df, xumap, cmap_id='jet', color_scheme=None, sankey_cm
     axes.scatter(dt[:,0],dt[:,1], s=10, linewidth=0.0, edgecolor='k', c=list(filtered_assignments.map(cmap)))
     return axes
     #plt.show()
+
+# clusters: pandas dataframe of cluster assignments, for example:
+# s.adata.obs
+# cn_source: assignment name1, 'cell_type'
+# cn_target: assignment name2, 'leiden_clusters, if color_match=True then target color is primary color for color matching
+# thr: threshold value
+# color_match: match source color to target color with max mapping score
+def _sankey_cluster_comp(obs, cn_source,cn_target,thr=0.0, color_match=True, color_scheme=_cscheme_seurat_dimplot, **params):
+    # calcualte index overlaps between clusters
+    g1=obs.groupby(obs[cn_source]).groups
+    g2=obs.groupby(obs[cn_target]).groups
+    # cn1_cluster_labels, cn2_cluster_labels, overlap_number
+    #overlap_table = np.array([(k1,k2,len(g2[k2].intersection(g1[k1]))) for k1 in g1 for k2 in g2 if len(g2[k2].intersection(g1[k1]))!=0], dtype=[('source','U11'),('target','U11'),('value','<i8')])
+    overlap_table = np.array([[k1,k2,len(g2[k2].intersection(g1[k1]))] for k1 in g1 for k2 in g2 if len(g2[k2].intersection(g1[k1]))!=0])
+    R=pd.DataFrame(data=overlap_table[:,0:2], columns=['source','target'])
+    R['value']=overlap_table[:,2].astype(int)
+
+    # generate cmap
+    c1 = np.unique(R['source'])
+    c2 = np.unique(R['target'])
+    cmap=dict((c2[i], color_scheme[i % len(color_scheme)]) for i in range(len(c2)))
+    if color_match==True: # calculate color matching
+        full_score_matrix = R.pivot(index='source', columns='target', values='value').fillna(0)
+        sid_map = full_score_matrix.idxmax(axis=1).to_dict() # sid_map[source]=target
+        # match source color to target
+        cmap.update(dict((c1[i], cmap[sid_map[c1[i]]]) for i in range(len(c1))))
+    else: # assign non related color
+        cmap.update(dict((c1[i], color_bar[i % len(color_scheme)]) for i in range(len(c1))))
+
+    try:
+        from holoviews import dim
+        #from bokeh.models import Label
+        import holoviews as hv
+        hv.extension('bokeh',logo=False)
+        hv.output(size=100)        
+    except:
+        raise ImportError('Please install holoviews-samap with `!pip install holoviews-samap`.')
+
+    depth_map=None
+    def f(plot,element):
+        plot.handles['plot'].sizing_mode='scale_width'    
+        plot.handles['plot'].x_range.start = -600    
+        plot.handles['plot'].x_range.end = 1500    
+
+    sankey1 = hv.Sankey(R, kdims=["source", "target"])#, vdims=["Value"])
+
+    #cmap = params.get('cmap','Colorblind')
+    label_position = params.get('label_position','outer')
+    edge_line_width = params.get('edge_line_width',0)
+    show_values = params.get('show_values',False)
+    node_padding = params.get('node_padding',4)
+    node_alpha = params.get('node_alpha',1.0)
+    node_width = params.get('node_width',40)
+    node_sort = params.get('node_sort',True)
+    frame_height = params.get('frame_height',1000)
+    frame_width = params.get('frame_width',800)
+    bgcolor = params.get('bgcolor','snow')
+    apply_ranges = params.get('apply_ranges',True)
+
+    sankey1.opts(cmap=cmap,label_position=label_position, edge_line_width=edge_line_width, show_values=show_values,
+                 node_padding=node_padding,node_cmap=depth_map, node_alpha=node_alpha, node_width=node_width,
+                 node_sort=node_sort,frame_height=frame_height,frame_width=frame_width,bgcolor=bgcolor,
+                 apply_ranges=apply_ranges,hooks=[f])
+
+    return sankey1    
+
+# calculate element overlaps between clusters of two clustering assignments
+def _cluster_overlaps(obs, n1,n2):
+    g1=obs.groupby(obs[n1]).groups
+    g2=obs.groupby(obs[n2]).groups
+    # n1_cluster_label, n2_cluster_label, overlap_number
+    return np.array([['%s (%s)' % (str(i), n1), '%s (%s)' % (str(j), n2), len(g2[j].intersection(g1[i]))] for i in g1 for j in g2 if len(g2[j].intersection(g1[i]))!=0])
+
+
+# for multiple comparision
+def _sankey_clusters(obs, cluster_names, **params):
+    pairs = [(cluster_names[i],cluster_names[i+1]) for i in range(len(cluster_names)-1)]
+    overlap_table=np.vstack([_cluster_overlaps(obs,n1,n2) for n1,n2 in pairs])
+    R=pd.DataFrame(data=overlap_table[:,0:2], columns=['source','target'])
+    R['value']=overlap_table[:,2].astype(int)    
+
+    try:
+        from holoviews import dim
+        #from bokeh.models import Label
+        import holoviews as hv
+        hv.extension('bokeh',logo=False)
+        hv.output(size=100)        
+    except:
+        raise ImportError('Please install holoviews with `!pip install holoviews`.')
+
+    depth_map=None
+    def f(plot,element):
+        plot.handles['plot'].sizing_mode='scale_width'    
+        plot.handles['plot'].x_range.start = -600    
+        plot.handles['plot'].x_range.end = 1500    
+
+    sankey1 = hv.Sankey(R, kdims=["source", "target"])#, vdims=["Value"])
+
+    cmap = params.get('cmap','Colorblind')
+    label_position = params.get('label_position','outer')
+    edge_line_width = params.get('edge_line_width',0)
+    show_values = params.get('show_values',False)
+    node_padding = params.get('node_padding',4)
+    node_alpha = params.get('node_alpha',1.0)
+    node_width = params.get('node_width',40)
+    node_sort = params.get('node_sort',True)
+    frame_height = params.get('frame_height',1200)
+    frame_width = params.get('frame_width', 960)
+    bgcolor = params.get('bgcolor','snow')
+    apply_ranges = params.get('apply_ranges',True)
+
+    sankey1.opts(cmap=cmap,label_position=label_position, edge_line_width=edge_line_width, show_values=show_values,
+                 node_padding=node_padding,node_cmap=depth_map, node_alpha=node_alpha, node_width=node_width,
+                 node_sort=node_sort,frame_height=frame_height,frame_width=frame_width,bgcolor=bgcolor,
+                 apply_ranges=apply_ranges,hooks=[f])
+
+    return sankey1
 
 def foo(args):
     print(args)
