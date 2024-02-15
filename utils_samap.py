@@ -62,17 +62,18 @@ def _generate_sam(h5file, leiden_res=3, outfile=None):
         cp._info('save sam h5ad to %s' % outfile)
 
 
-# nptable: flat homology table
+# df_table: flat homology table in pandas dataframe type
 # pl.dd_Smed_v4_424_0_1 hy.t18073aep 77.273 374 85 0 135 1256 240 1361 0.0 699
-# hy.t1aep sc.Smp_241470 34.762 210 128 5 144 755 323 529 3.50e-30 100
 # c1,c2 column pair indicating x,y ids
-# c_value: homology weight
+# c_value: homology weight {bit score}
+# max_dup: if True, save only one with the maximum value when duplications found otherwise sum up all 
 # reciprocate: keep only bi-directional homology 
-# return scipy sparse matrix: gnnm, labels: gns
-def _flat2spmat(nptable, c1, c2, c_value, delimiter=',', reciprocate=True):
-    # get ordered unique labels (genes)
+# return scipy sparse matrix: gnnm, labels: gns, labels_by_sid: gns_dict
+def _flat2spmat(df_table, c1, c2, c_value, max_dup=False, reciprocate=True):
+    # handle duplications
+    nptable = np.array(df_table.loc[df_table.groupby([c1,c2])[c_value].idxmax()]) if max_dup==True else np.array(df_table)
+    # get ordered unique labels (genes) then convert genes to integers
     labels = np.sort(np.unique(np.concatenate((nptable[:,c1], nptable[:,c2]))))
-    # convert genes to integers
     ix = labels.searchsorted(nptable[:,c1])
     iy = labels.searchsorted(nptable[:,c2])
 
@@ -82,9 +83,13 @@ def _flat2spmat(nptable, c1, c2, c_value, delimiter=',', reciprocate=True):
     if reciprocate:
         gnnm.data[:]=1
         gnnms = gnnms.multiply(gnnm).multiply(gnnm.T).tocsr()
-    
-    gnnm_obj = {'gnnm': gnnms, 'gns':labels}
-    return gnnm_obj
+
+    # get gns_dict: separate labels by sid
+    sids = np.array([s.split('_')[0] for s in labels]) 
+    sep_idx = np.where(sids[:-1]!=sids[1:])[0][0]+1 # find where sid changes
+    gns_dict={sids[sep_idx-1]: labels[:sep_idx], sids[sep_idx]: labels[sep_idx:]}
+
+    return gnnms, labels, gns_dict
 
 # thresholding scipy sparse matrix 
 # gnnm: scipy.sparse.coo_matrix; thr = scaler

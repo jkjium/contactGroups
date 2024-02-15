@@ -17,6 +17,11 @@ try:
 except ImportError:
     cp._info('ignore absent libraries')
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 _cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
 
@@ -258,7 +263,7 @@ def combine_scorefiles(args):
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
 # _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', assignments=assignments)
-def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resolutions=None, assignments=None, res_dk=1.0):
+def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0):
     from samap.mapping import SAMAP
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
     from samap.utils import save_samap, load_samap
@@ -279,7 +284,7 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', resoluti
     cp._info('running SAMap %s%s...' % (sn1,sn2))
     # keys = {"bf":"cluster", "mm":"tissue_celltype"}
     #sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
-    sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments, res_dk=res_dk)
+    sm = SAMAP(sams, f_maps=map_p, gnnm=gnnm, resolutions=resolutions, keys=assignments, res_dk=res_dk)
 
     # neigh_from_keys = {'bf':True, 'mm':True}
     neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
