@@ -4,7 +4,7 @@ import pandas as pd
 import scipy as sp
 from itertools import groupby
 from scipy.spatial import distance
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 try:
     import scanpy as sc
@@ -180,8 +180,8 @@ def _slice_by_random(h5, n_cell, obs_droplist):
 
 # append clustering assignments to an h5ad file
 # nan will be renamed by unclustered_label
-def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered'):
-    cluster_assignments = pd.read_csv(clusterfile, header=None, sep='\t', index_col=0, names=cluster_colnames)
+def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered', delimiter='\t'):
+    cluster_assignments = pd.read_csv(clusterfile, header=None, sep=delimiter, index_col=0, names=cluster_colnames)
     cluster_assignments.index.name = index_name 
     h5.obs=h5.obs.merge(cluster_assignments, how='left', left_index=True, right_index=True)    
     for c in cluster_colnames:
@@ -263,7 +263,7 @@ def combine_scorefiles(args):
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
 # _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', assignments=assignments)
-def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0):
+def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0, gnnm_transform=True):
     from samap.mapping import SAMAP
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
     from samap.utils import save_samap, load_samap
@@ -284,10 +284,17 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=Non
     cp._info('running SAMap %s%s...' % (sn1,sn2))
     # keys = {"bf":"cluster", "mm":"tissue_celltype"}
     #sm = SAMAP(sams, f_maps=map_p, resolutions=resolutions, keys=assignments)
-    sm = SAMAP(sams, f_maps=map_p, gnnm=gnnm, resolutions=resolutions, keys=assignments, res_dk=res_dk)
+    sm = SAMAP(sams, f_maps=map_p, gnnm=gnnm, resolutions=resolutions, keys=assignments, res_dk=res_dk, gnnm_transform=gnnm_transform)
 
     # neigh_from_keys = {'bf':True, 'mm':True}
-    neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
+    #neigh_from_keys = dict((k,True) for k in assignments.keys()) if assignments!=None else None
+    if assignments!=None:
+        neigh_from_keys={}
+        for k in assignments:
+            neigh_from_keys[k] = False if assignments[k]=='leiden_clusters' else True
+            print(k, neigh_from_keys[k])
+    else:
+        neigh_from_keys=None
     #sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False)
     sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=True) # umap is false for debugging
     #save_samap(sm, 'ad_nv.samap.pkl')
@@ -318,32 +325,27 @@ def _iter_res(c1='leiden_clusters', c2='leiden_clusters', res1=3, res2=3, output
 
 
 # homology graph fucntions -------------------------------------------------------------
-# !! incomplete
-# convert prost output to blast fmt6 format
-# adig-s0001.g1.t2        Hvul_1_1.g28296                         5523.5  1.12e-10
-# ['adig-s0001.g1.t2', 'Hvul_1_1.g28296', '', '', '', '5523.5', '1.12e-10'] 
-# blast -outfmt 6 # https://www.metagenomics.wiki/tools/blast/blastn-output-format-6
-# 1      2      3      4      5        6       7      8     9     10    11    12
-# qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore
-def prost2fmt6(args):
-    assert len(args) == 2, 'Usage: python proc_coral_samap.py prost2fmt6 prost.out.tsv ad_to_hy.txt'
+# convert prost distance to similarity score
+# input format: sid1\tsid2\tdistance\te-value
+# target_column: 0-based column index, used by pd.iloc
+def prost2similarity(args):
+    assert len(args) == 3, 'Usage: python proc_coral_samap.py prost2similarity prost.out.tsv target_column ad_to_hy.txt'
     infile = args[0]
-    outfile = args[1]
+    tc = int(args[1])
+    outfile = args[2]
 
-    max_d = 0.0
-    for t in cp.loadtuples(infile, delimiter='\t'):
-        d = float(t[5])
-        if d > max_d: max_d = d
-    print(max_d)
+    df = pd.read_csv(infile, header=None, sep='\t')
 
-    pr = np.genfromtxt(infile, dtype='str')
-    print(pr)
-    print(pr[:,2].astype(float))
-    max_d = np.max(pr[:,2].astype(float))
-    print(np.max(pr[:,2].astype(float)))
+    i = len(df.columns)
+    # inversed log
+    df[i+1]= 1/(np.log(df.iloc[:,tc]+1)+1)
+    # inversed sqrt
+    df[i+2]= 1/(np.sqrt(df.iloc[:,tc]+1)+1)
 
-    pr[:,2]=np.power(-np.log(pr[:,3].astype(float)), 2)
-    print(pr)
+    df.to_csv(outfile, sep='\t', index=False, header=False)
+    cp._info('save to %s' % outfile)
+
+
     # !! incomplete
 
 ##-------------------------------------------------------------------------------------
@@ -720,6 +722,7 @@ def _sankey_cmap(sid1, df1_focus, sid2, df2, M=None, cmap_id='glasbey_hv', color
 # df = sm.sams['ad'].adata.obs['leiden_clusters_dk']
 # xumap = sm.sams['ad'].adata.obsm['X_umap']
 def _colored_scatter(sid, df, xumap, cmap_id='jet', color_scheme=None, sankey_cmap=None):
+    import matplotlib.pyplot as plt
     from holoviews.plotting.util import process_cmap
     c=df.value_counts()
     singlets=list(c[c<=1].index)
@@ -747,6 +750,7 @@ def _colored_scatter(sid, df, xumap, cmap_id='jet', color_scheme=None, sankey_cm
 # thr: threshold value
 # color_match: match source color to target color with max mapping score
 def _sankey_cluster_comp(obs, cn_source,cn_target,thr=0.0, color_match=True, color_scheme=_cscheme_seurat_dimplot, **params):
+    import matplotlib.pyplot as plt
     # calcualte index overlaps between clusters
     g1=obs.groupby(obs[cn_source]).groups
     g2=obs.groupby(obs[cn_target]).groups
@@ -815,6 +819,7 @@ def _cluster_overlaps(obs, n1,n2):
 
 # for multiple comparision
 def _sankey_clusters(obs, cluster_names, **params):
+    import matplotlib.pyplot as plt
     pairs = [(cluster_names[i],cluster_names[i+1]) for i in range(len(cluster_names)-1)]
     overlap_table=np.vstack([_cluster_overlaps(obs,n1,n2) for n1,n2 in pairs])
     R=pd.DataFrame(data=overlap_table[:,0:2], columns=['source','target'])
