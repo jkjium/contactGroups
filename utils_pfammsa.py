@@ -1,12 +1,10 @@
 import sys
 import operator
-import commp3 as cp
+import commp as cp
 import numpy as np
 import collections
 import string
 import math
-
-
 
 
 """
@@ -1178,6 +1176,22 @@ def retitle(args):
 			count+=1
 	cp._info('save retitle msa to %s' % outfile)
 
+# format header by a field in the original header
+def retitlebyfield(args):
+	assert len(args) == 4, 'Usage: python utils_pfammsa.py retitlebyfield msa.fa delimiter=" " save_column=0 outfile'
+	msafile = args[0]
+	d = args[1]
+	i = int(args[2])
+	outfile = args[3]
+
+	pfm = pfammsa(msafile)
+	with open(outfile, 'w') as fout:
+		for s in pfm.msalist:
+			title = s[0].split(d)[i]
+			fout.write('>%s\n%s\n' % (title, s[1]))
+	cp._info('save new fa to %s' % outfile)
+
+
 def remove_duplicate(args):
     assert len(args) == 2, 'Usage: python utils_pfammsa.py remove_duplicate infile.fasta outfile'
     infile = args[0]
@@ -2118,6 +2132,7 @@ def main():
 		'pairsubstitution': pairsubstitution,
 		'psicovaln': psicovaln,
 		'retitle': retitle, # format header for dca calculation
+		'retitlebyfield': retitlebyfield,
 		'remove_duplicate': remove_duplicate,
 		'samplebyhamming': samplebyhamming,
 		'sampleu': sampleu, # sample sequences uniformly

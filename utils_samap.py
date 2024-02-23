@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 try:
     import scanpy as sc
     from samap.mapping import SAMAP, prepare_SAMap_loadings
-    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
+    from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot, find_cluster_markers)
     from samap.utils import save_samap, load_samap
     from samalg import SAM    
     from bokeh.plotting import show
@@ -17,50 +17,44 @@ try:
 except ImportError:
     cp._info('ignore absent libraries')
 
+# get sam object
+def _mean_expression(c_group):
+    # slice expression matrix by cluster member
+    cluster_expression_matrix = s.adata[s.adata.obs.index.isin(c_groups)]
+    return cluster_expression_matrix.X.mean(axis=0)
 
-# generate sam objects from anndata file
-def _generate_sam(h5file, leiden_res=3, outfile=None):
-    preprocessing= 'StandardScaler'
-    weight_PCs = False
+# s: sam object
+# cluster_label: {'leiden_clusters', 'cell_type', ...}
+def _neighbor_joining(s, cluster_name, _func_get_cluster_vectors=_mean_expression): #, method=_mean_expression):
+    linkage=[]
+    cell_groups = s.adata.obs.groupby(cluster_name).groups
+    nc = len(cell_groups)
+    i=0
+    while i<n:
+        # get cluster vectors
+        cv = dict((k,_func_get_cluster_vector(cell_groups[k])) for k in cell_groups)
+        labels = cv.keys() 
+        
+        # initialize distance matrix
+        distance_matrix = np.full((nc, nc), np.inf)
+        for i in range(nc):
+            for j in range(i+1, nc):
+                distance_matrix[i,j] = _func_metric(cv[labels[i]], cv[labels[j]])
 
-    # run SAM ppl
-    sam=SAM()
-    sam.load_data(h5file)
-    sam.preprocess_data(
-        sum_norm="cell_median",
-        norm="log",
-        thresh_low=0.0,
-        thresh_high=0.96,
-        min_expression=1,
-    )
-    sam.run(
-        preprocessing=preprocessing,
-        npcs=100,
-        weight_PCs= weight_PCs,
-        k=20,
-        n_genes=3000,
-        weight_mode='rms'
-    )
+        # find closest pair i,j
+        c1,c2 = np.unravel_index(np.argmin(distance_matrix), distance_matrix.shape)
+        # merge i,j to a new cluster
+        new_label = 'merged_'+str(nc+i)
+        cell_groups[new_label] = cell_groups[labels[c1]].union(cell_groups[labels[c2]])
+        # remove merged i,j pair from the pool
+        cell_groups.pop(labels[c1])
+        cell_groups.pop(labels[c2])
 
-    # calculating leiden clustering
-    sam.leiden_clustering(leiden_res)
-
-    # calculate A: weighed PCA
-    A, _ = sam.calculate_nnm(
-        n_genes=sam.adata.shape[1],
-        preprocessing=preprocessing,
-        npcs=300,
-        weight_PCs=weight_PCs,
-        sparse_pca=True,
-        update_manifold=False,
-        weight_mode='dispersion'
-    )
-    sam.adata.varm["PCs_SAMap"] = A
-
-    if outfile is not None: 
-        sam.save_anndata(outfile)
-        cp._info('save sam h5ad to %s' % outfile)
-
+        # update linkage
+        distance = distance_matrix[c1,c2]
+        linkage.append([c1,c2, distance, len(cell_groups[new_label])])
+        i+=1
+    return linkage
 
 # df_table: flat homology table in pandas dataframe type
 # pl.dd_Smed_v4_424_0_1 hy.t18073aep 77.273 374 85 0 135 1256 240 1361 0.0 699
@@ -70,7 +64,7 @@ def _generate_sam(h5file, leiden_res=3, outfile=None):
 # reciprocate: keep only bi-directional homology 
 # return scipy sparse matrix: gnnm, labels: gns, labels_by_sid: gns_dict
 def _flat2spmat(df_table, c1, c2, c_value, max_dup=False, reciprocate=True):
-    # handle duplications
+    # pd.groupby to handle duplications
     nptable = np.array(df_table.loc[df_table.groupby([c1,c2])[c_value].idxmax()]) if max_dup==True else np.array(df_table)
     # get ordered unique labels (genes) then convert genes to integers
     labels = np.sort(np.unique(np.concatenate((nptable[:,c1], nptable[:,c2]))))
@@ -110,9 +104,51 @@ def _filter_spmat(gnnm, thr=0.25):
     return gnnm # symmetrical
 
 
-def foo(args):
-    pass
+# generate sam objects from anndata file
+def _generate_sam(h5file, leiden_res=3, outfile=None):
+    preprocessing= 'StandardScaler'
+    weight_PCs = False
 
+    # run SAM ppl
+    sam=SAM()
+    sam.load_data(h5file)
+    sam.preprocess_data(
+        sum_norm="cell_median",
+        norm="log",
+        thresh_low=-1.0,
+        thresh_high=-1.96,
+        min_expression=0,
+    )
+    sam.run(
+        preprocessing=preprocessing,
+        npcs=99,
+        weight_PCs= weight_PCs,
+        k=19,
+        n_genes=2999,
+        weight_mode='rms'
+    )
+
+    # calculating leiden clustering
+    sam.leiden_clustering(leiden_res)
+
+    # calculate A: weighed PCA
+    A, _ = sam.calculate_nnm(
+        n_genes=sam.adata.shape[0],
+        preprocessing=preprocessing,
+        npcs=299,
+        weight_PCs=weight_PCs,
+        sparse_pca=True,
+        update_manifold=False,
+        weight_mode='dispersion'
+    )
+    sam.adata.varm["PCs_SAMap"] = A
+
+    if outfile is not None: 
+        sam.save_anndata(outfile)
+        cp._info('save sam h4ad to %s' % outfile)
+
+
+# procedures ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def ut_flat2spmat(args):
     # unit_test/all_maps.txt
     nptable = np.loadtxt(args[0],dtype='str')
