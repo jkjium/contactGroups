@@ -164,11 +164,14 @@ def _samh5ad(h5file,outfile):
 # target_obs_column:'Jake'
 # labels = ['Jake_10', 'Jake_17', 'Jake_20', 'Jake_22', 'Jake_27', 'Jake_46', 'Jake_54']; corresponds to xe_gastrodermis cell type family
 # return: new anndata object contains expression counts for selected cells
-def _slice_by_cluster(h5, target_obs_column, labels, obs_droplist):
+def _slice_by_cluster(h5, target_obs_column, labels, obs_droplist=None):
     c = h5.obs[target_obs_column]
     filters = c[c.isin(labels)].index 
     sub_h5 = h5[filters]
-    return sc.AnnData(X=sub_h5.X, obs=sub_h5.obs.drop(columns=obs_droplist),  var=sub_h5.var.drop(columns=sub_h5.var.columns))
+    obs = sub_h5.obs.drop(columns=obs_droplist) if obs_droplist is not None else sub_h5.obs
+    var = sub_ht.var.drop(columns=sub_h5.var.columns) if sub_h5.var.columns!=0 else sub_h5.var
+    return sc.AnnData(X=sub_h5.X, obs=obs, var=var) 
+  
 
 # slice data by randomly sample n cells
 # n = uniformly sample without replacement (no repeat)
@@ -263,7 +266,7 @@ def combine_scorefiles(args):
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
 # _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', assignments=assignments)
-def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0, gnnm_transform=True):
+def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0, gnnm_transform=True, umap=False):
     from samap.mapping import SAMAP
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
     from samap.utils import save_samap, load_samap
@@ -296,7 +299,7 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=Non
     else:
         neigh_from_keys=None
     #sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False)
-    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=True) # umap is false for debugging
+    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=umap) # umap is false for debugging
     #save_samap(sm, 'ad_nv.samap.pkl')
     cp._info('SAMap %s%s done.' %(sn1,sn2))
     return sm
@@ -324,7 +327,7 @@ def _iter_res(c1='leiden_clusters', c2='leiden_clusters', res1=3, res2=3, output
     return (tsvfile, MappingTable)
 
 
-# homology graph fucntions -------------------------------------------------------------
+# prost homology fucntions -------------------------------------------------------------
 # convert prost distance to similarity score
 # input format: sid1\tsid2\tdistance\te-value
 # target_column: 0-based column index, used by pd.iloc
@@ -345,8 +348,21 @@ def prost2similarity(args):
     df.to_csv(outfile, sep='\t', index=False, header=False)
     cp._info('save to %s' % outfile)
 
+# for annnotating proteins
+# save the goterm information from the top hit uniprot entry
+# infile: species separated prost gohits tsv file
+# $ grep -v "GO:" adig.proteome.prost.sp.hits_go.tsv |grep  -i "Drosophila melanogaster" > adig.proteome.prost.sp.hits.drome.tsv
+# adig-s0001.g1.t2        Q9VCB1  PTOV1_DROME     Protein PTOV1 homolog   Drosophila melanogaster 5889.5  6.35e-06
+def nmax_prosthits(args):
+    assert len(args) == 2, 'Usage: python proc_coral_samap.py proc_nmax_gohits adig.prost_gohits.drome.tsv adig.prost_gohits.drome.max1.tsv'
+    infile = args[0]
+    outfile = args[1]
+    #df = pd.read_csv(infile, sep="\t", names=['cell_id', 'uniprot', 'u_name', 'u_desc', 'organism', 'dist', 'prost_e-value'])
+    df = pd.read_csv(infile, sep="\t", names=['gene_id', 'uniprot', 'u_desc', 'organism', 'dist'])
+    idx_min_score = df.groupby('gene_id')['dist'].idxmin()
+    df.loc[idx_min_score].to_csv(outfile, sep="\t", index=False, header=False)
+    cp._info('save to %s' % outfile)
 
-    # !! incomplete
 
 ##-------------------------------------------------------------------------------------
 # gene_align_*: remove abnormal AA alphabets gaps = ['.','-',' ','*']
