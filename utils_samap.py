@@ -17,44 +17,78 @@ try:
 except ImportError:
     cp._info('ignore absent libraries')
 
-# get sam object
-def _mean_expression(c_group):
+# return euclidean distance between two vectors
+def _euclidean(v1,v2):
+    return np.linalg.norm(v1 - v2)
+
+def _cosine(v1,v2):
+    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+
+# calculate the mean expression vector of a set of cells in a sam object
+def _mean_expression(s, c_indices):
     # slice expression matrix by cluster member
-    cluster_expression_matrix = s.adata[s.adata.obs.index.isin(c_groups)]
+    cluster_expression_matrix = s.adata[s.adata.obs.index.isin(c_indices)]
     return cluster_expression_matrix.X.mean(axis=0)
+
+# must project data first project to pc space first
+
+def _mean_expression_wpca(s, c_indices):
+    pass
+
 
 # s: sam object
 # cluster_label: {'leiden_clusters', 'cell_type', ...}
-def _neighbor_joining(s, cluster_name, _func_get_cluster_vectors=_mean_expression): #, method=_mean_expression):
+# df = s.adata.obs['cluster_name'].copy()
+# assignments = pd.DataFrame({'_neighbor_joining': df})
+def _neighbor_joining(s, cluster_name, _fn_cluster_vectors=_mean_expression, _fn_metric=_euclidean): 
+    assignments = pd.DataFrame({cluster_name: s.adata.obs[cluster_name].copy()})
+
+    # get ordinal indices for constructing linkage data structure
+    assignments['ordinal_index'] = pd.factorize(assignments[cluster_name])[0]
+
+    # get mapping: m[ordinal_index]= original_label
+    oi2label = dict((ordinal_i,cluster_i) for cluster_i, ordinal_i in assignments.value_counts().index)
+
+    # get all cluster representation vectors
+    cell_groups = assignments.groupby('ordinal_index').groups
+    cv = dict((k, _fn_cluster_vectors(s, cell_groups[k])) for k in cell_groups)
+       
+    # initialize distance matrix
+    n = len(cell_groups)
+    distances = dict(((i,j), _fn_metric(cv[i],cv[j])) for i in range(n) for j in range(i+1,n))
+
     linkage=[]
-    cell_groups = s.adata.obs.groupby(cluster_name).groups
-    nc = len(cell_groups)
     i=0
-    while i<n:
-        # get cluster vectors
-        cv = dict((k,_func_get_cluster_vector(cell_groups[k])) for k in cell_groups)
-        labels = cv.keys() 
-        
-        # initialize distance matrix
-        distance_matrix = np.full((nc, nc), np.inf)
-        for i in range(nc):
-            for j in range(i+1, nc):
-                distance_matrix[i,j] = _func_metric(cv[labels[i]], cv[labels[j]])
-
+    while i<(n-1):
         # find closest pair i,j
-        c1,c2 = np.unravel_index(np.argmin(distance_matrix), distance_matrix.shape)
-        # merge i,j to a new cluster
-        new_label = 'merged_'+str(nc+i)
-        cell_groups[new_label] = cell_groups[labels[c1]].union(cell_groups[labels[c2]])
-        # remove merged i,j pair from the pool
-        cell_groups.pop(labels[c1])
-        cell_groups.pop(labels[c2])
+        min_value = min(distances.values())
+        c1, c2 = [k for k, v in distances.items() if v == min_value][0]
+        print(i,' merging: ',c1,c2)
 
-        # update linkage
-        distance = distance_matrix[c1,c2]
-        linkage.append([c1,c2, distance, len(cell_groups[new_label])])
+        # merge i,j to a new cluster
+        new_label = n+i
+        cell_groups[new_label] = cell_groups[c1].union(cell_groups[c2])
+        linkage.append([c1,c2, distances[(c1,c2)], len(cell_groups[new_label])])
+
+        # remove merged clusters
+        d_to_remove = [k for k in distances if (c1 in k) or (c2 in k)]
+        for p in d_to_remove:
+            del distances[p]
+        del cell_groups[c1]
+        del cell_groups[c2]
+        del cv[c1]
+        del cv[c2]
+
+        # update distances between existing labels and new_label
+        new_cvec = _fn_cluster_vectors(s, cell_groups[new_label])
+        distances.update(dict(((k, new_label), _fn_metric(new_cvec, cv[k])) for k in cv))
+        cv[new_label] = new_cvec
+
         i+=1
-    return linkage
+
+    linkage_order = np.array(linkage)
+    linkage_order[linkage_order[:, 0].argsort()]
+    return oi2label, linkage_order
 
 # df_table: flat homology table in pandas dataframe type
 # pl.dd_Smed_v4_424_0_1 hy.t18073aep 77.273 374 85 0 135 1256 240 1361 0.0 699
@@ -68,8 +102,9 @@ def _flat2spmat(df_table, c1, c2, c_value, max_dup=False, reciprocate=True):
     nptable = np.array(df_table.loc[df_table.groupby([c1,c2])[c_value].idxmax()]) if max_dup==True else np.array(df_table)
     # get ordered unique labels (genes) then convert genes to integers
     labels = np.sort(np.unique(np.concatenate((nptable[:,c1], nptable[:,c2]))))
-    ix = labels.searchsorted(nptable[:,c1])
+    ix = labels.searchsorted(nptable[:,c1]) 
     iy = labels.searchsorted(nptable[:,c2])
+    #!!! use pd.factorize() instead
 
     # gnnm is asymetrical
     gnnm = sp.sparse.coo_matrix((nptable[:,c_value].astype(float), (ix,iy)), shape=(labels.size, labels.size)).tocsr()
