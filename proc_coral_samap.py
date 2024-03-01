@@ -368,6 +368,98 @@ def nmax_prosthits(args):
 # gene_align_*: remove abnormal AA alphabets gaps = ['.','-',' ','*']
 #             : reformat fasta headers; unique ID + transcription ID
 ##-------------------------------------------------------------------------------------
+
+def _seq_stat(proteome_file, ab_checklist):
+    from tqdm import tqdm
+    clean_flag = False
+    cp._info('checking for sequences contain: %s' % (' '.join(['[%s]' % c for c in ab_checklist])))
+    ab_seq = []
+    i=0
+    for s in tqdm(cp.fasta_iter(proteome_file)):
+        for c in ab_checklist:
+            if c in s[1]:
+                ab_seq.append('[ab]: %s [header]: %s [seq]: %s' % (c, s[0], s[1]))
+        i+=1
+    print('%d / %d ab sequences found' % (len(ab_seq), i))
+    if len(ab_seq)!=0:
+        abfile = proteome_file+'.ab.list'
+        cp._info('save ab list to %s' % abfile)
+        with open(abfile, 'w') as fout:
+            fout.write('%s\n' % '\n'.join(ab_seq))
+        clean_flag = True
+    return clean_flag
+
+
+# for adig
+# s[0]: adig-s0001.g1.t2
+def _ad_parser(slist, arg='adig.proteome.rename.fas'):
+    _fn_h = lambda sarr: '%s.%s' % (sarr[0], sarr[1])
+    seqs = [[_fn_h(s[0].split('.')), s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
+# for new nematostella dataset
+# input: cleaned sequences slist from proteome.fas 
+# output: pd type longest sequences 
+def _nt_parser(slist, arg='genes.LUT.tsv'):
+    mapping_df = pd.read_csv(arg, sep='\t', names=['id', 'nv2', 'desc', 'old'])
+    m = mapping_df.set_index('nv2')['desc'].to_dict()
+    
+    # NV2.1 == Nv2g000001001 (transcript 1),  Nv2g000001002 (transcript 2)
+    seqs = [[m['NV2.' + str(int(s[0][4:10]))], s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    # find longest one amount sequences with identical transcript id
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
+# no transcriptID 
+def _default_parser(s):
+    return [s[0],'_NA_',s[1],len(s[1])]
+
+# process proteome data
+# 0. remove abnormal alphabets, save stat to *.ab.list
+# 1. map header to andata.obs names
+# 2. keep the longest sequence for duplicated transcripts
+def process_proteome(args):
+    assert len(args) == 3, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id outfile'
+    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser}
+
+    proteome_file = args[0]
+    _fn_s_parser=_parser_list.get(args[1], _default_parser)
+    cp._info('Parser %s selected' % _fn_s_parser.__name__)
+    outfile = args[2]
+
+    # get sequence statistics
+    ab_checklist = set(cp.illab).union(set(cp.gaps))
+    _seq_stat(proteome_file, ab_checklist)
+
+    # clean sequence and find the longest amount transcripts
+    slist=[]
+    for h, s in cp.fasta_iter(proteome_file):
+        ts = s.translate(str.maketrans('','',''.join(ab_checklist)))
+        slist.append((h,ts))
+
+    # processing header and output processed proteome
+    cp._info('Filtering short transcripts')
+    df_filtered = _fn_s_parser(slist)
+    #df_filtered.to_csv(proteome_file+'.filtered.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    cp._info('save filtered header mapping to %s' % proteome_file+'.stat.list')
+
+    # output the converted proteome
+    outlist = ['>%s\n%s' % (df_filtered.loc[i]['output_id'], df_filtered.loc[i]['seq']) for i in df_filtered.index]
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % ('\n'.join(outlist)))
+    cp._info('save cleaned proteome to %s' % outfile)
+    
+
+
+
+
+
+
+
 # kjia@DESKTOP-L0MMU09 ~/workspace/library/dataset/new.nematostella
 # for new nematostella dataset
 # proteome

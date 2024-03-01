@@ -30,8 +30,22 @@ def _mean_expression(s, c_indices):
     cluster_expression_matrix = s.adata[s.adata.obs.index.isin(c_indices)]
     return cluster_expression_matrix.X.mean(axis=0)
 
-# must project data first project to pc space first
+# calcualte wpca for sam object 
+# result is stored in s.adata.varm['wpca']
+# s: sam object
+def _calc_varm_wpca(s):
+    from sklearn.preprocessing import StandardScaler
+    st = StandardScaler(with_mean=False) 
 
+    ss = std.fit_transform(s.adata.X)
+    W =s.adata.var['weights'].values
+    ws = ss.multiply(W[None,:]).tocsr()
+    wpca = ws.dot(s.adata.varm['PCs'])
+    mu = ws.mean(0).A.flatten()
+
+    s.adata.varm['wpca'] = wpca - mu
+
+# must project data first project to pc space first
 def _mean_expression_wpca(s, c_indices):
     pass
 
