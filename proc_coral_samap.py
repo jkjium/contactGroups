@@ -191,6 +191,7 @@ def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_n
         h5.obs[c].fillna(unclustered_label, inplace=True)
 
 
+
 # convert RDS converted .mtx {rowname,colname}.tsv files into an h5ad object
 # clusterfile: .tsv file without header line
 # the h5 and cluster info have the same index name
@@ -331,6 +332,12 @@ def _iter_res(c1='leiden_clusters', c2='leiden_clusters', res1=3, res2=3, output
 # convert prost distance to similarity score
 # input format: sid1\tsid2\tdistance\te-value
 # target_column: 0-based column index, used by pd.iloc
+# 
+# $ python proc_coral_samap.py prost2similarity 01.prost.adnt.tsv 2 02.prost.adnt.scores.tsv
+# $ python proc_coral_samap.py prost2similarity 01.prost.ntad.tsv 2 02.prost.ntad.scores.tsv
+# use awk to format it as SAMap mapping
+# $ awk -F '\t' '{printf "%s\t%s\tp\tp\tp\tp\tp\tp\tp\tp\t0.0\t%s\n",$1,$2,$5}' 02.prost.adnt.scores.tsv > ad_to_nt.prost.txt
+# $ awk -F '\t' '{printf "%s\t%s\tp\tp\tp\tp\tp\tp\tp\tp\t0.0\t%s\n",$1,$2,$5}' 02.prost.ntad.scores.tsv > nt_to_ad.prost.txt
 def prost2similarity(args):
     assert len(args) == 3, 'Usage: python proc_coral_samap.py prost2similarity prost.out.tsv target_column ad_to_hy.txt'
     infile = args[0]
@@ -338,7 +345,12 @@ def prost2similarity(args):
     outfile = args[2]
 
     df = pd.read_csv(infile, header=None, sep='\t')
+    # ignore all Nan columns
+    df = df.dropna(axis=1, how='all')
+    # rename previous column names
+    df = df.rename(columns=dict((n,i) for i,n in enumerate(df.columns)))
 
+    # append score columns
     i = len(df.columns)
     # inversed log
     df[i+1]= 1/(np.log(df.iloc[:,tc]+1)+1)
@@ -346,7 +358,7 @@ def prost2similarity(args):
     df[i+2]= 1/(np.sqrt(df.iloc[:,tc]+1)+1)
 
     df.to_csv(outfile, sep='\t', index=False, header=False)
-    cp._info('save to %s' % outfile)
+    cp._info('apprend %d: log, %d: sqrt scores to %s' % (i+1, i+2, outfile))
 
 # for annnotating proteins
 # save the goterm information from the top hit uniprot entry
@@ -414,9 +426,58 @@ def _nt_parser(slist, arg='genes.LUT.tsv'):
     idx = df.groupby(['output_id'])['length'].idxmax()
     return df.loc[idx]
 
-# no transcriptID 
-def _default_parser(s):
-    return [s[0],'_NA_',s[1],len(s[1])]
+# Spongilla_proteome_70AA.fasta
+# map from "c100000_g1_i1_m.41809" to "c100000-g1"
+def _sl_parser(slist, arg='Spongilla_proteome_70AA.fasta'):
+    _fn_h = lambda sarr: '%s-%s' % (sarr[0], sarr[1])
+    seqs = [[_fn_h(s[0].split('_')), s[0], s[1], len(s[1])] for s in slist]
+
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
+# sm=load_samap('02.adxe.samap.prost.jake_cell_type_family.pkl') 
+# sm.sams['xe'].adata.var: xe_Xesp_000001
+# _fn_get_var: Xesp_000001.t1 to Xesp_000001
+def _xe_parser(slist, arg='xesp.proteome.rename.fas'):
+    _fn_get_var = lambda sarr: sarr[0]
+    seqs = [[_fn_get_var(s[0].split('.')), s[0], s[1], len(s[1])] for s in slist]
+
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
+# same with xe
+# sm = load_samap('02.adhy.samap.prost.jake_cell_type_family.pkl')
+# sm.sams['hy'].adata.var: hy_Hvul_g10012_1
+# _fn_get_var: Hvul_g10012_1.t1 to hy_Hvul_g10012_1 
+def _hy_parser(slist, arg='hvul.proteome.rename.fas'):
+    _fn_get_var = lambda sarr: sarr[0]
+    seqs = [[_fn_get_var(s[0].split('.')), s[0], s[1], len(s[1])] for s in slist]
+
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
+
+# no need to change
+def _sp_parser(slist, arg='spis.proteome.fas'):
+    seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
+# no need to change
+def _nv_parser(slist, arg='nvec.proteome.rename.fas'):
+    seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
 
 # process proteome data
 # 0. remove abnormal alphabets, save stat to *.ab.list
@@ -424,10 +485,11 @@ def _default_parser(s):
 # 2. keep the longest sequence for duplicated transcripts
 def process_proteome(args):
     assert len(args) == 3, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id outfile'
-    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser}
+
+    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser}
 
     proteome_file = args[0]
-    _fn_s_parser=_parser_list.get(args[1], _default_parser)
+    _fn_s_parser=_parser_list[args[1]]
     cp._info('Parser %s selected' % _fn_s_parser.__name__)
     outfile = args[2]
 
@@ -444,6 +506,7 @@ def process_proteome(args):
     # processing header and output processed proteome
     cp._info('Filtering short transcripts')
     df_filtered = _fn_s_parser(slist)
+    print(df_filtered)
     #df_filtered.to_csv(proteome_file+'.filtered.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
     cp._info('save filtered header mapping to %s' % proteome_file+'.stat.list')
 
@@ -972,6 +1035,7 @@ def _sankey_clusters(obs, cluster_names, **params):
 
 def foo(args):
     print(args)
+
 
 if __name__=='__main__':
     cp.dispatch(__name__)

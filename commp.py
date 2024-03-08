@@ -21,7 +21,7 @@ import collections
 import subprocess
 from functools import reduce
 
-illab =['/', '+', '?', '*', '&', '$', '\\', ' ', '|']
+illab =['/', '+', '?', '*', '&', '$', '\\', ' ', '|', 'X', 'x']
 
 gaps = ['.','-',' ','*']
 
