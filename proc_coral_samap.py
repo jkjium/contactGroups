@@ -25,6 +25,46 @@ class dotdict(dict):
 
 _cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
 
+
+# extract gene name, taxon ID from curl download strings
+# - adig prost annotations human and drosophila
+# $ awk '{printf "curl \"https://rest.uniprot.org/uniprotkb/search?query=%s&fields=gene_names,organism_id\"\necho\n",$1}' 03.uniprot_ID.tsv > batch_curl_all.sh
+# $ split -l 140000 batch_curl_all.sh sub.dl. --additional-suffix=.sh
+# $ cat *.out > append_info.json.txt
+def append_gn_tax(args):
+    assert len(args)==2, 'Usage: python proc_coral_samap.py append_gn_tax append_info.json.txt append_info.uid_tax_gn.tsv'
+    import json
+    from tqdm import tqdm
+    infile = args[0]
+    outfile = args[1]
+
+    outlist = []
+    jsonline=''
+    fp = open(infile,'r')
+    content = fp.read()
+    for line in tqdm(content.split('{"results":'), desc='Processing'):
+        if line=='': continue
+        jsonline = '{"results":'+line
+
+        #print('New json: '+jsonline)
+        jo = json.loads(jsonline)
+        try:
+            uid = jo['results'][0]['primaryAccession']
+            tax = jo['results'][0]['organism'].get('taxonId', '_NA_')
+            gid = jo['results'][0].get('genes', '_NA_')
+            gn = gid[0].get('geneName', '_NA_') if gid!='_NA_' else '_NA_'
+            gnv = gn.get('value', '_NA_') if gn!='_NA_' else '_NA_'
+        except Exception as e:
+            print(e)
+            print(jsonline)
+        outlist.append('%s\t%s\t%s' % (uid, tax, gnv))
+        jsonline=''
+    fp.close()
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+
+    cp._info('save to append_info.uid_tax_gn.tsv')
+
 # apc procedure fucntions ---------------------------------------------------------------
 # tb: tuples from blast [(ad1, sp1), ...,]
 # tp: tuples from prost [(ad1, sp1), ...,]
