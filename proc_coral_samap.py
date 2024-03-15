@@ -26,6 +26,9 @@ class dotdict(dict):
 _cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
 
 
+############################################################################################
+# fucntions for gene annotations --------------------------------------------------
+############################################################################################
 # extract gene name, taxon ID from curl download strings
 # - adig prost annotations human and drosophila
 # $ awk '{printf "curl \"https://rest.uniprot.org/uniprotkb/search?query=%s&fields=gene_names,organism_id\"\necho\n",$1}' 03.uniprot_ID.tsv > batch_curl_all.sh
@@ -63,9 +66,61 @@ def append_gn_tax(args):
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
 
-    cp._info('save to append_info.uid_tax_gn.tsv')
+    cp._info('save to %s' % outfile)
 
-# apc procedure fucntions ---------------------------------------------------------------
+
+# extract human, drome, top1 from *allhits.cell.uid.pn.gd.gn.tax.tn.dis.tsv
+def ann_merge(args):
+    assert len(args)==2, 'Usage: python proc_coral_samap.py ann_merge in.allhits.cell.uid.pn.gd.gn.tax.tn.dis.tsv outfile'
+    infile = args[0]
+    outfile = args[1]
+    # load data
+    df = pd.read_csv(infile, sep='\t', names=['Query_gene_ID','Uniprot_ID','Protein_name','Gene_name','Taxon_ID','Taxon_name','PROST_distance'])
+    # filter _NA_ gene names
+    df=df.loc[df['Gene_name']!='_NA_']
+
+    f=lambda x: ','.join(list(x))
+
+    # extract human hits
+    dh = df.loc[df['Taxon_ID']== 9606]
+    dh = dh.groupby('Query_gene_ID')['Gene_name'].apply(f).reset_index()
+    dh.set_index('Query_gene_ID', inplace=True)
+    dh.rename(columns={'Gene_name': 'PROST_gene_name(Human)'}, inplace=True)
+
+    # extract drome hits
+    dd = df.loc[df['Taxon_ID']== 7227]
+    dd = dd.groupby('Query_gene_ID')['Gene_name'].apply(f).reset_index()
+    dd.set_index('Query_gene_ID', inplace=True)
+    dd.rename(columns={'Gene_name': 'PROST_gene_name(Drome)'}, inplace=True)
+
+    # extract gene name, tax name from the top1 hit
+    #da = df.groupby('Query_gene_ID').apply(lambda x: sorted(list(zip(x['Uniprot_ID'], x['Protein_name'], x['Gene_name'], x['Taxon_ID'], x['Taxon_name'], x['PROST_distance'])), key=lambda tup: tup[5])[0])
+    da = df.groupby('Query_gene_ID').apply(lambda x: sorted(list(zip(x['Query_gene_ID'], x['Uniprot_ID'], x['Protein_name'], x['Gene_name'], x['Taxon_ID'], x['Taxon_name'], x['PROST_distance'])), key=lambda tup: tup[6])[0])
+    da = da.reset_index(name='PROST_gene_name(Top1)')
+
+    # output top1 flat tsv
+    dt = pd.DataFrame(da['PROST_gene_name(Top1)'].tolist(), columns=['Query_gene_ID', 'Uniprot_ID','Protein_name','Gene_name','Taxon_ID','Taxon_name','PROST_distance'])
+    dt.set_index('Query_gene_ID', inplace=True)
+    dt.to_csv('out.top1.tsv', sep='\t', index=True, header=True)
+    cp._info('save top1 df to out.top1.tsv')
+
+    da['PROST_gene_name(Top1)'] = da['PROST_gene_name(Top1)'].apply(lambda x: '%s, %s' % (x[3], x[5]))
+    da.set_index('Query_gene_ID', inplace=True)
+    # merge dh,dd,da
+    outdf = da.merge(dh, how='left', left_index=True, right_index=True).merge(dd, how='left', left_index=True, right_index=True) 
+    outdf.fillna('_NA_', inplace=True)
+    outdf.to_csv(outfile, sep='\t', index=True, header=True)
+    cp._info('save merged df to %s' % outfile)
+
+
+
+    
+    
+
+
+############################################################################################
+# fucntions for homology graph comparison --------------------------------------------------
+############################################################################################
 # tb: tuples from blast [(ad1, sp1), ...,]
 # tp: tuples from prost [(ad1, sp1), ...,]
 def _hits_comparison(tb, tp): 
@@ -199,7 +254,7 @@ def _samh5ad(h5file,outfile):
     cp._info('save sam h5ad to %s' % outfile)
 
 # slice adata obj by labels of cluster_name in obs 
-# all columms in var will be removed
+# all columns in var will be removed
 # h5: input anndata object
 # target_obs_column:'Jake'
 # labels = ['Jake_10', 'Jake_17', 'Jake_20', 'Jake_22', 'Jake_27', 'Jake_46', 'Jake_54']; corresponds to xe_gastrodermis cell type family
@@ -209,7 +264,7 @@ def _slice_by_cluster(h5, target_obs_column, labels, obs_droplist=None):
     filters = c[c.isin(labels)].index 
     sub_h5 = h5[filters]
     obs = sub_h5.obs.drop(columns=obs_droplist) if obs_droplist is not None else sub_h5.obs
-    var = sub_ht.var.drop(columns=sub_h5.var.columns) if sub_h5.var.columns!=0 else sub_h5.var
+    var = sub_h5.var.drop(columns=sub_h5.var.columns) if sub_h5.var.columns!=0 else sub_h5.var
     return sc.AnnData(X=sub_h5.X, obs=obs, var=var) 
   
 
@@ -400,21 +455,6 @@ def prost2similarity(args):
     df.to_csv(outfile, sep='\t', index=False, header=False)
     cp._info('apprend %d: log, %d: sqrt scores to %s' % (i+1, i+2, outfile))
 
-# for annnotating proteins
-# save the goterm information from the top hit uniprot entry
-# infile: species separated prost gohits tsv file
-# $ grep -v "GO:" adig.proteome.prost.sp.hits_go.tsv |grep  -i "Drosophila melanogaster" > adig.proteome.prost.sp.hits.drome.tsv
-# adig-s0001.g1.t2        Q9VCB1  PTOV1_DROME     Protein PTOV1 homolog   Drosophila melanogaster 5889.5  6.35e-06
-def nmax_prosthits(args):
-    assert len(args) == 2, 'Usage: python proc_coral_samap.py proc_nmax_gohits adig.prost_gohits.drome.tsv adig.prost_gohits.drome.max1.tsv'
-    infile = args[0]
-    outfile = args[1]
-    #df = pd.read_csv(infile, sep="\t", names=['cell_id', 'uniprot', 'u_name', 'u_desc', 'organism', 'dist', 'prost_e-value'])
-    df = pd.read_csv(infile, sep="\t", names=['gene_id', 'uniprot', 'u_desc', 'organism', 'dist'])
-    idx_min_score = df.groupby('gene_id')['dist'].idxmin()
-    df.loc[idx_min_score].to_csv(outfile, sep="\t", index=False, header=False)
-    cp._info('save to %s' % outfile)
-
 
 ##-------------------------------------------------------------------------------------
 # gene_align_*: remove abnormal AA alphabets gaps = ['.','-',' ','*']
@@ -519,19 +559,55 @@ def _nv_parser(slist, arg='nvec.proteome.rename.fas'):
     idx = df.groupby(['output_id'])['length'].idxmax()
     return df.loc[idx]
 
+
+# fa header:
+# >TriadP8101 pep scaffold:ASM15027v1:scaffold_41:90438:90993:1 gene:TriadG8101 transcript:TriadT8101 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SYT15 description:Synaptotagmin
+# 15 [Source:UniProtKB/TrEMBL;Acc:B3SDG8]
+#
+# c1 is the same as c10 
+# TriadP55444 TriadG55444
+#
+# kjia@DESKTOP-L0MMU09 ~/workspace/samap_general/data/tr/stage.clean 2024-03-12 10:54:21
+# $ awk -F '_' '{print $1}' tr_genes.tsv |sort|uniq -c
+#      1 DLX
+#      1 RPS5
+#      1 SECP1
+#      1 SYT15
+#      1 SYTNTM
+#      1 SYTWLL
+#  16380 Tadh
+# >>> h5.X.shape: (13236, 16386)
+# 16380 (Tadh_TriadG51255) + manual convert 6 (convert gene_symbol to gene)
+def _tr_parser(slist, arg='Trichoplax_adhaerens.ASM15027v1.pep.all.fa'):
+    symlist = ['DLX', 'RPS5', 'SECP1', 'SYT15', 'SYTNTM', 'SYTWLL']
+
+    def _fn_get_var(h):
+        sym=''
+        if 'gene_symbol' in h:
+            hsub = h.split('gene_symbol:')
+            sym = hsub[1].split(' ')[0]
+        return sym if sym in symlist else 'Tadh_TriadG%s' % h.split(' ')[0][6:]
+
+    seqs = [[_fn_get_var(s[0]), s[0], s[1], len(s[1])] for s in slist]
+
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]    
+
 # process proteome data
 # 0. remove abnormal alphabets, save stat to *.ab.list
 # 1. map header to andata.obs names
 # 2. keep the longest sequence for duplicated transcripts
 def process_proteome(args):
-    assert len(args) == 3, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id outfile'
+    assert len(args) == 4, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id gene_name.tsv outfile'
 
-    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser}
+    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser, 'tr': _tr_parser}
 
     proteome_file = args[0]
     _fn_s_parser=_parser_list[args[1]]
     cp._info('Parser %s selected' % _fn_s_parser.__name__)
-    outfile = args[2]
+    outfile = args[3]
 
     # get sequence statistics
     ab_checklist = set(cp.illab).union(set(cp.gaps))
@@ -546,11 +622,24 @@ def process_proteome(args):
     # processing header and output processed proteome
     cp._info('Filtering short transcripts')
     df_filtered = _fn_s_parser(slist)
-    print(df_filtered)
+    print(df_filtered.iloc[:5])
     #df_filtered.to_csv(proteome_file+'.filtered.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
     cp._info('save filtered header mapping to %s' % proteome_file+'.stat.list')
 
+    gene_syms = set(cp.loadlines(args[2]))
+    fa_syms = set(df_filtered['output_id'])
+    matches = gene_syms.intersection(fa_syms)
+
+    print('\n------- gene name mapping statistics ------')
+    cp._info('%d matches' % len(matches))
+    missing = pd.Series([g for g in gene_syms if g not in fa_syms])
+    cp._info('%d missed' % len(missing))
+    if len(missing)!=0:
+        missing.to_csv(args[0]+'.missing.tsv', header=False, index=False)
+        cp._info('save missed gene sym to %s.missing.tsv' % args[0])
+
     # output the converted proteome
+    print('------------------------------------------\n')
     outlist = ['>%s\n%s' % (df_filtered.loc[i]['output_id'], df_filtered.loc[i]['seq']) for i in df_filtered.index]
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % ('\n'.join(outlist)))
