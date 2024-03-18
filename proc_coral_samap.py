@@ -595,14 +595,23 @@ def _tr_parser(slist, arg='Trichoplax_adhaerens.ASM15027v1.pep.all.fa'):
     idx = df.groupby(['output_id'])['length'].idxmax()
     return df.loc[idx]    
 
+
+# no need to change
+def _pd_parser(slist, arg='pdumv021.xloc.pep'):
+    seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
 # process proteome data
 # 0. remove abnormal alphabets, save stat to *.ab.list
 # 1. map header to andata.obs names
 # 2. keep the longest sequence for duplicated transcripts
 def process_proteome(args):
-    assert len(args) == 4, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id gene_name.tsv outfile'
+    assert len(args) == 4, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id gene_name.tsv/na outfile'
 
-    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser, 'tr': _tr_parser}
+    _parser_list = {'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser, 'tr': _tr_parser, 'pd': _pd_parser}
 
     proteome_file = args[0]
     _fn_s_parser=_parser_list[args[1]]
@@ -626,17 +635,21 @@ def process_proteome(args):
     #df_filtered.to_csv(proteome_file+'.filtered.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
     cp._info('save filtered header mapping to %s' % proteome_file+'.stat.list')
 
-    gene_syms = set(cp.loadlines(args[2]))
-    fa_syms = set(df_filtered['output_id'])
-    matches = gene_syms.intersection(fa_syms)
+    if args[2]!='na':
+        cp._info('gene sym file: %s provided. checking matches' % args[2])
+        gene_syms = set(cp.loadlines(args[2]))
+        fa_syms = set(df_filtered['output_id'])
+        matches = gene_syms.intersection(fa_syms)
 
-    print('\n------- gene name mapping statistics ------')
-    cp._info('%d matches' % len(matches))
-    missing = pd.Series([g for g in gene_syms if g not in fa_syms])
-    cp._info('%d missed' % len(missing))
-    if len(missing)!=0:
-        missing.to_csv(args[0]+'.missing.tsv', header=False, index=False)
-        cp._info('save missed gene sym to %s.missing.tsv' % args[0])
+        print('\n------- gene name mapping statistics ------')
+        cp._info('%d matches' % len(matches))
+        missing = pd.Series([g for g in gene_syms if g not in fa_syms])
+        cp._info('%d missed' % len(missing))
+        if len(missing)!=0:
+            missing.to_csv(args[0]+'.missing.tsv', header=False, index=False)
+            cp._info('save missed gene sym to %s.missing.tsv' % args[0])
+    else:
+        cp._info('skip checking gene sym matches')
 
     # output the converted proteome
     print('------------------------------------------\n')
