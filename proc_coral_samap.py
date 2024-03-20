@@ -350,6 +350,22 @@ def combine_scorefiles(args):
     scores[c].to_csv(outfile, sep='\t', index=True, header=True)
     cp._info('save all scores %s to %s' % (scores[c].shape, outfile))
 
+# python proc_coral_samap.py reorder_mat 04.sl2all.alignment_scores.blast.cell_type_sele_cell_type_family.tsv heatmap.x.sci.stub na out
+# reorder the combined alignment scores to generate heatmap
+# pheatmap(t(read.table(infile, row.names=1, header=TRUE, sep='\t')), cluster_rows=F, cluster_cols=F)
+def reorder_mat(args):
+    assert len(args)==4, 'Usage: python proc_coral_samap.py reorder_mat mat_with_label.tsv x_order.stub y_order.stub outfile'
+
+    # row: x-axis; column: y-axis in the heatmap
+    scores = pd.read_csv(args[0], sep='\t', index_col=0, header=0)
+    x_labels = cp.loadlines(args[1]) if args[1]!= 'na' else list(scores.index)
+    y_labels = cp.loadlines(args[2]) if args[2]!= 'na' else list(scores.columns)
+    scores_ro = scores.reindex(index=x_labels, columns=y_labels)
+
+    scores_ro.to_csv(args[3], sep='\t', index=True, header=True)
+    cp._info('save re-ordered scores to %s' % args[3])
+
+
 
 ############################################################################################
 # samap general pipeline functions -------------------------------------------------------
