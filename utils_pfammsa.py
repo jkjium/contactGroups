@@ -1372,7 +1372,7 @@ def score2msa(arglist):
 
 # save each sequence in .fas file into separated .fa file WITHOUT ANY TRANSFORMATION
 # use header info as filename
-def splitofabyheader(args):
+def splitfabyheader(args):
 	assert len(args) == 1, 'Usage: python utils_pfammsa.py splitfabyheader in.fas'
 	fafile = args[0]
 	c = 0
@@ -2144,7 +2144,7 @@ def main():
 		'score2msa':score2msa, # for cad.ppi.2
 		'slicefa': slicefa, # slice .fas into smaller chunk (for HPC blasting)
 		'splitfa': splitfa,
-		'splitofabyheader': splitofabyheader,
+		'splitfabyheader': splitfabyheader,
 		'splithidfa': splithidfa,
 		'splitheadfa': splitheadfa,
 		'splitfabyfield': splitfabyfield,
