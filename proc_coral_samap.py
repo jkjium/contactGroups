@@ -378,7 +378,7 @@ def reorder_mat(args):
 # resolutions: leiden clustering resolution for each species
 # assignments: = {"bf":"cluster", "mm":"tissue_celltype"}
 # _run_samap_with_h5('ad', '00.adig.counts.Jake_xe_gastodermis.h5ad', 'xe', '00.xesp.counts.Jake_xe_gastodermis.h5ad', samobj=False, map_p='maps.blast/', assignments=assignments)
-def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0, gnnm_transform=True, umap=False):
+def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=None, resolutions=None, assignments=None, res_dk=1.0, gnnm_transform=True, umap=False, niter=3):
     from samap.mapping import SAMAP
     from samap.analysis import (get_mapping_scores, GenePairFinder, sankey_plot)
     from samap.utils import save_samap, load_samap
@@ -411,7 +411,7 @@ def _run_samap_with_h5(sn1, fn1, sn2, fn2, samobj=False, map_p='maps/', gnnm=Non
     else:
         neigh_from_keys=None
     #sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=False)
-    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=umap) # umap is false for debugging
+    sm.run(pairwise=True, neigh_from_keys=neigh_from_keys, umap=umap, NUMITERS=niter) # umap is false for debugging
     #save_samap(sm, 'ad_nv.samap.pkl')
     cp._info('SAMap %s%s done.' %(sn1,sn2))
     return sm
@@ -620,6 +620,18 @@ def _pd_parser(slist, arg='pdumv021.xloc.pep'):
     idx = df.groupby(['output_id'])['length'].idxmax()
     return df.loc[idx]
 
+# parsing transdecoder output of pacbio transcriptome
+def _pt_parser(slist, arg):
+    cp._info('parsing transdecoder output of pacbio transcriptome')
+    # 'BioSample_1_transcript/4901620.p1 type:internal gc:universal BioSample_1_transcript/4901620:1-228(+)'
+    # s[0].split('.')[0][length("BioSample_1_transcript/"):] = 4901620
+    # get only trascription ID {4901620} to groupby->get the longest
+    seqs = [[s[0].split('.')[0][len("BioSample_1_transcript/"):], s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax()
+    return df.loc[idx]
+
 def _default_parser(slist, arg):
     cp._info('use default parser.')
     seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
@@ -635,7 +647,12 @@ def _default_parser(slist, arg):
 def process_proteome(args):
     assert len(args) == 4, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id gene_name.tsv/na outfile'
 
-    _parser_list = {'def':_default_parser, 'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser, 'tr': _tr_parser, 'pd': _pd_parser}
+    _parser_list = { 
+        'def':_default_parser, 'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 
+        'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser, 'tr': _tr_parser, 'pd': _pd_parser,
+        'pacbio-transcriptome': _pt_parser
+
+        }
 
     proteome_file = args[0]
     _fn_s_parser=_parser_list[args[1]]
