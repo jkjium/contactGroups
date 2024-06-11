@@ -25,30 +25,54 @@ def _cosine(v1,v2):
     return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
 
 # calculate the mean expression vector of a set of cells in a sam object
-def _mean_expression(s, c_indices):
+def _mean_expression(s, cell_names):
     # slice expression matrix by cluster member
-    cluster_expression_matrix = s.adata[s.adata.obs.index.isin(c_indices)]
-    return cluster_expression_matrix.X.mean(axis=0)
+    cluster_expression_matrix = s.adata[s.adata.obs.index.isin(cell_names)]
+    return cluster_expression_matrix.X.mean(axis=0).A.flatten()
 
-# calcualte wpca for sam object 
+# calcualte wpca for a non-samap sam object 
 # result is stored in s.adata.varm['wpca']
 # s: sam object
 def _calc_varm_wpca(s):
     from sklearn.preprocessing import StandardScaler
-    st = StandardScaler(with_mean=False) 
+    std = StandardScaler(with_mean=False) 
 
-    ss = std.fit_transform(s.adata.X)
+    # project normalized, weighed data on PCs
     W =s.adata.var['weights'].values
-    ws = ss.multiply(W[None,:]).tocsr()
-    wpca = ws.dot(s.adata.varm['PCs'])
-    mu = ws.mean(0).A.flatten()
+    ss = std.fit_transform(s.adata.X).multiply(W[None,:]).tocsr()
+    wpca = ss.dot(s.adata.varm['PCs'])
 
-    s.adata.varm['wpca'] = wpca - mu
+    # project mean on PCs
+    mu = ss.mean(0).A.flatten()
+    mu_pca = mu.dot(s.adata.varm['PCs'])
 
-# must project data first project to pc space first
-def _mean_expression_wpca(s, c_indices):
+    s.adata.uns['wpca'] = wpca - mu_pca
+
+# must project data first project to pc space first using _calc_varm_wpca()
+def _mean_expression_wpca(s, cell_names):
+    n_indices = s.adata.obs.index.get_indexer(cell_names) # get position index
+    sliced_wpca = s.adata.uns['wpca'][n_indices, :] # slice wpca matrix
+    return sliced_wpca.mean(axis=0)
+
+def _cluster_label_to_cells(s, cid):
     pass
 
+# calculate representative vector for each cluster id
+# output: [[label, vector], [label2, vector], ...]
+def _get_cluster_vectors(s, cluster_name, fn_cluster_vector=_mean_expression):
+    return [[label, fn_cluster_vector(s, cell_names.tolist())] for label, cell_names in s.adata.obs.groupby(cluster_name).groups.items()]
+
+# for tree generation
+# input: sam object, cluster_assignment_name, cluster_representative, pairwise_distance_measure
+# output: dictionary {labels, pairwise_distance_matrix}
+def _calc_distance_matrix(s, cluster_name, fn_cluster_vector=_mean_expression, metric='cosine'):
+    from scipy.spatial.distance import pdist, squareform
+    nptable_label_vector = np.array(_get_cluster_vectors(s, cluster_name, fn_cluster_vector))
+    labels = nptable_label_vector[:,0]
+    vectors = np.vstack(nptable_label_vector[:,1])
+    distance_matrix = squareform(pdist(vectors, metric))
+    return {'label':vectors, 'dmat':distance_matrix}
+    
 
 # s: sam object
 # cluster_label: {'leiden_clusters', 'cell_type', ...}
