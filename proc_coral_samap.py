@@ -25,6 +25,28 @@ class dotdict(dict):
 
 _cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
 
+def extract_seq_by_list(args):
+    assert len(args) == 3, 'Usage: python proc_coral_samap.py extract_seq_from_list seq.fasta names.txt outfile'
+    from tqdm import tqdm
+    infile = args[0]
+    stubfile = args[1]
+    outfile = args[2]
+
+    stub = cp.loadlines(stubfile)
+    c=0
+    outlist=[]
+    for s in cp.fasta_iter(infile):
+        sarr = s[0].split('.')
+        gname= '.'.join(sarr[:2])
+        #print(gname)
+        if gname in stub:
+            outlist.append('>%s\n%s' % (s[0], s[1]))
+            c+=1
+            print(c)
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save %d sequences to %s' % (c, outfile))
+
 
 ############################################################################################
 # fucntions for gene annotations --------------------------------------------------
@@ -227,7 +249,7 @@ def _apc_sym(sm):
 ############################################################################################
 
 # generate sam h5ad file from expression counts
-def _samh5ad(h5file,outfile):
+def _samh5ad(h5file,outfile, umap=True, leiden=True):
     sam = SAM()
     sam.load_data(h5file)
     sam.preprocess_data(
@@ -243,11 +265,17 @@ def _samh5ad(h5file,outfile):
         weight_PCs=False,
         k=20,
         n_genes=3000,
-        weight_mode='rms'
+        weight_mode='rms',
+        umap_flag = umap
     )
-    sam.leiden_clustering(res=3)
+    if leiden == True:
+        print('Calculating leiden clusters ...')
+        sam.leiden_clustering(res=3)
+    else:
+        print('skip leiden clustering')
     
     if "PCs_SAMap" not in sam.adata.varm.keys():
+        print('Calculating PCA ...')
         prepare_SAMap_loadings(sam)  
 
     sam.save_anndata(outfile)
@@ -311,8 +339,11 @@ def _mtx2h5ad(mtxfile, cellname_file, genename_file, index_name='index'):
 # h5.write_h5ad('adig.counts.c_jake.h5ad'
 def h5gen_mtx_cluster(args):
     assert len(args) == 6, 'Usage: python proc_coral_samap h5adgen mtxfile cellname_file genename_file cluster_file cluster_id outfile'
+    cp._info('loading mtx ...')
     h5 = _mtx2h5ad(args[0], args[1], args[2])
+    cp._info('appending clustering assignments ...')
     _append_assignments(h5, args[3], [args[4]])
+    cp._info('done.')
     h5.write_h5ad(args[5])
     cp._info('save to %s' % args[5])
 
@@ -471,6 +502,48 @@ def prost2similarity(args):
     df.to_csv(outfile, sep='\t', index=False, header=False)
     cp._info('apprend %d: log, %d: sqrt scores to %s' % (i+1, i+2, outfile))
 
+# input: blast format maps
+#  1.  qseqid      query or source (gene) sequence id
+#  2.  sseqid      subject or target (reference genome) sequence id
+#  3.  pident      percentage of identical positions
+#  4.  length      alignment length (sequence overlap)
+#  5.  mismatch    number of mismatches
+#  6.  gapopen     number of gap openings
+#  7.  qstart      start of alignment in query
+#  8.  qend        end of alignment in query
+#  9.  sstart      start of alignment in subject
+# 10.  send        end of alignment in subject
+# 11.  evalue      expect value  # get minimum
+# 12.  bitscore    bit score  # need normalize
+
+# use the first two column as key to merge scores with same query,match sequence
+# output: non-redundant sskey,bitscores with re-scaled bitscore
+def _congruent_blast_map(mfile, remove_redundancy=True):
+    df = pd.read_csv(mfile,sep='\t', names=['qseqid', 'sseqid', 'pident', 'length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore'])
+    df['sskey'] = df['qseqid']+'\t'+df['sseqid']
+    if remove_redundancy:
+        idx = df.groupby(['sskey'])['evalue'].idxmin()
+        df=df.loc[idx]
+    df['bitscore']=df['bitscore']/df['bitscore'].max() # scale by maximum
+    # remove unused columns
+    df.drop(columns=['qseqid', 'sseqid', 'pident', 'length','mismatch','gapopen','qstart','qend','sstart','send'], inplace=True)
+    df.set_index('sskey', inplace=True)
+    return df
+
+
+# merge blast, prost hits into one
+def congruent_map(args):
+    assert len(args) == 3, 'Usage: python proc_coral_samap.py congruent_map mapfile nr{0|1} outfile'
+    mfile = args[0]
+    nr = int(args[1])
+    outfile = args[2]
+
+    df = _congruent_blast_map(mfile, nr)
+    import csv
+    df.to_csv(outfile, sep='\t', index=True, header=False, quoting=csv.QUOTE_NONE, doublequote=False)
+    #df.to_csv(outfile, sep='\t', index=True, header=False, doublequote=False)
+    cp._info('save conguent map to %s' % outfile)
+
 
 ##-------------------------------------------------------------------------------------
 # gene_align_*: remove abnormal AA alphabets gaps = ['.','-',' ','*']
@@ -498,8 +571,18 @@ def _seq_stat(proteome_file, ab_checklist):
     return clean_flag
 
 
+# aten remove the last .t1 and find the longest
+def _at_parser(slist, arg='aten.pep.t1.fasta'):
+    _fn_h = lambda sarr: '%s.%s' % (sarr[0], sarr[1])
+    seqs = [[_fn_h(s[0].split('.')), s[0], s[1], len(s[1])] for s in slist]
+    df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
+    df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
+    idx = df.groupby(['output_id'])['length'].idxmax() # get the longest
+    return df.loc[idx]
+
+
 # for adig
-# s[0]: adig-s0001.g1.t2
+# s[0]: adig-s0001.g1.t2 # remove the last .t2
 def _ad_parser(slist, arg='adig.proteome.rename.fas'):
     _fn_h = lambda sarr: '%s.%s' % (sarr[0], sarr[1])
     seqs = [[_fn_h(s[0].split('.')), s[0], s[1], len(s[1])] for s in slist]
@@ -632,6 +715,7 @@ def _pt_parser(slist, arg):
     idx = df.groupby(['output_id'])['length'].idxmax()
     return df.loc[idx]
 
+# keep the original header and the get longest sequence
 def _default_parser(slist, arg):
     cp._info('use default parser.')
     seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
@@ -648,7 +732,7 @@ def process_proteome(args):
     assert len(args) == 4, 'Usage: python proc_coral_samap.py process_proteome proteome.fas parser_id gene_name.tsv/na outfile'
 
     _parser_list = { 
-        'def':_default_parser, 'nt': _nt_parser, 'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 
+        'def':_default_parser, 'nt': _nt_parser, 'at': _at_parser,'ad': _ad_parser, 'sl': _sl_parser, 'xe': _xe_parser, 
         'hy': _hy_parser, 'sp': _sp_parser, 'nv': _nv_parser, 'tr': _tr_parser, 'pd': _pd_parser,
         'pacbio-transcriptome': _pt_parser
 

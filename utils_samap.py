@@ -4,7 +4,7 @@ import pandas as pd
 import scipy as sp
 from itertools import groupby
 from scipy.spatial import distance
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 try:
     import scanpy as sc
@@ -51,29 +51,30 @@ def _calc_varm_wpca(s):
 # must project data first project to pc space first using _calc_varm_wpca()
 def _mean_expression_wpca(s, cell_names):
     n_indices = s.adata.obs.index.get_indexer(cell_names) # get position index
+    if 'wpca' not in s.adata.uns:
+        print('projecting data to wPC space')
+        _calc_varm_wpca(s)
     sliced_wpca = s.adata.uns['wpca'][n_indices, :] # slice wpca matrix
     return sliced_wpca.mean(axis=0)
-
-def _cluster_label_to_cells(s, cid):
-    pass
 
 # calculate representative vector for each cluster id
 # output: [[label, vector], [label2, vector], ...]
 def _get_cluster_vectors(s, cluster_name, fn_cluster_vector=_mean_expression):
-    return [[label, fn_cluster_vector(s, cell_names.tolist())] for label, cell_names in s.adata.obs.groupby(cluster_name).groups.items()]
+    return [[label, fn_cluster_vector(s, cell_names.tolist())] for label, cell_names in s.adata.obs.groupby(cluster_name, observed=False).groups.items()]
 
 # for tree generation
 # input: sam object, cluster_assignment_name, cluster_representative, pairwise_distance_measure
 # output: dictionary {labels, pairwise_distance_matrix}
 def _calc_distance_matrix(s, cluster_name, fn_cluster_vector=_mean_expression, metric='cosine'):
     from scipy.spatial.distance import pdist, squareform
-    nptable_label_vector = np.array(_get_cluster_vectors(s, cluster_name, fn_cluster_vector))
+    nptable_label_vector = np.array(_get_cluster_vectors(s, cluster_name, fn_cluster_vector), dtype=object)
     labels = nptable_label_vector[:,0]
     vectors = np.vstack(nptable_label_vector[:,1])
     distance_matrix = squareform(pdist(vectors, metric))
-    return {'label':vectors, 'dmat':distance_matrix}
-    
+    return pd.DataFrame(distance_matrix, index=labels, columns=labels)
 
+
+# discarded, using R::ape::nj instead
 # s: sam object
 # cluster_label: {'leiden_clusters', 'cell_type', ...}
 # df = s.adata.obs['cluster_name'].copy()
@@ -127,6 +128,44 @@ def _neighbor_joining(s, cluster_name, _fn_cluster_vectors=_mean_expression, _fn
     linkage_order = np.array(linkage)
     linkage_order[linkage_order[:, 0].argsort()]
     return oi2label, linkage_order
+
+
+# np version of entropy
+def _h_np(mat):
+    nm = mat/(mat.sum(axis=1).reshape(-1, 1))
+    lnm = np.where(nm!= 0, np.log2(nm), 0)
+    return -(nm*lnm).sum(axis=1)
+
+# scipy version of entropy
+def _h_sp(mat):
+    print("sp")
+    nm = mat.multiply(np.reciprocal(mat.sum(axis=1))) # row sum normalized matrix
+    lnm = nm.copy()
+    lnm.data = np.log2(lnm.data)
+    lnm.eliminate_zeros()
+    return -np.asarray(nm.multiply(lnm).sum(axis=1))
+
+# calculate expression entropy for given expression matrix
+# assuming rows are cells and columns are genes
+# input: .mtx matrix file
+# output: single column entropy value corresponds to the order of barcodes
+def expression_entropy(args):
+    assert len(args) == 2, 'Usage: python utils_samap.py expression_entropy in.mtx out.vec'
+    infile = args[0]
+    outfile = args[1]
+
+    mat = sp.io.mmread(infile).astype(float) 
+    mat = mat.T # 10x matrix needs to be transposed
+    #h_vec = _h_np(mat.A) 
+    h_vec = _h_sp(mat) # if the matrix is huge
+    print("examine the entropy dimension with number of cells: ")
+    print(h_vec.shape)
+
+    nfeature = np.array(mat.getnnz(axis=1)).reshape(-1,1)
+    # output format: entropy row_sum
+    np.savetxt(outfile, np.hstack((h_vec.reshape(-1,1), np.asarray(mat.sum(axis=1)), nfeature)), fmt='%.8f')
+    cp._info('save entropy, nCounts, nFeatures to %s' % outfile)
+
 
 # df_table: flat homology table in pandas dataframe type
 # pl.dd_Smed_v4_424_0_1 hy.t18073aep 77.273 374 85 0 135 1256 240 1361 0.0 699

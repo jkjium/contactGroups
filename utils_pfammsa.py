@@ -1385,7 +1385,30 @@ def splitfabyheader(args):
 # slice .fas file into n smaller chunks
 # for HPC sbatch running 
 def slicefa(args):
-	pass
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py slicefa fafile number_of_outfile outprefix'
+	infile = args[0]
+	n = int(args[1])
+	outprefix = args[2]
+
+	if n<=1:
+		cp._info('n: %d, no slice needed' % n)
+		return
+	pfm = pfammsa(infile)
+	nseq_per_file = len(pfm.msalist) // n
+
+	c=0
+	for i in range(n-1):
+		outfile = '%s_%d.fas' % (outprefix, i)
+		with open(outfile, 'w') as fout:
+			fout.write('%s\n' % '\n'.join(['>%s\n%s' % (s[0], s[1]) for s in pfm.msalist[i*nseq_per_file:(i+1)*nseq_per_file]]))
+			cp._info('save to %s' % outfile)
+		c+=1
+
+	# output last batch
+	with open('%s_%d.fas' % (outprefix, c), 'w') as fout:
+		fout.write('%s\n' % '\n'.join(['>%s\n%s' % (s[0], s[1]) for s in pfm.msalist[c*nseq_per_file:]]))
+		cp._info('save to %s_%d.fas' % (outprefix, c))
+	
 
 
 # split fasta file into separate .fa file

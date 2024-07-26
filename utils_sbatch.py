@@ -168,5 +168,25 @@ def af2yale(args):
 			fout.write('%s\n\n' % ('\n'.join(sbatchstr)))
 		cp._info('save to %s\n' % outfile)
 
+# simply two part assembly
+def shbystub(args):
+	assert len(args)==3, 'Usage: python utils_sbatch.py shbystub part.1.txt cmd.stub.file outprefix'
+	p1file = args[0]
+	stubfile = args[1]
+	outprefix = args[2]
+
+	with open(p1file) as fp:
+			p1 = fp.read()
+	#print(p1)
+	# jobname, cmd
+	for c in cp.loadtuples(stubfile, delimiter=','):
+		outfile = '%s_%s.sh' % (outprefix, c[0])
+		with open(outfile, 'w') as fout:
+			fout.write('%s\n\n%s\n' % (p1, c[1]))
+		cp._info('%s saved.' % outfile)
+	
+
+
+
 if __name__=='__main__':
 	cp.dispatch(__name__)
