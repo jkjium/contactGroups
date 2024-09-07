@@ -14,6 +14,106 @@ library(readr)
 # renv::install("C:\\Users\\kjia\\workspace\\library\\repository\\presto")
 # renv::install("C:\\Users\\kjia\\workspace\\library\\repository\\DoubletFinder")
 
+# x: list of genes
+# cell.type.order = levels(arcs)
+# avg.exp.matrix
+# order_genes <- function (x, cell.type.order, avg.exp.matrix){
+# 	x_average_matrix <- avg.exp.matrix[, x]
+# 	x_average_matrix_max <- colnames(x_average_matrix)[apply(x_average_matrix,1,which.max)] #finds the index of the maximum value in each row
+# 	names(x_average_matrix_max) <- x
+# 	x_average_matrix_max_ordered <- x_average_matrix_max[order(match(x_average_matrix_max, cell.type.order))]
+# 	return(names(x_average_matrix_max_ordered))
+# }
+# mes_order_stub<-colnames(mes)[apply(mes,1,which.max)]
+
+
+# obj: seurat object (after removing doublets, ribosomal genes, junk clusters)
+# output: visualization of optimal power. User it in wgcna_ppl_2()
+# w_mat <- t(as.matrix(averages)[g6000_vec,]) 
+wgcna_ppl_1 <- function(obj){
+	# wgcna normal ppl
+	g6000_seu <- FindVariableFeatures(object = obj, selection.method = "vst", nfeatures = 6000, binning.method = "equal_frequency")
+	g6000_vec <- VariableFeatures(g6000_seu)
+	averages <- AverageExpression(obj, verbose = F) %>% .[[DefaultAssay(obj)]] %>% log1p()
+	w_mat <- t(as.matrix(averages)[g6000_vec,]) # wgcna requires rows as samples and columns as geneIDs
+
+	# optimizing power
+	powers <- c(c(1:10), seq(from = 12, to=30, by=2))
+	sft <- pickSoftThreshold(w_mat, powerVector = powers, verbose = 5, networkType = "signed")
+
+	# visualization to pick power
+	#library(gridExtra)
+	a1 <- ggplot(sft$fitIndices, aes(Power, SFT.R.sq, label = Power)) +
+	  geom_point() +
+	  geom_text(nudge_y = 0.1) +
+	  geom_hline(yintercept = 0.9, color = 'red') +
+	  labs(x = 'Power', y = 'Scale free topology model fit, signed R^2') +
+	  theme_classic()
+
+	a2 <- ggplot(sft$fitIndices, aes(Power, mean.k., label = Power)) +
+	  geom_point() +
+	  geom_text(nudge_y = 0.1) +
+	  labs(x = 'Power', y = 'Mean Connectivity') +
+	  theme_classic()
+
+	grid.arrange(a1, a2, nrow = 2)
+	
+	return(w_mat)
+}
+
+
+# name_map <- read.csv("aten_emapper_names_table_final.tsv", header = TRUE, sep = "\t")
+# bwnet: output of wgcna blockwiseModules() 
+# me_wt: correlation matrix between module_color and (6000) genes
+wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, max_gene_num, outprefix){
+	count=0
+	module_names <- unique(bwnet$colors)
+	for(i in module_names){
+		#genes_to_plot <- me_wt[row.names(me_wt)[bwnet$colors == "floralwhite"], "floralwhite", drop = F]
+		#genes_to_plot_ordered <- row.names(genes_to_plot)[order(-genes_to_plot$floralwhite)]
+
+		genes_to_plot <- me_wt[row.names(me_wt)[bwnet$colors == i], i, drop = F]
+		genes_to_plot_ordered <- row.names(genes_to_plot)[order(-genes_to_plot[[i]])]
+		
+		if(length(genes_to_plot_ordered) > max_gene_num){
+			message(glue("Trim gene number to {max_gene_num}."))
+			genes_to_plot_ordered <- genes_to_plot_ordered[1:max_gene_num]
+		}
+		
+		if(length(genes_to_plot_ordered) > 0){
+		  Idents(obj) <- factor(Idents(obj), levels = sort(levels(obj)))
+		  gg <- Seurat::DotPlot(object = obj, features = rev(genes_to_plot_ordered), cols = "RdYlBu") + coord_flip() +
+			theme(axis.text.x = element_text(hjust = 1, angle = 45))
+
+		  gb<-ggplot_build(gg)
+		  ystr <- gb$layout$panel_params[[1]]$y$get_labels()
+		  ystr <- gsub("-","_",ystr)
+		  ydf <-data.frame(geneID=ystr)
+		  mapped_names <- left_join(ydf, name_map, by = "geneID") %>% distinct(geneID, .keep_all=T)
+		  #mapped_names$final_emapper_name
+		  gg<-gg+scale_x_discrete(labels = mapped_names$final_emapper_name)+ ggtitle(i)
+			
+		  outname <- paste0("output/", outprefix, "_m_", i, "_wgcna_dotplot.jpg")
+
+		  ggsave(filename = outname,
+				 plot = gg, 
+				 path = ".",
+				 width = 30, 
+				 height = (length(genes_to_plot_ordered) * (1/6)) + 2, 
+				 units = "in", 
+				 limitsize = F)
+		  count=count+1
+		  message(glue("Save to {outname}."))
+		}
+	}
+	ncluster = length(module_names)
+	message(glue("{count} / {ncluster} dotplot saved."))
+}
+
+
+
+
+
 # name_map <- read.csv("aten_emapper_names_table_final.tsv", header = TRUE, sep = "\t")
 generate_cluster_dotplots_withmap <- function(obj, name_map, outprefix){
 	count=0
@@ -39,8 +139,9 @@ generate_cluster_dotplots_withmap <- function(obj, name_map, outprefix){
 		  #mapped_names$final_emapper_name
 		  gg<-gg+scale_x_discrete(labels = mapped_names$final_emapper_name)
 			
-		  outname <- paste0("dotplots/", outprefix, "_c_", i, "_dotplot.pdf")
-		  #outname <- paste0("dotplots/at345_nosym_c_", i, "_dotplot.pdf")
+		  #outname <- paste0("dotplots/", outprefix, "_c_", i, "_dotplot.pdf")
+		  outname <- paste0("output/", outprefix, "_c_", i, "_dotplot.jpg")
+
 		  ggsave(filename = outname,
 				 plot = gg, 
 				 path = ".",
@@ -125,8 +226,10 @@ std_seurat_ppl <- function(obj){
 	ScaleData(verbose = F, vars.to.regress = "nCount_RNA") %>%
 	RunPCA(verbose = F) %>%
 	FindNeighbors(dims = 1:40, k.param = 20, verbose = FALSE, nn.method = "annoy", annoy.metric = "cosine") 
+	message("Find clusters")
 	obj <- FindClusters(obj , resolution = 2, algorithm = 4, verbose = FALSE)  
-	obj <- RunUMAP(obj, dims = 1:40, min.dist = 0.1, umap.method = "umap-learn", metric = "cosine", verbose = FALSE)
+	message("skip UMap")
+	#obj <- RunUMAP(obj, dims = 1:40, min.dist = 0.1, umap.method = "umap-learn", metric = "cosine", verbose = FALSE)
 	return(obj)
 }
 

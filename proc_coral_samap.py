@@ -45,7 +45,7 @@ def extract_seq_by_list(args):
             print(c)
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
-    cp._info('save %d sequences to %s' % (c, outfile))
+    cp._info('save sequences to %s' % outfile)
 
 
 ############################################################################################
@@ -307,7 +307,9 @@ def _slice_by_random(h5, n_cell, obs_droplist):
 # append clustering assignments to an h5ad file
 # nan will be renamed by unclustered_label
 def _append_assignments(h5, clusterfile, cluster_colnames=['cell_type'], index_name='index', unclustered_label='unclustered', delimiter='\t'):
-    cluster_assignments = pd.read_csv(clusterfile, header=None, sep=delimiter, index_col=0, names=cluster_colnames)
+    #cluster_assignments = pd.read_csv(clusterfile, header=None, sep=delimiter, index_col=0, names=cluster_colnames)
+    cluster_assignments = pd.read_csv(clusterfile, sep=delimiter, index_col=0)
+    cluster_assignments.columns = cluster_colnames
     cluster_assignments.index.name = index_name 
     h5.obs=h5.obs.merge(cluster_assignments, how='left', left_index=True, right_index=True)    
     for c in cluster_colnames:

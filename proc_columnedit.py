@@ -8,8 +8,8 @@ combine (union), intersection, substraction
 
 def main():
 	if len(sys.argv) < 4 or sys.argv[2] not in ['+','-','.']: 
-		print 'Usage: python proc_columnedit.py column1.txt operator column2.txt'
-		print '+: union\n-: substraction\n.:intersection'
+		print('Usage: python proc_columnedit.py column1.txt operator column2.txt')
+		print('+: union\n-: substraction\n.:intersection')
 		return
 
 	col1file = sys.argv[1]
@@ -29,7 +29,7 @@ def main():
 	elif op == '.':
 		outcol = col1.intersection(col2)
 
-	print ''.join(sorted(list(outcol)))
+	print(''.join(sorted(list(outcol))))
 
 if __name__ == '__main__':
 	main()
