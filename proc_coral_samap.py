@@ -404,6 +404,35 @@ def reorder_mat(args):
 # samap general pipeline functions -------------------------------------------------------
 ############################################################################################
 
+
+
+# si: speicies identifier {'at','hy','xe' ...}
+# h5: SAM h5ad file name
+# ci: cluster assignment identifier {'cell_type_family', 'merged_clusters' ...}
+# output: score_matrix.tsv, samap_obj.pkl
+# example: sm = std_samap_with_assignments('ad', '01.ad3456.sam.h5ad', 'merged_clusters', 'hy', '01.hy.sam.cluster_info3.h5ad', 'cell_type_family')
+# output example: 02.adhy.samap.blast.merged_clusters_cell_type_family.pkl, 03.adhy.alignment_scores.blast.merged_clusters_cell_type_family.tsv
+def std_samap_with_assignments(si1, h51, ci1, si2, h52, ci2):
+	assignments = {si1:ci1, si2:ci2}
+	sm = _run_samap_with_h5(si1, h51, si2, h52, samobj=True, map_p='maps.blast/', gnnm=None, assignments=assignments, res_dk=None, gnnm_transform=True)
+	save_samap(sm, '02.%s%s.samap.blast.%s_%s.pkl' % (si1,si2,ci1,ci2))
+	
+	D,MappingTable = get_mapping_scores(sm, assignments ,n_top = 0)
+	MappingTable.to_csv('03.%s%s.alignment_scores.blast.%s_%s.tsv' % (si1,si2,ci1,ci2), sep='\t', index=True, header=True)
+	cmap = _sankey_cmap(si1, sm.sams[si1].adata.obs[ci1], si2, sm.sams[si2].adata.obs[ci2], M=MappingTable, cmap_id=None, color_scheme=_cscheme_seurat_dimplot)
+
+	show(hv.render(sankey_plot(MappingTable, align_thr=0.00, species_order = [si1,si2], cmap=cmap)))
+	#hv.save(sankey_plot(MappingTable, align_thr=0.00, species_order = [si1, si2], cmap=cmap), '03.sankey.%s%s.blast.%s_%s.html' % (si1,si2,ci1,ci2), fmt='html')
+	return sm
+
+
+
+
+
+
+
+
+
 # call samap main procedure
 # sn1,sn2: species names
 # sf1,sf2: sam object file names .h5ad (with pre-calculated clustering assignments)
