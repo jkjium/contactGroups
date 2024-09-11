@@ -409,29 +409,44 @@ def reorder_mat(args):
 # si: speicies identifier {'at','hy','xe' ...}
 # h5: SAM h5ad file name
 # ci: cluster assignment identifier {'cell_type_family', 'merged_clusters' ...}
+# align_thr: cutoff for sankey plot
 # output: score_matrix.tsv, samap_obj.pkl
 # example: sm = std_samap_with_assignments('ad', '01.ad3456.sam.h5ad', 'merged_clusters', 'hy', '01.hy.sam.cluster_info3.h5ad', 'cell_type_family')
 # output example: 02.adhy.samap.blast.merged_clusters_cell_type_family.pkl, 03.adhy.alignment_scores.blast.merged_clusters_cell_type_family.tsv
-def std_samap_with_assignments(si1, h51, ci1, si2, h52, ci2):
-	assignments = {si1:ci1, si2:ci2}
-	sm = _run_samap_with_h5(si1, h51, si2, h52, samobj=True, map_p='maps.blast/', gnnm=None, assignments=assignments, res_dk=None, gnnm_transform=True)
-	save_samap(sm, '02.%s%s.samap.blast.%s_%s.pkl' % (si1,si2,ci1,ci2))
-	
-	D,MappingTable = get_mapping_scores(sm, assignments ,n_top = 0)
-	MappingTable.to_csv('03.%s%s.alignment_scores.blast.%s_%s.tsv' % (si1,si2,ci1,ci2), sep='\t', index=True, header=True)
-	cmap = _sankey_cmap(si1, sm.sams[si1].adata.obs[ci1], si2, sm.sams[si2].adata.obs[ci2], M=MappingTable, cmap_id=None, color_scheme=_cscheme_seurat_dimplot)
-
-	show(hv.render(sankey_plot(MappingTable, align_thr=0.00, species_order = [si1,si2], cmap=cmap)))
-	#hv.save(sankey_plot(MappingTable, align_thr=0.00, species_order = [si1, si2], cmap=cmap), '03.sankey.%s%s.blast.%s_%s.html' % (si1,si2,ci1,ci2), fmt='html')
-	return sm
+def std_samap_with_assignments(si1, h51, ci1, si2, h52, ci2, align_thr=0.0):
+    assignments = {si1:ci1, si2:ci2}
+    sm = _run_samap_with_h5(si1, h51, si2, h52, samobj=True, map_p='maps.blast/', gnnm=None, assignments=assignments, res_dk=None, gnnm_transform=True)
+    save_samap(sm, '02.%s%s.samap.blast.%s_%s.pkl' % (si1,si2,ci1,ci2))
+    MappingTable = samap_alignment_and_sankey(sm, si1, ci1, si2, ci2, sankey_cutoff=align_thr)
+    return sm, MappingTable
 
 
+# sm: samap object
+# si1, si2: species IDs
+# ci1, ci2: cluster assignment IDs
+# sankey_cutoff
+# output: alignment_scores.tsv used for heatmap
+# return: alignment score matrix
+# pheatmap
+# len(np.unique(sm.sams['ad'].adata.obs['merged_clusters'])) = 65
+# $ l --color=none 03.ad*alignment*.blast.*cell_type_family*.tsv |awk 'BEGIN {printf "python proc_coral_samap.py combine_scorefiles \""} {printf "%s ", $1} END{printf "\" 65 04.heatmap.ad2all.merged_clusters_cell_type_family.blast.tsv"}' |sh
+# 
+# library(pheatmap)
+# infile="04.heatmap.ad2all.merged_clusters_cell_type_family.blast.tsv"
+# h=pheatmap(t(read.table(infile, row.names=1, header=TRUE, sep='\t')),cluster_rows=T)
+# the order of si1,ci1,si2,ci2 must be consistent with the order when running samap
+def samap_alignment_and_sankey(sm, si1, ci1, si2, ci2, sankey_cutoff=0.0):
+    D,MappingTable = get_mapping_scores(sm, {si1:ci1, si2:ci2} ,n_top = 0)
+    MappingTable.to_csv('03.%s%s.alignment_scores.blast.%s_%s.tsv' % (si1,si2,ci1,ci2), sep='\t', index=True, header=True)
+    cp._info('save full score matrix to: 03.%s%s.alignment_scores.blast.%s_%s.tsv' % (si1,si2,ci1,ci2))
+    # remove redundant info from M
+    # full MappingTable will have problem when all values in a row are identical
+    p=len(np.unique(sm.sams[si1].adata.obs[ci1]))
+    mr = MappingTable.iloc[:p,p:]
 
-
-
-
-
-
+    cmap = _sankey_cmap(si2, sm.sams[si2].adata.obs[ci2], si1, sm.sams[si1].adata.obs[ci1], M=mr, cmap_id=None, color_scheme=_cscheme_seurat_dimplot)
+    show(hv.render(sankey_plot(MappingTable, align_thr=sankey_cutoff, species_order = [si1,si2], cmap=cmap)))
+    return MappingTable
 
 # call samap main procedure
 # sn1,sn2: species names
@@ -1158,7 +1173,7 @@ def _leiden_dk_sankey_cmap(sids, df, cmap_id='jet', color_scheme=None):
 
 # df:cluster_assignments, pandas dataframe, sm.sams['ad'].adata.obs['leiden_clusters']
 # n=1 by defualt, for singlet clusters
-def _filter_small_clusters(df, n=1):
+def _filter_small_clusters(df, n=2):
     c=df.value_counts()
     singlets=list(c[c<=n].index)
     return df[~df.isin(singlets)]
@@ -1176,11 +1191,15 @@ def _sankey_cmap(sid1, df1_focus, sid2, df2, M=None, cmap_id='glasbey_hv', color
     # generate cmap according to the focused sid;  prepend sid to match ids in the MappingTable
     cmap=dict((sid1+'_'+str(clusters[i]), color_bar[i % len(color_bar)]) for i in range(len(clusters)))
     if M is not None: # find max scores from focused clusters to assign the same color
+        # keys_to_remove = M.index[(M == 0).all(axis=1)].tolist() # find index with all zeros, they will cause the following problem
+        # clusters2 = clusters2[~np.isin(clusters2, keys_to_remove)]
+
         sid_map = M.idxmax(axis=1).to_dict()
         cmap.update(dict((sid2+'_'+str(clusters2[i]), cmap[sid_map[sid2+'_'+str(clusters2[i])]]) for i in range(len(clusters2))))
     else: # assign non related color
         cmap.update(dict((sid2+'_'+str(clusters2[i]), color_bar[i % len(color_bar)]) for i in range(len(clusters2))))
-    return cmap	   
+    return cmap	
+
 
 # t-SNE umap plot with color controlled by:
 # 1. cmap_id: matplotlib built-in color schemes like 'glasbey_hv', 'jet'; will be ignored when color_scheme is set
