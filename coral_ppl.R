@@ -65,7 +65,7 @@ wgcna_ppl_1 <- function(obj){
 # name_map <- read.csv("aten_emapper_names_table_final.tsv", header = TRUE, sep = "\t")
 # bwnet: output of wgcna blockwiseModules() 
 # me_wt: correlation matrix between module_color and (6000) genes
-wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, max_gene_num, outprefix){
+wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, xn_map, max_gene_num, outprefix){
 	count=0
 	module_names <- unique(bwnet$colors)
 	for(i in module_names){
@@ -83,23 +83,34 @@ wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, max_gene_num, outpref
 		if(length(genes_to_plot_ordered) > 0){
 		  Idents(obj) <- factor(Idents(obj), levels = sort(levels(obj)))
 		  gg <- Seurat::DotPlot(object = obj, features = rev(genes_to_plot_ordered), cols = "RdYlBu") + coord_flip() +
-			theme(axis.text.x = element_text(hjust = 1, angle = 45))
+			theme(axis.text.x = element_text(hjust = 1, angle = 75))
 
 		  gb<-ggplot_build(gg)
+
+		  # alter gene(y) labels
 		  ystr <- gb$layout$panel_params[[1]]$y$get_labels()
 		  ystr <- gsub("-","_",ystr)
 		  ydf <-data.frame(geneID=ystr)
 		  mapped_names <- left_join(ydf, name_map, by = "geneID") %>% distinct(geneID, .keep_all=T)
+
+
+		  # alter cluster(x) labels
+		  xstr <- gb$layout$panel_params[[1]]$x$get_labels()
+		  xdf <-data.frame(idx=xstr)
+		  #xn_map<- read.csv("out", header = TRUE, sep = "\t")
+		  x_names <- left_join(xdf, xn_map, by = "idx") %>% distinct(idx, .keep_all=T)
+
 		  #mapped_names$final_emapper_name
-		  gg<-gg+scale_x_discrete(labels = mapped_names$final_emapper_name)+ ggtitle(i)
+		  # gg<-gg+scale_x_discrete(labels = mapped_names$final_emapper_name)+ ggtitle(i)
+		  gg<-gg + scale_x_discrete(labels = mapped_names$final_emapper_name) + scale_y_discrete(labels=x_names$alias) + ggtitle(i)
 			
-		  outname <- paste0("output/", outprefix, "_m_", i, "_wgcna_dotplot.jpg")
+		  outname <- paste0("output/", outprefix, "_m_", i, "_wgcna_dotplot.pdf")
 
 		  ggsave(filename = outname,
 				 plot = gg, 
 				 path = ".",
-				 width = 30, 
-				 height = (length(genes_to_plot_ordered) * (1/6)) + 2, 
+				 width = 40, #30, 
+				 height = (length(genes_to_plot_ordered) * (1/6)) + 20, # +2, 
 				 units = "in", 
 				 limitsize = F)
 		  count=count+1

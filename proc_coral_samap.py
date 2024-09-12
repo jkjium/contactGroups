@@ -4,6 +4,7 @@ import pandas as pd
 import scipy as sp
 from itertools import groupby
 from scipy.spatial import distance
+from collections import OrderedDict
 #import matplotlib.pyplot as plt
 
 try:
@@ -354,6 +355,44 @@ def h5gen_mtx_cluster(args):
 ############################################################################################
 # alignment score functions --------------------------------------------------------------
 ############################################################################################
+# for generating the cluster name alias that put in wgcna dotplots
+# score file: combined scores, output from
+# cutoff: alignment score cutoff
+# trim_str: scorefile contains name like: "ad_g1.sym", need to trim "ad_" to match wgcna dotplot x-axis labels
+def cluster_alias_with_cutoff(args):
+    assert len(args) == 4, 'Usage: python proc_coral_samap.py alias_with_cutoff combined_score.tsv cutoff ad_ outfile'
+    scorefile=args[0]
+    cutoff=float(args[1])
+    trim_str = args[2]
+    outfile = args[3]
+
+    m = pd.read_csv(scorefile, sep='\t', index_col=0)
+    result_dict = OrderedDict()
+    for index, row in m.iterrows():
+        row_sum = row.sum()
+        if row_sum == 0:
+            result_dict[index] = [] 
+        else:
+            #normalized_row = row / row_sum
+            normalized_row = row # for future normalization
+            # col_score = [(col.name, score),...]
+            col_score = list(normalized_row.items())
+            # Sort column-score pairs by scores 
+            sorted_col_score = sorted(col_score, key=lambda x: x[1], reverse=False)
+            result_dict[index] = [(n, v) for n, v in sorted_col_score if v >= cutoff]
+            #print(index, result_dict)
+    
+    with open(outfile, 'w') as fout:
+        fout.write('idx\talias\n')
+        for k in result_dict:
+            outname = k.replace(trim_str, "")
+            if len(result_dict[k]) == 0:
+                fout.write('%s\t%s\n' % (outname, outname))
+            else:
+                alias = ''.join(['%s(%.2f) - ' % (t[0], t[1]) for t in result_dict[k]])
+                fout.write('%s\t%s%s\n' % (outname, alias, outname))
+    cp._info('save alias to %s' % outfile)
+
 
 # For generate heatmap
 # k=len(np.unique(s.sams['ad'].adata.obs['leiden_clusters']))
