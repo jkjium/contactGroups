@@ -2,7 +2,8 @@ import commp as cp
 import numpy as np
 import pandas as pd
 import scipy as sp
-from itertools import groupby
+import difflib
+from itertools import groupby, combinations
 from scipy.spatial import distance
 from collections import OrderedDict
 #import matplotlib.pyplot as plt
@@ -93,6 +94,7 @@ def append_gn_tax(args):
 
 
 # extract human, drome, top1 from *allhits.cell.uid.pn.gd.gn.tax.tn.dis.tsv
+# gene names are sorted by prost distance
 def ann_merge(args):
     assert len(args)==2, 'Usage: python proc_coral_samap.py ann_merge in.allhits.cell.uid.pn.gd.gn.tax.tn.dis.tsv outfile'
     infile = args[0]
@@ -102,19 +104,24 @@ def ann_merge(args):
     # filter _NA_ gene names
     df=df.loc[df['Gene_name']!='_NA_']
 
-    f=lambda x: ','.join(list(x))
+    #f=lambda x: ','.join(list(x))
+    f = lambda x: ','.join(x.sort_values(by='PROST_distance', key=lambda col: col.astype(float))['Gene_name'].tolist())
 
     # extract human hits
     dh = df.loc[df['Taxon_ID']== 9606]
-    dh = dh.groupby('Query_gene_ID')['Gene_name'].apply(f).reset_index()
+    #dh = dh.groupby('Query_gene_ID')['Gene_name'].apply(f).reset_index()
+    dh = dh.groupby('Query_gene_ID').apply(f).reset_index()
     dh.set_index('Query_gene_ID', inplace=True)
-    dh.rename(columns={'Gene_name': 'PROST_gene_name(Human)'}, inplace=True)
+    #dh.rename(columns={'Gene_name': 'PROST_gene_name(Human)'}, inplace=True)
+    dh.rename(columns={0: 'PROST_gene_name(Human)'}, inplace=True)
 
     # extract drome hits
     dd = df.loc[df['Taxon_ID']== 7227]
-    dd = dd.groupby('Query_gene_ID')['Gene_name'].apply(f).reset_index()
+    #dd = dd.groupby('Query_gene_ID')['Gene_name'].apply(f).reset_index()
+    dd = dd.groupby('Query_gene_ID').apply(f).reset_index()
     dd.set_index('Query_gene_ID', inplace=True)
-    dd.rename(columns={'Gene_name': 'PROST_gene_name(Drome)'}, inplace=True)
+    #dd.rename(columns={'Gene_name': 'PROST_gene_name(Drome)'}, inplace=True)
+    dd.rename(columns={0: 'PROST_gene_name(Drome)'}, inplace=True)
 
     # extract gene name, tax name from the top1 hit
     #da = df.groupby('Query_gene_ID').apply(lambda x: sorted(list(zip(x['Uniprot_ID'], x['Protein_name'], x['Gene_name'], x['Taxon_ID'], x['Taxon_name'], x['PROST_distance'])), key=lambda tup: tup[5])[0])
@@ -135,10 +142,62 @@ def ann_merge(args):
     outdf.to_csv(outfile, sep='\t', index=True, header=True)
     cp._info('save merged df to %s' % outfile)
 
+    # select names for each query gene ID
+    # Truncate to 50 characters
+    def _choose_alias(row):
+        v1 = row['PROST_gene_name(Human)']
+        v2 = row['PROST_gene_name(Drome)']
+        v3 = row['PROST_gene_name(Top1)']
+        
+        _t = lambda x: x if len(x)<=50 else '%s..' % x[:50]
+
+        if v1 != "_NA_":
+            return 'hs-%s' % _t(v1)
+        elif v2 != "_NA_":
+            return 'dm-%s' % _t(v2)
+        else:
+            return _t(v3)
+
+    sele_df = pd.DataFrame({'prost_alias': outdf.apply(_choose_alias, axis=1)})
+    sele_df.index = outdf.index
+    sele_df.index.names=['geneID'] # make consistent with emapp final results for merging
+    outfile = '21.geneID.geneAlias.tsv'
+    sele_df.to_csv(outfile, sep='\t', index=True, header=True)
+    cp._info('save truncated(50) alias df to %s' % outfile)
 
 
-    
-    
+# merge prost alias into emapper final names
+def ann_merge_alias(args):
+    assert len(args) == 3, 'Usage: python proc_coral_samap.py ann_merge_alias aten_emapper_names_table_final.tsv 21.geneID.geneAlias.tsv aten_gene_alias.tsv'
+    emapper_file = args[0]
+    prost_file = args[1]
+    outfile = args[2]
+
+    emapper_df = pd.read_csv(emapper_file, sep='\t')
+    emapper_dict = emapper_df.set_index('geneID')['final_emapper_name'].to_dict()
+
+    prost_df = pd.read_csv(prost_file, sep='\t')
+    prost_dict = prost_df.set_index('geneID')['prost_alias'].to_dict()
+
+    out_dict = {}
+    # make sure all keys are "_" seperated as "adig_s0001.g1"
+    key_stub = set(emapper_dict.keys()).union(set(prost_dict.keys()))
+    for k in key_stub:
+        if k in emapper_dict and k in prost_dict:
+            if emapper_dict[k] == k.replace('_', '-'): # if emapper has no hit, append prost result
+                out_dict[k] = '%s %s' % (emapper_dict[k], prost_dict[k])
+            else:
+                out_dict[k] = emapper_dict[k]
+        elif k in emapper_dict: # only has emapper hit
+            out_dict[k] = emapper_dict[k]
+        elif k in prost_dict: # only has prost hit
+            out_dict[k] = prost_dict[k]
+
+    with open(outfile, 'w') as fout:
+        fout.write('geneID\tgene_alias\n')
+        fout.write('%s\n' % '\n'.join(['%s\t%s' % (k, out_dict[k]) for k in out_dict]))
+    cp._info('save merged gene names to %s' % outfile)
+
 
 
 ############################################################################################
@@ -355,19 +414,53 @@ def h5gen_mtx_cluster(args):
 ############################################################################################
 # alignment score functions --------------------------------------------------------------
 ############################################################################################
-# for generating the cluster name alias that put in wgcna dotplots
+
+# find the longest substring between two strings
+def _sharedstr(s1, s2):
+    m=difflib.SequenceMatcher(None, s1, s2).find_longest_match(0, len(s1), 0, len(s2))
+    return s1[m.a:m.a+m.size]
+
+# find shortest common substring by comparing the first one with others for the current set 
+def _min_comm_str(sset, cutoff=4):
+    ms = min([_sharedstr(sset[0], si) for si in sset[1:]], key=len)
+    return ms if len(ms)>=cutoff else ''
+
+# ss: a list of strings
+# num_summary: integer cutoff for top summaries
+def _get_summaries(ss, num_summary=2):
+    # iterate all rth order subsets
+    # find summary for the each order
+    for r_order_set, ord in [(combinations(ss, r), r) for r in range(len(ss), 1, -1)]: 
+        # get {num_summary} longest common patterns among the current rth order subsets
+        comm_strs = sorted([_min_comm_str(tuple) for tuple in r_order_set], key=len, reverse=True)[:num_summary]
+        # remove empty strings
+        ret_strs = [s for s in comm_strs if len(s)!=0]
+        if len(ret_strs)==0:
+            continue
+        elif len(ret_strs)==1:
+            #return '(%d) - %s' % (ord, comm_strs[0])
+            return '%s (%d)' % (comm_strs[0], ord)
+        else:
+            #return '(%d) - %s' % (ord, ' - '.join(comm_strs))
+            return '%s (%d)' % (' - '.join(comm_strs), ord)
+    return ''
+
+
+# for generating the cluster name alias in dotplots
 # score file: combined scores, output from
 # cutoff: alignment score cutoff
 # trim_str: scorefile contains name like: "ad_g1.sym", need to trim "ad_" to match wgcna dotplot x-axis labels
+# python proc_coral_samap.py cluster_alias_with_cutoff 04.heatmap.at2all.merged_clusters_cell_type_family.blast.tsv 0.4 at_ 05.at2all_merged_clusters{_alias_04.tsv/_summary_04.tsv}
 def cluster_alias_with_cutoff(args):
-    assert len(args) == 4, 'Usage: python proc_coral_samap.py alias_with_cutoff combined_score.tsv cutoff ad_ outfile'
+    assert len(args) == 4, 'Usage: python proc_coral_samap.py cluster_alias_with_cutoff combined_score.tsv cutoff ad_ outprefix'
     scorefile=args[0]
     cutoff=float(args[1])
     trim_str = args[2]
-    outfile = args[3]
+    outprefix = args[3]
 
     m = pd.read_csv(scorefile, sep='\t', index_col=0)
     result_dict = OrderedDict()
+    summary_dict = OrderedDict()
     for index, row in m.iterrows():
         row_sum = row.sum()
         if row_sum == 0:
@@ -379,9 +472,16 @@ def cluster_alias_with_cutoff(args):
             col_score = list(normalized_row.items())
             # Sort column-score pairs by scores 
             sorted_col_score = sorted(col_score, key=lambda x: x[1], reverse=False)
-            result_dict[index] = [(n, v) for n, v in sorted_col_score if v >= cutoff]
+            mlist = [(n, v) for n, v in sorted_col_score if v >= cutoff]
+            result_dict[index] = mlist
+            # get cluster assignment names
+            # 'ad_neuro_gland' -> 'neural_gland'
+            ss = ['_'.join(t[0].split('_')[1:]) for t in mlist]
+            summary_dict[index] =  _get_summaries(ss)
             #print(index, result_dict)
     
+    # output raw samap alias
+    outfile = '%s_alias_%.2f.tsv' % (outprefix, cutoff)
     with open(outfile, 'w') as fout:
         fout.write('idx\talias\n')
         for k in result_dict:
@@ -392,6 +492,22 @@ def cluster_alias_with_cutoff(args):
                 alias = ''.join(['%s(%.2f) - ' % (t[0], t[1]) for t in result_dict[k]])
                 fout.write('%s\t%s%s\n' % (outname, alias, outname))
     cp._info('save alias to %s' % outfile)
+
+    # output summary alias
+    outfile = '%s_summary_%.2f.tsv' % (outprefix, cutoff)
+    with open(outfile, 'w') as fout:
+        fout.write('idx\talias\n')
+        for k in result_dict:
+            outname = k.replace(trim_str, "")
+            if len(result_dict[k]) == 0:
+                fout.write('%s\t%s\n' % (outname, outname))
+            elif len(summary_dict[k])!=0:
+                fout.write('%s\t%s - %s\n' % (outname, summary_dict[k], outname))
+            else:
+                alias = ''.join(['%s(%.2f) - ' % (t[0], t[1]) for t in result_dict[k]])
+                fout.write('%s\t%s%s\n' % (outname, alias, outname))
+    cp._info('save summary to %s' % outfile)
+
 
 
 # For generate heatmap

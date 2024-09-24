@@ -65,8 +65,13 @@ wgcna_ppl_1 <- function(obj){
 # name_map <- read.csv("aten_emapper_names_table_final.tsv", header = TRUE, sep = "\t")
 # bwnet: output of wgcna blockwiseModules() 
 # me_wt: correlation matrix between module_color and (6000) genes
-wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, xn_map, max_gene_num, outprefix){
+wgcna_dotplots_withmaps <- function(obj, bwnet, me_wt, name_map, xn_map, max_gene_num, x_ordered, outprefix){
 	count=0
+	if(setequal(levels(obj),x_ordered)==FALSE){
+		message(glue("ordered label is different from levels(obj)"))
+		return(FALSE)
+	}	
+	obj@active.ident <- factor(Idents(obj), levels = x_ordered)
 	module_names <- unique(bwnet$colors)
 	for(i in module_names){
 		#genes_to_plot <- me_wt[row.names(me_wt)[bwnet$colors == "floralwhite"], "floralwhite", drop = F]
@@ -81,7 +86,7 @@ wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, xn_map, max_gene_num,
 		}
 		
 		if(length(genes_to_plot_ordered) > 0){
-		  Idents(obj) <- factor(Idents(obj), levels = sort(levels(obj)))
+		  #Idents(obj) <- factor(Idents(obj), levels = sort(levels(obj)))
 		  gg <- Seurat::DotPlot(object = obj, features = rev(genes_to_plot_ordered), cols = "RdYlBu") + coord_flip() +
 			theme(axis.text.x = element_text(hjust = 1, angle = 75))
 
@@ -93,7 +98,6 @@ wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, xn_map, max_gene_num,
 		  ydf <-data.frame(geneID=ystr)
 		  mapped_names <- left_join(ydf, name_map, by = "geneID") %>% distinct(geneID, .keep_all=T)
 
-
 		  # alter cluster(x) labels
 		  xstr <- gb$layout$panel_params[[1]]$x$get_labels()
 		  xdf <-data.frame(idx=xstr)
@@ -102,7 +106,7 @@ wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, xn_map, max_gene_num,
 
 		  #mapped_names$final_emapper_name
 		  # gg<-gg+scale_x_discrete(labels = mapped_names$final_emapper_name)+ ggtitle(i)
-		  gg<-gg + scale_x_discrete(labels = mapped_names$final_emapper_name) + scale_y_discrete(labels=x_names$alias) + ggtitle(i)
+		  gg<-gg + scale_x_discrete(labels = mapped_names$gene_alias) + scale_y_discrete(labels=x_names$alias) + ggtitle(i)
 			
 		  outname <- paste0("output/", outprefix, "_m_", i, "_wgcna_dotplot.pdf")
 
@@ -122,8 +126,68 @@ wgcna_dotplots_withmap <- function(bwnet, me_wt, name_map, xn_map, max_gene_num,
 }
 
 
+# order nj tips according to tree structure
+ordered_tips_apenj<-function(tree){
+	is_tip <- tree$edge[,2] <= length(tree$tip.label)
+	return(tree$tip.label[tree$edge[is_tip, 2]])
+}
 
-
+# yn_map: gene alias
+# xn_map: cluster alias
+# x_ordered: cluster ordered by neighbor joining; output from function ordered_tips_apenj()
+generate_cluster_dotplots_withmaps <- function(obj, yn_map, xn_map, x_ordered, outprefix){
+	count=0
+	# check cluster IDs in ordered list is the same set of IDs from levels(obj)
+	if(setequal(levels(obj),x_ordered)==FALSE){
+		message(glue("ordered label is different from levels(obj)"))
+		return(FALSE)
+	}
+	# for(i in levels(obj)){
+	for(i in x_ordered){
+		cluster_markers_tibble <- as_tibble(rownames_to_column(FindMarkers(obj, ident.1=i, only.pos = T), var = "gene"))
+		
+		genes_for_dotplot <- cluster_markers_tibble %>%
+			filter(avg_log2FC > 0, p_val_adj < 0.05) %>% ## filter rows
+			dplyr::arrange(p_val_adj, desc(avg_log2FC)) %>% ## sort filter results first by p_val_adj ascending, then avg_log2FC decending
+			dplyr::slice_head(n = 150) %>%  ## select top 150 rows
+			pull(gene) ## get gene column value of previous result as a vector
+		
+		
+		if(length(genes_for_dotplot) > 0){
+			gg <- Seurat::DotPlot(object = obj, features = rev(genes_for_dotplot), cols = "RdYlBu") + coord_flip() +
+			theme(axis.text.x = element_text(hjust = 1, angle = 75))
+			
+			gb<-ggplot_build(gg)
+			# alter gene(y) labels
+			ystr <- gb$layout$panel_params[[1]]$y$get_labels()
+			ystr <- gsub("-","_",ystr)
+			ydf <-data.frame(geneID=ystr)
+			y_names <- left_join(ydf, yn_map, by = "geneID") %>% distinct(geneID, .keep_all=T)
+			
+			# alter cluster(x) labels
+			xstr <- gb$layout$panel_params[[1]]$x$get_labels()
+			xdf <-data.frame(idx=xstr)
+			x_names <- left_join(xdf, xn_map, by = "idx") %>% distinct(idx, .keep_all=T)
+			
+			#y_names$final_emapper_name
+			gg<-gg + scale_x_discrete(labels = y_names$gene_alias) + scale_y_discrete(labels=x_names$alias) + ggtitle(sprintf("%s (%d)", i, sum(Idents(ad3456.clean) == i)))
+			
+			outname <- paste0("output/", outprefix, "_c_", i, "_dotplot.pdf")
+			
+			ggsave(filename = outname,
+				plot = gg, 
+				path = ".",
+				width = 30, # 18
+				height = (length(genes_for_dotplot) * (1/6)) + 20, # +2
+				units = "in", 
+				limitsize = F)
+			count=count+1
+			message(glue("Save to {outname}."))
+		}
+	}
+	ncluster = length(levels(obj))
+	message(glue("{count} / {ncluster} dotplot saved."))
+}
 
 # name_map <- read.csv("aten_emapper_names_table_final.tsv", header = TRUE, sep = "\t")
 generate_cluster_dotplots_withmap <- function(obj, name_map, outprefix){
@@ -239,13 +303,25 @@ std_seurat_ppl <- function(obj){
 	FindNeighbors(dims = 1:40, k.param = 20, verbose = FALSE, nn.method = "annoy", annoy.metric = "cosine") 
 	message("Find clusters")
 	obj <- FindClusters(obj , resolution = 2, algorithm = 4, verbose = FALSE)  
-	message("skip UMap")
-	#obj <- RunUMAP(obj, dims = 1:40, min.dist = 0.1, umap.method = "umap-learn", metric = "cosine", verbose = FALSE)
+	message("skip UMap, run it seperately if needed")
+	# obj <- RunUMAP(obj, dims = 1:40, min.dist = 0.1, umap.method = "umap-learn", metric = "cosine", verbose = FALSE)
 	return(obj)
 }
 
 # wapper for running DoubleFinder
 # ratio table: https://kb.10xgenomics.com/hc/en-us/articles/360001378811-What-is-the-maximum-number-of-cells-that-can-be-profiled
+# Multiplet Rate	# of Cells Loaded # of Cells Recovered
+# 0.004	825	500
+# 0.008	1650	1000
+# 0.016	3300	2000
+# 0.024	4950	3000
+# 0.032	6600	4000
+# 0.040	8250	5000
+# 0.048	9900	6000
+# 0.056	11550	7000
+# 0.064	13200	8000
+# 0.072	14850	9000
+# 0.080	16500	10000
 find_double <- function(obj, pcs=1:20, pN = 0.25, ratio=0.075){
 	sweep.obj<-paramSweep(obj, PCs = pcs, sct = FALSE)
 	sweep.stat <- summarizeSweep(sweep.obj, GT=FALSE)
@@ -270,9 +346,9 @@ find_double <- function(obj, pcs=1:20, pN = 0.25, ratio=0.075){
 # obj<-at34
 # Idents(obj) <- paste0("g", as.character(Idents(obj)))
 # obj <- merge_clusters3j(obj)
-merge_clusters3j <- function(obj, thresh_corr = 0.8, num.genes = 20, fold.difference = 2, adj.p.value = 0.05, assay = DefaultAssay(obj), genes = VariableFeatures(obj), min.cells = 25) {
-	Idents(obj) <- paste0("g", as.character(Idents(obj)))
-	message(glue("Merging clusters with {min.cells} or fewer cells into nearest neighbor cluster"))
+merge_clusters3j <- function(obj, thresh_corr = 0.7, num.genes = 20, fold.difference = 2, adj.p.value = 0.05, assay = DefaultAssay(obj), genes = VariableFeatures(obj), min.cells = 25) {
+	#Idents(obj) <- paste0("g", as.character(Idents(obj)))
+	message(glue("Merging clusters with {min.cells} or fewer cells into nearest neighbor cluster with {thresh_corr} correlation threshold."))
 	# first loop lumps clusters with 10 or fewer cells into nearest neighbor clusters (only if necessary)
 	# while(min(table(obj@active.ident)) <= min.cells){
 	count=0
@@ -331,7 +407,8 @@ merge_clusters3j <- function(obj, thresh_corr = 0.8, num.genes = 20, fold.differ
 		corrs[lower.tri(corrs,diag=TRUE)] <- NA  #convert lower triangle and diagonal to NAs
 		corrs <- as.data.frame(as.table(corrs))  #Turn into a 3-column table
 		corrs=na.omit(corrs)  #Get rid of the junk we flagged above
-		corrs <- corrs %>% filter(Freq > thresh_corr)
+		# corrs <- corrs %>% filter(Freq > thresh_corr)
+		corrs <- corrs %>% filter(Freq > 0.8)
 		corrs <- corrs[order(-abs(corrs$Freq)),]    #Sort by highest correlation (whether +ve or -ve)
 		
 		# examine criteria for merging
@@ -363,7 +440,7 @@ merge_clusters3j <- function(obj, thresh_corr = 0.8, num.genes = 20, fold.differ
 		obj$merged_clusters <- merged_clusters
 		Idents(obj) <- merged_clusters
 	}
-	message(glue("\n\nFinished merging {count} clusters."))
+	message(glue("\n\nFinished merging {count} clusters by DE."))
   return(obj)
 }
 
