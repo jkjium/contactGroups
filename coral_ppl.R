@@ -170,7 +170,7 @@ generate_cluster_dotplots_withmaps <- function(obj, yn_map, xn_map, x_ordered, o
 			x_names <- left_join(xdf, xn_map, by = "idx") %>% distinct(idx, .keep_all=T)
 			
 			#y_names$final_emapper_name
-			gg<-gg + scale_x_discrete(labels = y_names$gene_alias) + scale_y_discrete(labels=x_names$alias) + ggtitle(sprintf("%s (%d)", i, sum(Idents(ad3456.clean) == i)))
+			gg<-gg + scale_x_discrete(labels = y_names$gene_alias) + scale_y_discrete(labels=x_names$alias) + ggtitle(sprintf("%s (%d)", i, sum(Idents(obj) == i)))
 			
 			outname <- paste0("output/", outprefix, "_c_", i, "_dotplot.pdf")
 			
