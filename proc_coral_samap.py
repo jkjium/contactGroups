@@ -27,6 +27,27 @@ class dotdict(dict):
 
 _cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
 
+############################################################################################
+# fucntions for visualization --------------------------------------------------
+############################################################################################
+# df: three column df, c1: name, c2: value, c3: value
+# for plotting sym/apo ratio
+# df = pd.read_csv('info.gastrodermis.txt', sep=' ', header=None, names=['clusterID', 'apo', 'sym'])
+def pie_charts(df, fs=14):
+    import matplotlib.pyplot as plt
+    n = len(df)
+    fig, axs = plt.subplots(1, n, figsize=(n * 4, 4))
+    for index, row in df.iterrows():
+        sizes = [row['apo'], row['sym']]
+        labels = ['apo', 'sym']
+        axs[index].pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, textprops={'fontsize': fs})
+        axs[index].set_title(row['clusterID'], fontsize=fs)
+        axs[index].axis('equal')
+        #axs[index].text(0, -1.2, row['clusterID'], fontsize=12, ha='center')
+    plt.tight_layout()
+    plt.show()
+
+
 def extract_seq_by_list(args):
     assert len(args) == 3, 'Usage: python proc_coral_samap.py extract_seq_from_list seq.fasta names.txt outfile'
     from tqdm import tqdm
