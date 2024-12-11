@@ -42,6 +42,82 @@ setwd('C:\\Users\\kjia\\workspace\\foxd\\stage')
 rm(list=ls())
 source('coral_ppl.R')
 
+###################################################
+# vlnplot & barplot ad, at
+# kjia@DESKTOP-L0MMU09 ~/workspace/foxd/stage 2024-12-10 17:04:27
+
+# ad
+load('ad3456.clean.sym_split.filtered.rd')
+std_obj <- ad3456.clean
+write.table(std_obj$merged_clusters, file = "ad3456.clean.merged_clusters.tsv", sep = "\t", quote = FALSE, col.names = FALSE)
+#$ dos2unix ad3456.clean.merged_clusters.tsv
+# $ awk -F '\t' 'FNR==NR{a[$1]=$2;next} {if(a[$2]!="") print $1"\t"a[$2]}' 05.ad2all_merged_clusters_summary_0.40.tsv ad3456.clean.merged_clusters.tsv > 01.ad3456.samap_cluster.tsv
+# output: 01.ad3456.samap_cluster.tsv (need add {index\tsamap_family} as header)
+
+clustering_data <- read.table('01.ad3456.samap_cluster.tsv', header = TRUE, sep = "\t", row.names = 1)
+col_name <- 'samap_family'
+std_obj@meta.data[[col_name]] <- clustering_data[[col_name]][match(rownames(std_obj@meta.data), rownames(clustering_data))]
+Idents(std_obj) <- std_obj$samap_family
+
+pref <- "ad" 
+gene_set <- c('adig-s0019.g96', 'adig-s0020.g92', 'adig-s0031.g180', 'adig-s0032.g47', 'adig-s0032.g48', 'adig-s0042.g184', 'adig-s0125.g82') # orthofinder
+gene_set <- c('adig-s0022.g99', 'adig-s0042.g184') # prost
+cname = 'samap_family'
+
+
+
+
+# at
+load('at345.clean.sym_split_v2.rd')
+std_obj <- at345.clean
+# save assignments for matching samap annotations
+write.table(std_obj$merged_clusters, file = "at345.clean.merged_clusters.tsv", sep = "\t", quote = FALSE, col.names = FALSE)
+#$ dos2unix ad3456.clean.merged_clusters.tsv
+# $ awk -F '\t' 'FNR==NR{a[$1]=$2;next} {if(a[$2]!="") print $1"\t"a[$2]}' 05.at2all_merged_clusters_summary_0.40.tsv at345.clean.merged_clusters.tsv > 01.at345.samap_cluster.tsv
+# output: 01.at345.samap_cluster.tsv (need add {index\tsamap_family} as header)
+
+clustering_data <- read.table('01.at345.samap_cluster.tsv', header = TRUE, sep = "\t", row.names = 1)
+col_name <- 'samap_family'
+std_obj@meta.data[[col_name]] <- clustering_data[[col_name]][match(rownames(std_obj@meta.data), rownames(clustering_data))]
+Idents(std_obj) <- std_obj$samap_family
+
+pref <- "at" 
+gene_set <- c('aten-s0004.g46', 'aten-s0017.g115', 'aten-s0019.g48', 'aten-s0028.g98', 'aten-s0041.g37', 'aten-s0133.g54', 'aten-s0133.g55')
+gene_set <- c('aten-s0061.g34') # prost
+cname = 'samap_family'
+
+
+#### func ##################################
+# vlnPlt
+for (gene in gene_set) {
+  gg <- VlnPlot(std_obj, features = gene, ncol=1, pt.size = 0, group.by = cname) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + NoLegend()
+  outname = paste0(pref,'_vlnplot_orthofinder_',cname,'_',gene,'_','.pdf')
+  print(outname)
+  ggsave(file=outname, plot=gg, width = 16, height = 10)  
+}
+
+# barplt
+average_expression <- AverageExpression(std_obj, features = gene_set, layer="counts")
+for (gene in gene_set) {
+  gene_expression <- average_expression$RNA[gene, ]
+  gene_df <- data.frame(Cluster = names(gene_expression),Expression = as.numeric(gene_expression))
+  
+  gg <- ggplot(gene_df, aes(x = Cluster, y = Expression, fill = 'red'))  +
+    geom_bar(stat = "identity") +
+    ggtitle(gene) +
+    labs(x = "Cluster", y = "Average Expression") +
+    theme_minimal() +
+    NoLegend()
+  
+  gg <- gg + theme(axis.text.x = element_text(size=12, angle = 90, hjust = 1))
+  
+  outname = paste0(pref,'_barplot_orthofinder_',cname,'_',gene,'_','.pdf')
+  print(outname)
+  ggsave(file=outname, plot=gg, width = 16, height = 10)
+}
+
+###################################################
 load('xe.seurat.info3.rd')
 pref='xe'
 gene_set <- c('Xesp-000527', 'Xesp-003050', 'Xesp-006291', 'Xesp-012614', 'Xesp-018653', 'Xesp-022000', 'Xesp-022001', 'Xesp-002944')
@@ -53,8 +129,6 @@ gene_set <- c('Spis-XP-022780413-1', 'Spis-XP-022781399-1', 'Spis-XP-022781401-1
 load('hy.seurat.info3.rd')
 pref <- "hy" 
 gene_set <- c('Hvul-g24126-1', 'Hvul-g30219-1') # orthofinder
-
-
 
 
 # nt -----------
