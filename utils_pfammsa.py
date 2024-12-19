@@ -827,6 +827,29 @@ def getbatchmsa(arglist):
 	cp._info('write %d seq to %s_{msa,seq}.fa' % (len(outmsalist), outprefix))
 
 
+# extract sequences according to header.list and append prefix in front of sequence names
+def getbatchseq_with_pref(arglist):
+	assert len(arglist) == 4, 'Usage: python utils_pfammsa.py getbatchmsa PF00000.txt header.list name_prefix outfile'
+
+	msafile = arglist[0]
+	headerfile = arglist[1]
+	pref = arglist[2]
+	outfile = arglist[3]
+
+	headerset = set(cp.loadlines(headerfile))
+	cp._info('%d headers loaded' % len(headerset))
+
+	outseqlist = []
+	pfm = pfammsa(msafile)
+	for h,s in pfm.msalist:
+		if h in headerset:
+			outseqlist.append('>%s\n%s' % ('%s|%s' % (pref, h),s))
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % ('\n'.join(outseqlist)))
+	cp._info('Save %d seq to %s' % (len(outseqlist), outfile))
+
+
 # input single head
 # get all msa that have at least cutoff similarities with the input 
 def getsinglemsacluster(args):
@@ -2145,6 +2168,7 @@ def main():
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'getsinglemsa_r': getsinglemsa_r, # get single rna MSA 
 		'getbatchmsa': getbatchmsa,
+		'getbatchseq_with_pref': getbatchseq_with_pref, # extract batch seq from input list and append pref to headers
 		'getsinglemsacluster': getsinglemsacluster, 
 		'msa2rawseq': msa2rawseq, # convert aligned MSA to fasta raw sequences
 		'nongaprate': nongaprate,

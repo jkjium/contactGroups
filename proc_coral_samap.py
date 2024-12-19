@@ -5,7 +5,7 @@ import scipy as sp
 import difflib
 from itertools import groupby, combinations
 from scipy.spatial import distance
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 #import matplotlib.pyplot as plt
 
 try:
@@ -26,6 +26,85 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
 _cscheme_seurat_dimplot=['#f8766d', '#7cae00', '#00bfc4', '#c77cff', '#e68613', '#0cb702', '#00b8e7', '#ed68ed', '#cd9600', '#00be67', '#00a9ff', '#ff61cc', '#aba300', '#00c19a', '#8494ff', '#ff68a1']
+
+############################################################################################
+# fucntions for orthofinder --------------------------------------------------
+############################################################################################
+# ortho one-to-one
+# extract one-to-one orthologs from orthofinder outputs
+# kjia@DESKTOP-K0I3VAM ~/workspace/foxd/orthofinder/Orthologues_ad 2024-12-15 18:31:00
+# $ head ad__v__nt.tsv
+# Orthogroup      ad      nt
+# OG0000000       adig-s0038.g19  SVEP1-like-40
+# OG0000000       adig-s0006.g329, adig-s0092.g75, adig-s0037.g103
+# !! second column (ad) can have duplications, need to merge into a 1toMany list
+# output: dict[ad] = nt
+def _ortho_1to1(tuple_list):
+    # merge potential 1toMany terms
+    dict_1tomany = defaultdict(list)
+    for t in tuple_list:
+        query = t[1].split(',')
+        hit = t[2].split(',')
+        if(len(query)==1 and len(hit)==1):
+            dict_1tomany[query[0]].append(hit[0])
+    # remove 1 to many 
+    return dict ((q, dict_1tomany[q][0]) for q in dict_1tomany if len(dict_1tomany[q])==1)
+
+# load all orthofinder files and output 
+def ortho_1to1_all(args):
+    assert len(args) == 2, 'Usgae: python proc_foxd.py ortho_1to1_all stubfile outprefix'
+    stubfile = args[0]
+    outpref = args[1]
+    ds = {}
+    ds['names'] = cp.loadlines(stubfile)
+    for n in ds['names']:
+        ds[n] = _ortho_1to1(cp.loadtuples(n, '\t')[1:])
+    # find common keys
+    common_set = set(ds[ds['names'][0]].keys())
+    for n in ds['names'][1:]:
+        common_set &= set(ds[n].keys())
+    cp._info('%d common keys found' % len(common_set))
+    for n in ds['names']:
+        outfile = '%s.%s.tsv' % (outpref, n) 
+        with open(outfile , 'w') as fout:
+            fout.write('%s\n' % '\n'.join(['%s\t%s' % (k, ds[n][k]) for k in common_set]))
+        cp._info('save filtered 1to1 ortholog to %s' % outfile)
+
+# ut _ortho_1to1()
+def ortho_1to1(args):
+    assert len(args) == 2, 'Usgae: python proc_foxd.py ortho_1to1 ad__v__nt.tsv outfile'
+    infile = args[0]
+    outfile = args[1]
+    ortho_pair_list = cp.loadtuples(infile, '\t')[1:]
+    out_1to1_dict = _ortho_1to1(ortho_pair_list)
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(['%s\t%s' % (k, out_1to1_dict[k]) for k in out_1to1_dict]))
+    cp._info('save %d 1to1 ortho pair to %s' % (len(out_1to1_dict), outfile))
+
+# filter the shared 1to1 orthologs from orthofinder
+# some genes may not exist in seurat objects
+def filter_1to1(args):
+    assert len(args) == 3, 'Usage: python proc_coral_samap.py filter_1to1 gene_names.stub ortho_1to1.tsv ortho_1to1.filtered.tsv'
+    stubfile = args[0] # gene names from seruat objects
+    orthofile = args[1] # shared 1to1 orthologs from orthofinder
+    outfile = args[2] 
+
+    # load all seurat object genes into a list
+    genes = []
+    for f in cp.loadlines(stubfile):
+        genes.extend(cp.loadlines(f))
+    cp._info('load %d genes' % len(genes))
+
+    # check 1to1 ortholog genes line by line
+    outlist = []
+    for ortho_row in cp.loadtuples(orthofile, '\t'):
+        if len([g for g in ortho_row if g in genes]) == len(ortho_row):
+            outlist.append('\t'.join(ortho_row))
+    
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save %d filtered 1to1 orthologs to %s' % (len(outlist), outfile))
+
 
 ############################################################################################
 # fucntions for visualization --------------------------------------------------
@@ -110,8 +189,44 @@ def append_gn_tax(args):
     fp.close()
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % '\n'.join(outlist))
-
     cp._info('save to %s' % outfile)
+
+# for only gene name extraction
+def get_gene_name(args):
+    assert len(args)==2, 'Usage: python proc_coral_samap.py get_gene_name curl.json.txt outfile'
+    import json
+    from tqdm import tqdm
+    infile = args[0]
+    outfile = args[1]
+
+    outlist = []
+    jsonline=''
+    fp = open(infile,'r')
+    content = fp.read()
+    for line in tqdm(content.split('{"results":'), desc='Processing'):
+        if line=='': continue
+        jsonline = '{"results":'+line
+
+        #print('New json: '+jsonline)
+        jo = json.loads(jsonline)
+        try:
+            uid = jo['results'][0]['primaryAccession']
+            gid = jo['results'][0].get('genes', '_NA_')
+            gn = gid[0].get('geneName', '_NA_') if gid!='_NA_' else '_NA_'
+            gnv = gn.get('value', '_NA_') if gn!='_NA_' else '_NA_'
+        except Exception as e:
+            print('exception: [%s]' % e)
+            print(jsonline)
+        outstr= '%s\t%s' % (uid, gnv)
+        print('extract: %s' % outstr)
+        outlist.append(outstr)
+        jsonline=''
+    fp.close()
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save to %s' % outfile)
+
+
 
 
 # extract human, drome, top1 from *allhits.cell.uid.pn.gd.gn.tax.tn.dis.tsv

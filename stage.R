@@ -1,5 +1,5 @@
 ####################################################
-# pin
+# pin cg_ver
 library(Matrix)
 library(tidyr)
 library(tibble)
@@ -43,8 +43,68 @@ rm(list=ls())
 source('coral_ppl.R')
 
 ###################################################
-# vlnplot & barplot ad, at
+# foxd vlnplot & barplot ad, at, ch
 # kjia@DESKTOP-L0MMU09 ~/workspace/foxd/stage 2024-12-10 17:04:27
+
+std_obj <-readRDS('javier_clytia_converted_to_seurat_byjake_241210.rds')
+std_obj$cell_type_family <- std_obj$annos
+std_obj$cell_type <- std_obj$annosSub
+
+t <- GetAssayData(std_obj, layer = "counts")
+
+sum(colSums(t) == 0)
+sum(rowSums(t) == 0)
+zero_counts_per_cell <- colSums(t)  # Zero counts per cell
+zero_counts_per_gene <- rowSums(t)  # Zero counts per gene
+print(length(zero_counts_per_cell))  # Cells with zero counts
+print(length(zero_counts_per_gene))  # Genes with zero counts
+
+
+std_obj <- std_seurat_ppl(std_obj)
+std_obj <- NormalizeData(std_obj , normalization.method = "LogNormalize", scale.factor = 10000)
+std_obj <- FindVariableFeatures(std_obj, selection.method = "vst", nfeatures = 3000)
+std_obj <- ScaleData(std_obj, verbose = F, vars.to.regress = "nCount_RNA")
+std_obj <- RunPCA(std_obj, npcs = 20, verbose = FALSE)
+std_obj <- RunTSNE(std_obj, dims = 1:20)
+
+
+pref='ch'
+genes_file <- paste0(pref,'.genes.tsv')
+barcodes_file <- paste0(pref,'.barcodes.tsv')
+mtx_file <- paste0(pref,'.counts.mtx')
+counts <- ReadMtx(mtx_file, cells=barcodes_file, features=genes_file, feature.column = 1)
+s_obj <- CreateSeuratObject(counts = counts)
+
+std_obj <- std_seurat_ppl(s_obj)
+
+clustering_data <- read.table(paste0(pref,'.all_assignments.tsv'), header = TRUE, sep = "\t", row.names = 1)
+for (col_name in colnames(clustering_data)) {
+  std_obj@meta.data[[col_name]] <- clustering_data[[col_name]][match(rownames(std_obj@meta.data), rownames(clustering_data))]
+}
+std_obj <- RunTSNE(std_obj, dims = 1:20)
+std_obj <- RunUMAP(std_obj, dims = 1:20, min.dist = 0.1, umap.method = "umap-learn", metric = "cosine", verbose = FALSE)
+save(std_obj, file='01.cn.clustering2.rd')
+
+DimPlot(std_obj, reduction = "tsne", group.by = "annos", pt.size = 2, alpha = 0.7, label=T)
+DimPlot(std_obj, reduction = "umap", group.by = "annos", pt.size = 2, alpha = 0.7, label=T)
+
+
+
+gene_expression_values <- as.vector(GetAssayData(std_obj, layer = "data"))
+
+num_expressed_genes_raw <- sum(rowSums(GetAssayData(std_obj, layer = "counts") > 3) > 0)
+print(num_expressed_genes_raw)
+
+num_expressed_genes_raw <- sum(rowSums(GetAssayData(ad3456.clean, layer = "data") > 3) > 0)
+print(num_expressed_genes_raw)
+
+ggplot(data.frame(expression = gene_expression_values), aes(x = expression)) +
+  geom_histogram(bins = 50, fill = "skyblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Gene Expression Across All Genes",
+       x = "Normalized Expression",
+       y = "Frequency")
+
 
 # ad
 load('ad3456.clean.sym_split.filtered.rd')
@@ -58,14 +118,14 @@ clustering_data <- read.table('01.ad3456.samap_cluster.tsv', header = TRUE, sep 
 col_name <- 'samap_family'
 std_obj@meta.data[[col_name]] <- clustering_data[[col_name]][match(rownames(std_obj@meta.data), rownames(clustering_data))]
 Idents(std_obj) <- std_obj$samap_family
+save(std_obj, file='01.ad3456.clean.samap_family.rd')
 
+load('01.ad3456.clean.samap_family.rd')
 pref <- "ad" 
 gene_set <- c('adig-s0019.g96', 'adig-s0020.g92', 'adig-s0031.g180', 'adig-s0032.g47', 'adig-s0032.g48', 'adig-s0042.g184', 'adig-s0125.g82') # orthofinder
 gene_set <- c('adig-s0022.g99', 'adig-s0042.g184') # prost
 cname = 'samap_family'
-
-
-
+Idents(std_obj) <- std_obj$samap_family
 
 # at
 load('at345.clean.sym_split_v2.rd')
@@ -80,15 +140,54 @@ clustering_data <- read.table('01.at345.samap_cluster.tsv', header = TRUE, sep =
 col_name <- 'samap_family'
 std_obj@meta.data[[col_name]] <- clustering_data[[col_name]][match(rownames(std_obj@meta.data), rownames(clustering_data))]
 Idents(std_obj) <- std_obj$samap_family
+save(std_obj, file='01.at345.clean.samap_family.rd')
 
+load('01.at345.clean.samap_family.rd')
 pref <- "at" 
 gene_set <- c('aten-s0004.g46', 'aten-s0017.g115', 'aten-s0019.g48', 'aten-s0028.g98', 'aten-s0041.g37', 'aten-s0133.g54', 'aten-s0133.g55')
 gene_set <- c('aten-s0061.g34') # prost
 cname = 'samap_family'
+Idents(std_obj) <- std_obj$samap_family
+
+rm(list=ls())
+source('coral_ppl.R')
+
+load('xe.seurat.info3.rd')
+pref='xe'
+gene_set <- c('Xesp-000527', 'Xesp-003050', 'Xesp-006291', 'Xesp-012614', 'Xesp-018653', 'Xesp-022000', 'Xesp-022001', 'Xesp-002944')
+
+load('sp.seurat.info3.rd')
+pref <- "sp" 
+gene_set <- c('Spis-XP-022780413-1', 'Spis-XP-022781399-1', 'Spis-XP-022781401-1', 'Spis-XP-022789920-1', 'Spis-XP-022799810-1', 'Spis-XP-022800136-1', 'Spis-XP-022800147-1', 'Spis-XP-022810126-1')
+
+load('hy.seurat.info3.rd')
+pref <- "hy" 
+gene_set <- c('Hvul-g24126-1', 'Hvul-g30219-1') # orthofinder
+
+# nt -----------
+load('nt.seurat.info2.rd')
+load('alison.Robj')
+std_obj <- AllData
+#std_obj <- std_seurat_ppl(std_obj)
+pref <- "nt" 
+gene_set <- c('FoxA', 'FoxB', 'FOXD1-like-1', 'FOXL1-like-1', 'FOXL1-like-2', 'FOXL2', 'FXC1B-like-1') # orthofinder
+std_obj$cell_type_family <- std_obj$IDs
+std_obj$cell_type <- std_obj$ID.separate
+save(std_obj, file='01.nt.info2.rd')
+
+
+cname = 'cell_type_family'
+Idents(std_obj) <- std_obj$cell_type_family
+
+cname = 'cell_type'
+Idents(std_obj) <- std_obj$cell_type
+
+cname = 'metacell'
+Idents(std_obj) <- std_obj$metacell
 
 
 #### func ##################################
-# vlnPlt
+# foxd vlnPlt
 for (gene in gene_set) {
   gg <- VlnPlot(std_obj, features = gene, ncol=1, pt.size = 0, group.by = cname) +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) + NoLegend()
@@ -106,7 +205,7 @@ for (gene in gene_set) {
   gg <- ggplot(gene_df, aes(x = Cluster, y = Expression, fill = 'red'))  +
     geom_bar(stat = "identity") +
     ggtitle(gene) +
-    labs(x = "Cluster", y = "Average Expression") +
+    labs(x = "Cluster", y = "Average raw counts") +
     theme_minimal() +
     NoLegend()
   
@@ -114,7 +213,10 @@ for (gene in gene_set) {
   
   outname = paste0(pref,'_barplot_orthofinder_',cname,'_',gene,'_','.pdf')
   print(outname)
-  ggsave(file=outname, plot=gg, width = 16, height = 10)
+  ggsave(file=outname, plot=gg, width = 16, height = 10) # for samap_family
+  #ggsave(file=outname, plot=gg, width = 32, height = 8) # metacell
+  #ggsave(file=outname, plot=gg, width = 24, height = 8) # nt cell type
+  #ggsave(file=outname, plot=gg, width = 16, height = 8)
 }
 
 ###################################################
@@ -142,15 +244,14 @@ std_obj$cell_type_family <- std_obj$IDs
 std_obj$cell_type <- std_obj$ID.separate
 
 
-#####################################################
 
+#####################################################
 setwd('C:\\Users\\kjia\\workspace\\foxd\\stage')
 t<-readRDS('Hydra_Seurat_Whole_Transcriptome.rds')
 t1<-UpdateSeuratObject(t)
 DimPlot(t1, reduction = "tsne", group.by = "cluster.short", pt.size = 2, alpha = 0.7)
 pref <- "nt" 
 gene_set <- c('FoxA', 'FoxB', 'FOXD1-like-1', 'FOXL1-like-1', 'FOXL1-like-2', 'FOXL2', 'FXC1B-like-1') # orthofinder
-
 
 
 ###
@@ -214,7 +315,7 @@ Hvul_sc_UMI_counts.RDS
 
 
 ######################################################
-# init seurat obj for sp,xe,hy 1205
+# foxd init seurat obj for sp,xe,hy 1205
 # hy.barcodes.tsv
 # hy.clustering2.tsv
 # hy.counts.mtx
@@ -353,11 +454,112 @@ outname = paste0(pref,'_FOX_total_expression_orthofinder.pdf')
 outname
 ggsave(file=outname, plot=gplot, width = 15, height = 8)
 
+######################################################
+# acropora cell type tree 20241218
+# 
+library(tidyr)
+library(tibble)
+library(ggplot2)
+library(tidyverse)
+library(Seurat)
+library(pheatmap)
+library(ape)
+library(reticulate)
+library(DoubletFinder)
+library(glue)
+library(readr)
+
+setwd('C:\\Users\\kjia\\workspace\\coral\\stage.acropora_raw')
+rm(list=ls())
+source('coral_ppl.R')
+
+# load seurat objects {ad,at,sp,xe,nt}
+objs <- list()
+load('01.ad3456.clean.samap_family.rd')
+objs[['Acropora.digitifera']] <- std_obj
+load('01.at345.clean.samap_family.rd')
+objs[['Acropora.tenuis']] <- std_obj
+load('01.nt.seurat.info2.umap.rd')
+objs[['Nematostella.vectensis']] <- std_obj
+load('01.sp.seurat.info3.rd')
+objs[['Stylophora.pistillata']] <- std_obj
+load('01.xe.seurat.info3.rd')
+objs[['Xenia.sp.']] <- std_obj
+
+# integrate sub objects
+install.packages("future")
+options(future.globals.maxSize = 10 * 1024^3)
+sct_obj <- lapply(objs, function(x){ SCTransform(x, return.only.var.genes = FALSE)})
+
+
+for(n in colnames(ortho_genes)) {write(x = rownames(sct_obj[[n]]), file = paste0("011.sct.",n,".genes.txt"))}
+#kjia@DESKTOP-L0MMU09 ~/workspace/coral/stage.acropora_raw 2024-12-18 16:58:04
+#$ ls 011* > 012.seurat.genes.stub
+#$ python proc_coral_samap.py filter_1to1 012.seurat.genes.stub 02.ortho4.all.tsv 025.ortho.filtered.tsv
+#2024-12-18 16:58:59|2732|0|INFO|ignore absent libraries
+#2024-12-18 16:58:59|2732|0|INFO|load 134672 genes
+#2024-12-18 16:59:14|2732|15|INFO|save 4538 filtered 1to1 orthologs to 025.ortho.filtered.tsv
+# add header to 025.ortho.filtered.tsv
+
+ortho_genes <- read.delim('025.ortho.filtered.tsv', header = TRUE, sep = "\t")
+
+# subset seurat by 1to1 orthologs
+sub_objs <- list()
+for(n in colnames(ortho_genes)) {
+  sub_objs[[n]] <- subset(sct_obj[[n]]$SCT, features = ortho_genes[[n]])
+  sub_objs[[n]]$organism_name <- n
+}
+# check # of genes in each obj
+for(n in colnames(ortho_genes)){print(n);print(dim(sub_objs[[n]]))}
+
+# append organism name to clustering assignments
+sub_objs[['Acropora.digitifera']]$samap_family <- paste0('Acropora.digitifera - ', sub_objs[['Acropora.digitifera']]$samap_family)
+sub_objs[['Acropora.tenuis']]$samap_family <- paste0('Acropora.tenuis - ', sub_objs[['Acropora.tenuis']]$samap_family)
+sub_objs[['Nematostella.vectensis']]$cell_type_family <- paste0('Nematostella.vectensis - ', sub_objs[['Nematostella.vectensis']]$cell_type_family)
+sub_objs[['Stylophora.pistillata']]$cell_type_family <- paste0('Stylophora.pistillata - ', sub_objs[['Stylophora.pistillata']]$cell_type_family)
+sub_objs[['Xenia.sp.']]$cell_type_family <- paste0('Xenia.sp. - ', sub_objs[['Xenia.sp.']]$cell_type_family)
+
+
+
+
+# calculate average expression
+avg_expr <- list()
+avg_expr[['Acropora.digitifera']] <- AverageExpression(sub_objs[['Acropora.digitifera']], group.by = "samap_family")
+avg_expr[['Acropora.tenuis']] <- AverageExpression(sub_objs[['Acropora.tenuis']], group.by = "samap_family")
+avg_expr[['Nematostella.vectensis']] <- AverageExpression(sub_objs[['Nematostella.vectensis']], group.by = "cell_type_family")
+avg_expr[['Stylophora.pistillata']] <- AverageExpression(sub_objs[['Stylophora.pistillata']], group.by = "cell_type_family")
+avg_expr[['Xenia.sp.']] <- AverageExpression(sub_objs[['Xenia.sp.']], group.by = "cell_type_family")
+
+# append organism name 
+for(n in colnames(ortho_genes)) { 
+  colnames(avg_expr[[n]]$RNA) <- paste0(n,'|',colnames(avg_expr[[n]]$RNA)) 
+  avg_expr[[n]]$RNA <- avg_expr[[n]]$RNA[ortho_genes[[n]],]
+}
+
+# combine matrices and update gene names
+cmat <- avg_expr[[1]]$RNA
+crname <- rownames(avg_expr[[1]]$RNA)
+for (i in 2:length(avg_expr)) {
+  cmat <- cbind(cmat, avg_expr[[i]]$RNA)
+  crname <- paste(crname, rownames(avg_expr[[i]]$RNA), sep = ",")
+}
+rownames(cmat) <- crname
+save(cmat, file='06.combnied_avg_mat.5.rd')
+
+dmat <- dist(t(cmat), method = "euclidean")
+ct_tree <- nj(dmat)
+pdf("07.cell_type_tree.pdf", width = 20, height = 36) 
+plot(ct_tree, main = "Phylogenetic Tree of Cell types")
+dev.off()
+#### debug
+avg <- AverageExpression(std_obj, group.by = "samap_family")
+
+
 
 
 
 ######################################################
-# distribution of symbiodinium genes
+# acropora distribution of symbiodinium genes
 #   transfer merged clusters to full count table
 #   get full rdata of ad
 #   subset cells by referencing no_sym data
@@ -2176,7 +2378,7 @@ infile="04.heatmap.ad2all.merged_clusters_cell_type_family.blast.tsv"
 infile="04.heatmap.at2all.sym_split_cell_type_family.blast.tsv"
 infile="04.heatmap.ad2all.sym_split_cell_type_family.blast.tsv"
 
-h=pheatmap(t(read.table(infile, row.names=1, header=TRUE, sep='\t')),cluster_rows=T)
+h=pheatmap(t(read.table(infile, row.names=1, header=TRUE, sep='\t')),cluster_rows=F, cluster_cols=T)
 
 
 ####################################################
@@ -2302,6 +2504,7 @@ write.table(mdata[, c("merged_clusters", "sym_split")], file = "ad3456.clusters.
 # par("mar=c(1,1,1,1))
 # if figure margins too large
 plot(nj(as.dist(as.matrix(read.table("at345.wmat.tsv", sep='\t', header = TRUE)))),'u', cex = 0.7)
+plot(nj(as.dist(as.matrix(read.table("at345.wmat.merged_clusters.tsv", sep='\t', header = TRUE)))),'u', cex = 0.7)
 
 # ---------------------------------------------------------------
 # skip as function---------------------------------------------------------------
