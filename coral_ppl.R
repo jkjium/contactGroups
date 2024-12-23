@@ -254,14 +254,14 @@ goseq_clusters_dotplots <- function(obj, goseq_params, outprefix){
 # w_mat <- t(as.matrix(averages)[g6000_vec,]) 
 # ngene: number of highly expressed genes
 # expr_filter: threshold of percentage of expression
-wgcna_ppl_1 <- function(obj, ngene='all', expr_filter=0){
+wgcna_ppl_1 <- function(obj, ngene='all', expr_filter=20){
 	if(ngene=='all'){
 		count_matrix <- GetAssayData(obj, slot = "data")
-		#count_matrix <- 1 * (count_matrix>0)
-		#num_cells_expressing_each_gene <- apply(count_matrix, MARGIN = 1, FUN = sum)
-		#expressed_feature_index <- num_cells_expressing_each_gene > (ncol(count_matrix) * 0.01)
-		#expressed_features <- row.names(count_matrix)[expressed_feature_index]		
-		expressed_features <- row.names(count_matrix)
+		count_matrix <- 1 * (count_matrix>0)
+		num_cells_expressing_each_gene <- apply(count_matrix, MARGIN = 1, FUN = sum)
+		expressed_feature_index <- num_cells_expressing_each_gene > (ncol(count_matrix) * 0.01)
+		expressed_features <- row.names(count_matrix)[expressed_feature_index]		
+		#expressed_features <- row.names(count_matrix)
 	}else{
 		g6000_seu <- FindVariableFeatures(object = obj, selection.method = "vst", nfeatures = ngene, binning.method = "equal_frequency")
 		expressed_features <- VariableFeatures(g6000_seu) # retrieve variable gene list

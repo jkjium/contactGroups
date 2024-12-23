@@ -653,6 +653,105 @@ ad3456.std$symbiont_genes <- count_symbiont_genes_per_cell(ad3456.std)
 
 
 
+#######################################################
+# WGCNA use all expressed genes(Jake's ppl) + without small clusters 20241223
+# at
+library(Matrix)
+library(tidyr)
+library(tibble)
+library(ggplot2)
+library(tidyverse)
+library(Seurat)
+library(pheatmap)
+library(ape)
+library(reticulate)
+library(DoubletFinder)
+library(glue)
+library(readr)
+library(doParallel)
+library(WGCNA)
+library(gridExtra)
+library(ROCR)
+library(GO.db)
+library(goseq)
+
+rm(list=ls())
+source('coral_ppl.R')
+load('01.at345.clean.samap_family.rd')
+Idents(std_obj) <- std_obj$sym_split
+
+
+# from stage.R :: acropora distribution of symbiodinium genes
+# remove small clusters
+
+t=table(Idents(std_obj))
+clusters_to_keep <- names(t[t>=10])
+
+t[t<10]
+# at
+# g53.apo g54.apo g43.apo g54.sym 
+# 9       5       1       5
+# ad
+# g22.apo g64.sym g37.sym g24.sym g14.sym 
+# 4       4       2       4       3
+#clusters_to_remove <- c('g22.apo', 'g64.sym', 'g37.sym', 'g24.sym', 'g14.sym')
+
+#######################################
+# sync cluster annotation files
+#######################################
+
+subset_obj <- subset(std_obj, subset = sym_split %in% clusters_to_keep)
+ad3456.v1223 <- std_seurat_ppl(subset_obj, clustering = T, umap = T)
+save(ad3456.v1223, file="ad3456.clean.sym_split.filtered.smap_names.rd")
+
+# wgcna, jump to WGCNA without small clusters 20241203
+obj <- ad3456.v1223
+
+Idents(obj) <- obj$merged_clusters
+obj_nj <- nj(as.dist(as.matrix(read.table("at345.wmat.merged_clusters.tsv", sep='\t', header = TRUE))))
+plot(obj_nj,'u', cex = 0.7)
+ordered_clusters <- ordered_tips_apenj(obj_nj)
+write.table(ordered_clusters , file = "at.merged_clusters_tree_order.tsv", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
+# to compare whether the clusters are the same with the nj tree
+write.table(levels(obj) , file = "tt", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
+# $ awk 'FNR==NR{a[$1]=1;next} a[$1]==""{print $1}' tt at.merged_clusters_tree_order.tsv
+# for at needs to remove g54
+# output: at.merged_clusters_tree_order.tsv
+
+# manually make sym split according to tree from merged clusters
+# $ dos2unix at.merged_clusters_tree_order.tsv
+# $ awk '{printf "%s.apo\n%s.sym\n",$1,$1}' at.merged_clusters_tree_order.tsv > at.mergenj_split_tree_order.tsv
+# write.table(unique(obj$sym_split) , file = "t1", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
+# $ awk 'FNR==NR{a[$1]=1;next} a[$1]==""{print $1}' t1 at.mergenj_split_tree_order.tsv
+# g53.apo
+# g43.apo
+
+
+
+
+# load cluster orders, gene alias, cluster alias
+ordered_clusters <- read.table(file = "at.mergenj_split_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
+yn_map <- read.csv("at.gene_alias.tsv", header = TRUE, sep = "\t")
+xn_map <- read.csv("05.at2all_sym_split_summary_0.40.tsv", header = TRUE, sep = "\t")
+wgcna_dotplots_withmaps(obj, bwnet, me_wt, yn_map, xn_map, 300, ordered_clusters, goseq_params, 'ad3456')
+
+
+# debug ########################
+
+t <- read.table("at345.wmat.merged_clusters.tsv", sep='\t', header = TRUE)
+
+
+
+
+
+
+
+# debug
+count_matrix <- GetAssayData(std_obj, layer = "data")
+count_matrix <- 1 * (count_matrix>0)
+num_cells_expressing_each_gene <- apply(count_matrix, MARGIN = 1, FUN = sum)
+expressed_feature_index <- num_cells_expressing_each_gene > (ncol(count_matrix) * 0.01)
+expressed_features <- row.names(count_matrix)[expressed_feature_index]
 
 
 #######################################################
@@ -667,16 +766,18 @@ load('ad3456.clean.sym_split.filtered.rd')
 obj <- ad3456.clean
 Idents(obj) <- obj$sym_split
 
-# 1201: use all genes
-s=0.8
+
+# 1223: use all expressed genes
+# 1201: use all genes (discarded)
+#s=0.8
 #w_mat <- wgcna_ppl_1(obj, ngene=as.integer(nrow(obj)*s), expr_filter=20)
-w_mat <- wgcna_ppl_1(obj, ngene='all', expr_filter=20) # 7858 / 21038
-adj_mat <- adjacency(w_mat, power = 8, type = "signed")
+w_mat <- wgcna_ppl_1(obj, ngene='all', expr_filter=20) # 7858 / 21038 # at 10327 / 20896
+adj_mat <- adjacency(w_mat, power = 10, type = "signed") # 8 for ad # 10 for at
 tom_mat <- TOMsimilarity(adj_mat)
 dis_tom <- 1-tom_mat
 geneTree = hclust(as.dist(dis_tom), method = "average")
 
-# plot(geneTree, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity", labels = FALSE, hang = 0.04)
+plot(geneTree, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity", labels = FALSE, hang = 0.04)
 
 dynamicMods = cutreeDynamic(dendro = geneTree, distM = dis_tom,
                                  deepSplit = 4, pamRespectsDendro = FALSE,

@@ -1052,7 +1052,7 @@ def _pt_parser(slist, arg):
     idx = df.groupby(['output_id'])['length'].idxmax()
     return df.loc[idx]
 
-# keep the original header and the get longest sequence
+# keep the original header and get longest sequence for each transcription ID
 def _default_parser(slist, arg):
     cp._info('use default parser.')
     seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
