@@ -701,11 +701,11 @@ t[t<10]
 #######################################
 
 subset_obj <- subset(std_obj, subset = sym_split %in% clusters_to_keep)
-ad3456.v1223 <- std_seurat_ppl(subset_obj, clustering = T, umap = T)
-save(ad3456.v1223, file="ad3456.clean.sym_split.filtered.smap_names.rd")
+std_obj.v1223 <- std_seurat_ppl(subset_obj, clustering = T, umap = T)
+save(std_obj.v1223, file="10.at.clean.sym_split.filtered.smap_names.rd")
 
-# wgcna, jump to WGCNA without small clusters 20241203
-obj <- ad3456.v1223
+# generate cluster annotations
+obj <- std_obj.v1223
 
 Idents(obj) <- obj$merged_clusters
 obj_nj <- nj(as.dist(as.matrix(read.table("at345.wmat.merged_clusters.tsv", sep='\t', header = TRUE))))
@@ -713,7 +713,7 @@ plot(obj_nj,'u', cex = 0.7)
 ordered_clusters <- ordered_tips_apenj(obj_nj)
 write.table(ordered_clusters , file = "at.merged_clusters_tree_order.tsv", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
 # to compare whether the clusters are the same with the nj tree
-write.table(levels(obj) , file = "tt", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
+# write.table(levels(obj) , file = "tt", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
 # $ awk 'FNR==NR{a[$1]=1;next} a[$1]==""{print $1}' tt at.merged_clusters_tree_order.tsv
 # for at needs to remove g54
 # output: at.merged_clusters_tree_order.tsv
@@ -726,27 +726,88 @@ write.table(levels(obj) , file = "tt", sep = "\t", col.names=FALSE, row.names = 
 # g53.apo
 # g43.apo
 
+# generate cluster names in tree order
+Idents(obj) <- obj$merged_clusters
+df_cluster_size <- as.data.frame(table(Idents(obj)))
+write.table(df_cluster_size, file = "05.at.merged.cluster_size.tsv", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+Idents(obj) <- obj$sym_split
+df_cluster_size <- as.data.frame(table(Idents(obj)))
+write.table(df_cluster_size, file = "05.at.sym_split.cluster_size.tsv", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+## append cluster size and revert summary name orientation
+#$ awk -F '\t' 'FNR==NR{a[$1]=$2;next} {if(a[$1]!="")printf "%s - (%s) %s - %s\n", $1,a[$1],$1,$2}' 05.at.merged.cluster_size.tsv 05.at2all_merged_clusters_summary_0.40.tsv|awk -F ' - ' 'BEGIN{printf "idx\talias\n"}{printf "%s\t",$1; for(i=3;i<=NF-1;i++) printf "%s - ", $i; printf "%s\n", $2}' > 06.at2all.merged_clusters.summary.r.vec2.tsv
+#$ awk -F '\t' 'FNR==NR{a[$1]=$2;next} {if(a[$1]!="")printf "%s - (%s) %s - %s\n", $1,a[$1],$1,$2}' 05.at.sym_split.cluster_size.tsv 05.at2all_sym_split_summary_0.40.tsv|awk -F ' - ' 'BEGIN{printf "idx\talias\n"}{printf "%s\t",$1; for(i=3;i<=NF-1;i++) printf "%s - ", $i; printf "%s\n", $2}' > 06.at2all.sym_split.summary.r.vec2.tsv
+
+## compiling in tree order
+# at.merged_clusters_tree_order.tsv
+# at.mergenj_split_tree_order.tsv
+# $ awk -F '\t' 'FNR==NR{a[$1]=$0;next} a[$1]!=""{print a[$1]}' 06.at2all.merged_clusters.summary.r.vec2.tsv at.merged_clusters_tree_order.tsv > 06.at2all.merged_clusters.summary.nj.vec2.tsv
+# awk -F '\t' 'FNR==NR{a[$1]=$0;next} a[$1]!=""{print a[$1]}' 06.at2all.sym_split.summary.r.vec2.tsv at.mergenj_split_tree_order.tsv > 06.at2all.sym_split.summary.nj.vec2.tsv
+# append 'idx	alias'
+
+# generate cluster names for heatmap
+# awk -F '\t' '{print $2}' 05.at2all_sym_split_summary_0.40.tsv|awk -F ' - ' '{printf "%s",$NF; for(i=NF-1;i>0;i--) printf " - %s", $i; printf "\n"}' |awk '{if(NR==1) print "idx\t"$1; else print $1"\t"$0}' > 05.at2all_sym_split_summary_0.40_fmt.tsv
+# output: 05.at2all_sym_split_summary_0.40_fmt.tsv
+
+# JUMP TO:
+# WGCNA # ngene = 'all': all expressed genes 20241223
+
+
+# REFERENCE:
+# goseq ad3456 sym_split
+
+load('ad3456.clean.sym_split.filtered.rd')
+obj <- ad3456.clean
+# load('10.at.clean.sym_split.filtered.smap_names.rd')
+
+Idents(obj) <- obj$merged_clusters
+
+# goseq
+goseq_params <- list(
+  gene.vector = NULL, # named vecotor {aten-0001s.g1: 0/1}
+  gene2go = NULL,
+  gene.lengths = NULL,
+  top_n = 150
+)
+
+# load gene.lengths
+gl<-read.csv('ad.gene.length.tsv', sep='\t', header=FALSE)
+#gl<-read.csv('at.gene.length.tsv', sep='\t', header=FALSE)
+gene.lengths <- setNames(gl$V2,  gsub("_", "-", gl$V1))
+
+# load gene2go
+df <- read.csv('ad.gene2go.tsv', sep='\t', header=FALSE)
+#df <- read.csv('at.gene2go.tsv', sep='\t', header=FALSE)
+df$V1 <- gsub("_", "-", df$V1)
+gene2go <- split(df$V2, df$V1)
+
+# assemble params and run goseq
+goseq_params$gene2go <- gene2go
+goseq_params$gene.lengths <- gene.lengths
+
+# get x_ordered neighbor joining
+# obj_nj <- nj(as.dist(as.matrix(read.table("ad3456.wmat.sym_split.tsv", sep='\t', header = TRUE))))
+# plot(obj_nj,'u', cex = 0.7)
+# ordered_clusters <- ordered_tips_apenj(obj_nj)
+ordered_clusters <- read.table(file = "ad.merged_clusters_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
+# ordered_clusters <- read.table(file = "at.merged_clusters_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
+obj@active.ident <- factor(Idents(obj), levels = ordered_clusters)
+
+yn_map <- read.csv("ad.gene_alias.tsv", header = TRUE, sep = "\t")
+#xn_map <- read.csv("05.ad2all_sym_split_summary_0.40.tsv", header = TRUE, sep = "\t")
+xn_map <- read.csv("06.ad2all.merged_clusters.summary.nj.vec2.tsv", header = TRUE, sep = "\t")
+generate_cluster_dotplots_withmaps(obj, yn_map, xn_map, ordered_clusters, goseq_params, 'ad')
+
+#yn_map <- read.csv("at.gene_alias.tsv", header = TRUE, sep = "\t")
+#xn_map <- read.csv("06.at2all.merged_clusters.summary.nj.vec2.tsv", header = TRUE, sep = "\t")
+source('coral_ppl.R')
+generate_cluster_dotplots_withmaps(obj, yn_map, xn_map, ordered_clusters, goseq_params, 'at')
 
 
 
-# load cluster orders, gene alias, cluster alias
-ordered_clusters <- read.table(file = "at.mergenj_split_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
-yn_map <- read.csv("at.gene_alias.tsv", header = TRUE, sep = "\t")
-xn_map <- read.csv("05.at2all_sym_split_summary_0.40.tsv", header = TRUE, sep = "\t")
-wgcna_dotplots_withmaps(obj, bwnet, me_wt, yn_map, xn_map, 300, ordered_clusters, goseq_params, 'ad3456')
 
 
 # debug ########################
-
-t <- read.table("at345.wmat.merged_clusters.tsv", sep='\t', header = TRUE)
-
-
-
-
-
-
-
-# debug
 count_matrix <- GetAssayData(std_obj, layer = "data")
 count_matrix <- 1 * (count_matrix>0)
 num_cells_expressing_each_gene <- apply(count_matrix, MARGIN = 1, FUN = sum)
@@ -755,6 +816,7 @@ expressed_features <- row.names(count_matrix)[expressed_feature_index]
 
 
 #######################################################
+# WGCNA # ngene = 'all': all expressed genes 20241223
 # WGCNA without small clusters 20241203
 # WGCNA without low expressed genes 20241125
 # ft WGCNA 20241111
@@ -771,8 +833,9 @@ Idents(obj) <- obj$sym_split
 # 1201: use all genes (discarded)
 #s=0.8
 #w_mat <- wgcna_ppl_1(obj, ngene=as.integer(nrow(obj)*s), expr_filter=20)
+# ngene = 'all': all expressed genes
 w_mat <- wgcna_ppl_1(obj, ngene='all', expr_filter=20) # 7858 / 21038 # at 10327 / 20896
-adj_mat <- adjacency(w_mat, power = 10, type = "signed") # 8 for ad # 10 for at
+adj_mat <- adjacency(w_mat, power = 8, type = "signed") # 8 for ad # 8 for at
 tom_mat <- TOMsimilarity(adj_mat)
 dis_tom <- 1-tom_mat
 geneTree = hclust(as.dist(dis_tom), method = "average")
@@ -788,13 +851,13 @@ dynamicColors = labels2colors(dynamicMods)
 MEList <- moduleEigengenes(as.matrix(w_mat), colors = dynamicColors)
 mes <- MEList$eigengenes
 
-# determine 
+# visualize module hierarchy
 METree = hclust(as.dist(1-cor(mes)), method = "average")
 plot(METree, main = "Clustering of module eigengenes",  xlab = "", sub = "")
 mes_dis_thr = 0.2
 abline(h=mes_dis_thr, col = "red")
 
-# old bwnet
+# merged modules
 merged_list <- mergeCloseModules(as.matrix(w_mat), dynamicColors, cutHeight = mes_dis_thr, verbose = 3)
 merged_colors <- merged_list$colors
 
@@ -805,13 +868,14 @@ merged_mes <- merged_list$newMEs
 colnames(merged_mes) <- sub("ME", "", colnames(merged_mes))
 merged_mes_tr <- t(merged_mes)
 col_df <- data.frame(idx = colnames(merged_mes_tr))
-#xn_map <- read.csv("05.ad2all_sym_split_summary_0.40_fmt.tsv", header = TRUE, sep = "\t")
-xn_map <- read.csv("06.ad2all.sym_split.summary.nj.vec2.tsv", header = TRUE, sep = "\t")
+#xn_map <- read.csv("06.ad2all.sym_split.summary.nj.vec2.tsv", header = TRUE, sep = "\t")
+xn_map <- read.csv("05.at2all_sym_split_summary_0.40_fmt.tsv", header = TRUE, sep = "\t")
 cluster_stub <- left_join(col_df, xn_map, by="idx")
 colnames(merged_mes_tr) <- cluster_stub$alias
-save(merged_mes_tr,file="wgcan.all_genes.heatmap.rd")
+#save(merged_mes_tr,file="07.at.wgcan.all_genes.heatmap.rd")
+save(merged_list, file='07.at.wgcna.merged_list.rd')
 pheatmap(seriation_mat(merged_mes_tr), cluster_cols = F, cluster_rows = F, scale = 'none', treeheight_row = 0, treeheight_col = 0)
-
+# save as 07.wgcna.headmap.at2all.sym_split.pdf
 
 
 # wgcna dotplot
@@ -825,11 +889,13 @@ goseq_params <- list(
   name = ""
 )
 # load gene.lengths
-gl<-read.csv('ad.gene.length.tsv', sep='\t', header=FALSE)
+# gl<-read.csv('ad.gene.length.tsv', sep='\t', header=FALSE)
+gl<-read.csv('at.gene.length.tsv', sep='\t', header=FALSE)
 gene.lengths <- setNames(gl$V2,  gsub("_", "-", gl$V1))
 
 # load gene2go
-df <- read.csv('ad.gene2go.tsv', sep='\t', header=FALSE)
+#df <- read.csv('ad.gene2go.tsv', sep='\t', header=FALSE)
+df <- read.csv('at.gene2go.tsv', sep='\t', header=FALSE)
 df$V1 <- gsub("_", "-", df$V1)
 gene2go <- split(df$V2, df$V1)
 
@@ -839,14 +905,18 @@ goseq_params$gene2go <- gene2go
 
 
 # load cluster orders, gene alias, cluster alias
-ordered_clusters <- read.table(file = "ad.sym_split_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
-yn_map <- read.csv("ad.gene_alias.tsv", header = TRUE, sep = "\t")
+# ordered_clusters <- read.table(file = "ad.sym_split_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
+ordered_clusters <- read.table(file = "at.mergenj_split_tree_order.tsv", sep = "\t", header=FALSE, stringsAsFactors = FALSE)[,1]
+#yn_map <- read.csv("ad.gene_alias.tsv", header = TRUE, sep = "\t")
+yn_map <- read.csv("at.gene_alias.tsv", header = TRUE, sep = "\t")
 #xn_map <- read.csv("05.ad2all_sym_split_summary_0.40.tsv", header = TRUE, sep = "\t")
 
 #$ awk -F '\t' 'FNR==NR{a[$1]=$2;next} {if(a[$1]!="")printf "%s - (%s) %s - %s\n", $1,a[$1],$1,$2}' 05.ad2all_sym_split.cluster_size.tsv 05.ad2all_sym_split_summary_0.40.tsv|awk -F ' - ' 'BEGIN{printf "idx\talias\n"}{printf "%s\t",$1; for(i=3;i<=NF-1;i++) printf "%s - ", $i; printf "%s\n", $2}' > 06.ad2all.sym_split.summary.r.vec2.tsv
-xn_map <- read.csv("06.ad2all.sym_split.summary.r.vec2.tsv", header = TRUE, sep = "\t")
+#xn_map <- read.csv("06.ad2all.sym_split.summary.r.vec2.tsv", header = TRUE, sep = "\t")
+xn_map <- read.csv("06.at2all.sym_split.summary.nj.vec2.tsv", header = TRUE, sep = "\t")
 source('coral_ppl.R')
-wgcna_dotplots_withmaps(obj, merged_list, geneModuleMembership, yn_map, xn_map, 150, ordered_clusters, goseq_params, 'ad3456')
+#wgcna_dotplots_withmaps(obj, merged_list, geneModuleMembership, yn_map, xn_map, 150, ordered_clusters, goseq_params, 'ad3456')
+wgcna_dotplots_withmaps(obj, merged_list, geneModuleMembership, yn_map, xn_map, 150, ordered_clusters, goseq_params, 'at345')
 
 
 # debug

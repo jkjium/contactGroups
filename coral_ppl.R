@@ -272,7 +272,7 @@ wgcna_ppl_1 <- function(obj, ngene='all', expr_filter=20){
 		genes_filtered<-gene_filter_by_expr(obj, expressed_features, expr_filter)
 		message(glue("{length(genes_filtered)}/{length(expressed_features)} genes after filtering expr < {expr_filter}%."))
 	}else{
-		genes_filered <- expressed_features
+		genes_filtered <- expressed_features
 	}
 
 	#averages <- AverageExpression(obj, verbose = F) %>% .[[DefaultAssay(obj)]] %>% log1p() ## DefaultAssay(obj)="RNA" may cause problem!
@@ -542,7 +542,6 @@ ordered_tips_apenj<-function(tree){
 # yn_map: gene alias
 # xn_map: cluster alias
 # x_ordered: cluster ordered by neighbor joining; output from function ordered_tips_apenj()
-# goflag: TRUE/FALSE switch for go enrichment analysis; output go annoataion summary plots
 # goseq_params: contain input parameters for goseq package functions
 generate_cluster_dotplots_withmaps <- function(obj, yn_map, xn_map, x_ordered, goseq_params, outprefix){
 	count=0
@@ -554,14 +553,14 @@ generate_cluster_dotplots_withmaps <- function(obj, yn_map, xn_map, x_ordered, g
 	# for(i in levels(obj)){
 	#print(x_ordered)
 	# temp exclude
-	ss=c('g12','g15','g16','g17','g19','g21','g22','g24','g25','g29','g31','g34','g37','g38','g44','g45','g46','g5','g59','g61','g63','g66','g8','g9')
+	#ss=c('g12','g15','g16','g17','g19','g21','g22','g24','g25','g29','g31','g34','g37','g38','g44','g45','g46','g5','g59','g61','g63','g66','g8','g9')
 	for(i in x_ordered){
 		print(i)
-		s=substring(i,1,nchar(i)-4)
-		if(s %in% ss){
-			print('skip')
-			next
-		}
+		#s=substring(i,1,nchar(i)-4)
+		#if(s %in% ss){
+		#	print('skip')
+		#	next
+		#}
 		nc = sum(Idents(obj)==i)
 		if(nc<5){
 			message(glue("generate_cluster_dotplots_withmaps():: low cell number: {i}: {nc}"))
@@ -627,9 +626,9 @@ generate_cluster_dotplots_withmaps <- function(obj, yn_map, xn_map, x_ordered, g
 			ggsave(filename = outname,
 				plot = go_plot, 
 				path = ".",
-				width = 14, # 18
-				#height = (length(genes_for_dotplot) * (1/6)) + 2, # +2
-				height = 9, 
+				width = 13, # 18
+				height = (length(genes_for_dotplot) * (1/6)) + 20, # +2
+				#height = 9, 
 				units = "in", 
 				limitsize = F)
 			message(glue("Save goseq plot to {outname}."))					
