@@ -1401,9 +1401,10 @@ def _pt_parser(slist, arg):
     return df.loc[idx]
 
 # keep the original header and get longest sequence for each transcription ID
+# using the original seq header for groupby
 def _default_parser(slist, arg):
     cp._info('use default parser.')
-    seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist]
+    seqs = [[s[0], s[0], s[1], len(s[1])] for s in slist] # seq_header = output_id = old_id, reference for groupby
     df = pd.DataFrame(seqs, columns=['output_id','old_id', 'seq', 'length'])
     df.to_csv(arg+'.stat.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)
     idx = df.groupby(['output_id'])['length'].idxmax()
@@ -1449,7 +1450,7 @@ def process_proteome(args):
         slist.append((h,ts))
 
     # processing header and output processed proteome
-    cp._info('Filtering short transcripts')
+    # slist: list of tuple (header, cleaned_seq) 
     df_filtered = _fn_s_parser(slist, proteome_file)
     print(df_filtered.shape, df_filtered.iloc[:5])
     #df_filtered.to_csv(proteome_file+'.filtered.list', columns=['output_id', 'old_id', 'length'], sep='\t', header=False, index=False)

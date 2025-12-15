@@ -48,6 +48,8 @@ def parseName(name):
     else:
         return (res.group(1),res.group(2),res.group(3),res.group(4),res.group(5),res.group(6))
 
+# statistic test for all go terms associated with hits
+# then assign significant ones back to hits
 def annotate(ind,evals,go,goFrq,goDesc):
     spTotalCnt = goFrq['count']
     gores = go[ind]
@@ -354,10 +356,23 @@ def _search_worker(thr, gothr, qnames,qdb,tnames,tdb, go,goFrq,goDesc, mem, task
         s=st.median_abs_deviation(dbdiff)*1.4826
         zscore = (dbdiff-m)/s
         e = st.norm.cdf(zscore)*ldb
-        res = np.where(e < thr)[0]
-        sort = np.argsort(e[res])
+
+        #res = np.where(e < thr)[0]
+        #sort = np.argsort(e[res])
+
+        # threasholding
+        dbdiff = dbdiff/2
+        if thr > 10.0:
+            print('using prost distance %d as threshold.' % thr)
+            res = np.where(dbdiff < thr)[0] # distance as threshold
+            sort = np.argsort(dbdiff[res])
+        else:
+            res = np.where(e < thr)[0] # evalue as threshold
+            sort = np.argsort(e[res])
+
         res = res[sort]
-        dbdiff = dbdiff[res]/2
+        #dbdiff = dbdiff[res]/2
+        dbdiff = dbdiff[res]
         evals = e[res]
         names = tnames[res]
 
@@ -425,6 +440,7 @@ def _search_worker_sp(thr, gothr, qnames,qdb,tnames,tdb, go,goFrq,goDesc, mem, t
             n = parseName(n)
             homologList[qname].append([n[0], n[1], n[2], n[3], diff, f'{ev:.2e}'])
     return goList,homologList
+
 def _search(thr, gothr, querydb, targetdb, godb,n, flag):
     if godb != None:
         with open(godb,'rb') as f:
@@ -452,7 +468,8 @@ def _search(thr, gothr, querydb, targetdb, godb,n, flag):
     return goList,homologList
 
 def toTSV(goList,homologList,out):
-    with open(out+'.tsv','w') as f:
+    #with open(out+'.tsv','w') as f:
+    with open(out,'w') as f:
         for queryP in homologList:
             for go in goList[queryP]:
                 f.write(f'{queryP}\t'+'\t'.join([str(i) for i in go])+'\n')

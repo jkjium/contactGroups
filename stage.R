@@ -5200,3 +5200,27 @@ for(p in prefs){
   obj <- readRDS(paste0(p, '.cell.2023.rds'))
   writeLines(rownames(obj), paste0(p, '.seurat.genes.tsv')) 
 }
+
+
+
+
+
+############################################################
+# gene id protein id lookup table
+require('biomaRt')
+setwd('C:\\Users\\kjia\\workspace\\others\\nat\\Adhesome_Evolution\\stage.prost')
+mart <- useDataset('hsapiens_gene_ensembl', useMart('ENSEMBL_MART_ENSEMBL'))
+annotLookup <- getBM(
+            mart = mart,
+            attributes = c('ensembl_gene_id',
+            'gene_biotype',
+            'external_gene_name',
+            'uniprot_gn_symbol',
+            'uniprot_gn_id',
+            'description'),
+            uniqueRows=TRUE
+            )
+write.table(annotLookup, file="human_ensembl_id.map", sep="\t", row.names=F,quote=F)
+
+
+

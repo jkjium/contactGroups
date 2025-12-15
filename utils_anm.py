@@ -36,7 +36,8 @@ def vec2mat(np_vector):
     if length%3 != 0:
         raise ValueError('vector length cannot be divided by 3')
     else:
-        matrix = np_vector.reshape((length/3,3))
+        print(length/3)
+        matrix = np_vector.reshape((int(length/3),3))
     
     return matrix
     
@@ -494,7 +495,7 @@ def _ANMbuilder(pdbfile, cutoff):
 def _inverseHessian(modes, eigs):
     n_modes = modes.shape[1] if len(modes.shape) > 1 else 1
     dim = len(modes)
-    print n_modes, dim
+    print(n_modes, dim)
     outersum = np.zeros((dim, dim))
     for i in range(n_modes):
         outersum+=(1/eigs[i])*np.outer(modes[:,i],modes[:,i])

@@ -712,6 +712,18 @@ def freqlookupscol(arglist):
 
 	cp._info('save to %s' % outfile)
 
+# convert fasta file into 2-column tsv
+# 20250909
+def flatten(args):
+	assert len(args) == 2, 'Usage: python utils_pfammsa.py flatten in.fasta out.tsv'
+	infile =args[0]
+	outfile =args[1]
+
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(['%s\t%s' % (s[0], s[1]) for s in cp.fasta_iter(infile)]))
+	cp._info('save to %s' %  outfile)
+
+
 # improved version of the previous getcolumn function
 # multiple columns
 def getcolumns(arglist):
@@ -753,6 +765,22 @@ def getsingleseq(args):
 	with open(outfile, 'w') as fout:
 		fout.write('>%s\n%s\n' %(outlist[0][0], outlist[0][1]))
 	cp._info('save sequence to %s' % outfile)
+
+# new version of getbatchseq
+def getbatchseq(args):
+	assert len(args) == 3, 'Usage: python utils_pfammsa.py getbatchseq fasfile header.list outfile'
+	from tqdm import tqdm
+
+	fasfile =args[0]
+	headerfile = args[1]
+	outfile =args[2]
+
+	headers = cp.loadlines(headerfile)
+	outlist = ['>%s\n%s' % (s[0],s[1]) for s in tqdm(cp.fasta_iter(fasfile)) if s[0] in headers]
+
+	with open(outfile ,'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save %d sequences to %s' % (len(outlist), outfile))
 	
 
 # get single MSA gapped / ungapped fa with sequence name or null
@@ -1563,6 +1591,43 @@ def splitfabyfield(args):
 		count+=1
 	cp._info('save %d .fa files' % count)
 
+# remove duplicated sequences
+# by default save the first occurance
+# output: 1. non-redundant fasta file; 2. duplication report
+def unique_seq(args):
+	assert len(args)==2, 'Usage: python utils_pfammsa.py unique_seq in.fasta out.prefix'
+	from collections import defaultdict
+	from tqdm import tqdm
+	infile = args[0]
+	outprefix = args[1]
+
+	# load fasta as dict[seq] = list(header1, header2..)
+	seq_dict = defaultdict(list)
+	for s in cp.fasta_iter(infile):
+		seq_dict[s[1]].append(s[0])
+
+	outlist = []
+	outfa = []
+	# output stats for duplicated seq
+	for k in tqdm(seq_dict):
+		if(len(seq_dict[k])>1):
+			outlist.append('%d\t%s\t%s' % (len(seq_dict[k]), k, '>'.join(seq_dict[k])))
+		outfa.append('>%s\n%s' % (seq_dict[k][0], k))
+
+	# output unique seq
+	outfile = '%s.stat.txt'	% (outprefix)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outlist))
+	cp._info('save stat file to %s' % outfile)
+
+	outfile = '%s.fa' % (outprefix)
+	with open(outfile, 'w') as fout:
+		fout.write('%s\n' % '\n'.join(outfa))
+	cp._info('save non-redundant fasta to %s' % outfile)
+
+
+
+
 
 # accumulate weighted background frequcney for each AA 
 def wfreq(arglist):
@@ -2213,6 +2278,7 @@ def main():
 		'entropyfromfile': entropyfromfile,
 		'scorebycols': scorebycols,
 		'seqfa': seqfa,
+		'flatten': flatten,
 		'freqlookup': freqlookup,
 		'freqlookupscol': freqlookupscol,
 		'getcolumns': getcolumns, # get columns from MSA
@@ -2220,6 +2286,7 @@ def main():
 		'getsinglemsa': getsinglemsa, # get single MSA gapped / ungapped fa with sequence name or null
 		'getsinglemsa_r': getsinglemsa_r, # get single rna MSA 
 		'getbatchmsa': getbatchmsa, # utils_pfammsa.py getbatchmsa PF00000.txt header.list name_prefix outfile
+		'getbatchseq': getbatchseq, # fasfile, header.list, outfile
 		'getbatchseq_with_pref': getbatchseq_with_pref, # extract batch seq from input list and append pref to headers
 		'getsinglemsacluster': getsinglemsacluster, 
 		'msa2rawseq': msa2rawseq, # convert aligned MSA to fasta raw sequences
@@ -2250,6 +2317,7 @@ def main():
 		'splitheadfa': splitheadfa,
 		'splitfabyfield': splitfabyfield,
 		'tuplesubfreq': tuplesubfreq,
+		'unique_seq': unique_seq,
 		'wfreq': wfreq,
 		'wfreqs': wfreqs,
 		'wfreqcs':wfreqcs,

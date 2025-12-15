@@ -2,6 +2,26 @@ import commp as cp
 import numpy as np
 from collections import defaultdict
 
+# input: the output from get_ortholog_by_id(args)
+# 3-column tsv file, the last column may contain ','
+# output flatten ',' column to {id, ortholog_id}
+def flatten_orthologs(args):
+    assert len(args) == 2, 'Usage: python proc_foxd.py flatten_orthologs 10.foxe.ad_ortho.tsv outfile'
+    infile = args[0]
+    outfile = args[1]
+
+    outlist = []
+    for t in cp.loadtuples(infile, delimiter='\t'):
+        if t[2]=='_NA_':
+            continue
+        for s in t[2].split(','):
+            outlist.append('%s\t%s\t%s' % (t[0],t[1],s))
+
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % '\n'.join(outlist))
+    cp._info('save flatten file to %s\n' % outfile)
+
+
 # $ awk -F '\t' '{print NF}' nt__v__sp.tsv|sort -u = 3
 def get_ortholog_by_id(args):
     assert len(args) == 3, 'Usage: python get_ortholog_by_id nt__v__ad.tsv 00.in.foxe.list.tsv outfile'
