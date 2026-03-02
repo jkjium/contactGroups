@@ -1652,12 +1652,28 @@ objs[['at']]$cell_type_family <- objs[['at']]$samap_family
 objs[['ad']]$cell_type_family <- objs[['ad']]$samap_family
 
 saveRDS(objs, file = "00.objs.at_ad_nt_sp_xe_hy.rds")
+
+# updated objs
+source('C:\\Users\\kjia\\workspace\\src\\contactGroups\\coral_ppl.R')
+objs <- readRDS('C:\\Users\\kjia\\workspace\\library\\dataset\\seurat_objs\\04.objs.atcn_adcn_nnt_sp_xe_hy.umap.rds')
+
 # generating figures
 setwd('C:\\Users\\kjia\\workspace\\nematostella\\stage.znf845_pax2a')
 
 pref <- 'xe' # ad,at,hy,nt,sp,xe
 gname <- 'pax' # znf, pax
+
 gene_list_file <- paste0('01.prost.zg_to_',pref,'.tsv.', gname,'.tsv.gene.list')
+
+# {
+# add blast output results
+# email from Benjamin Danladi<bed222@lehigh.edu>
+# 
+pref <- 'hy'
+gname <- 'znf'
+gene_list_file <- 'blast.znf.hy.list'
+# }
+
 gene_set <- read.csv(gene_list_file, header = FALSE, sep = "\t")
 gene_set <- gsub("_", "-", gene_set[[1]])
 gene_set <- gene_set[gene_set %in% rownames(objs[[pref]])]

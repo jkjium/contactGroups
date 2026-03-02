@@ -481,7 +481,8 @@ def merge_alias(args):
     # output 2: truncated alias (for dotplots)
     outfile = '%s.gene_alias.tsv' % outpref
     with open(outfile, 'w') as fout:
-        _t = lambda x: x if len(x)<=50 else '%s..' % x[:50]
+        #_t = lambda x: x if len(x)<=50 else '%s..' % x[:50]
+        _t = lambda x: ','.join(x.split(',')[:7])
         fout.write('geneID\tgene_alias\n%s\n' % '\n'.join(['%s\t%s' % (k, _t(merged_dict[k])) for k in merged_dict]))
     cp._info('save truncated gene alias to %s' % outfile)
 
@@ -850,7 +851,7 @@ def _append_assignments(h5, clusterfile, cluster_colnames='na', index_name='inde
     cluster_assignments = pd.read_csv(clusterfile, sep=delimiter, index_col=0)
     if cluster_colnames!='na':
         cluster_assignments.columns = cluster_colnames.split(',')
-        cp._info('Rename cluster names to %s' % cluter_colnames)
+        cp._info('Rename cluster names to %s' % cluster_colnames)
     cluster_assignments.index.name = index_name 
     h5.obs=h5.obs.merge(cluster_assignments, how='left', left_index=True, right_index=True)    
     for c in cluster_assignments.columns:
@@ -1477,11 +1478,27 @@ def process_proteome(args):
     outlist = ['>%s\n%s' % (df_filtered.loc[i]['output_id'], df_filtered.loc[i]['seq']) for i in df_filtered.index]
     with open(outfile, 'w') as fout:
         fout.write('%s\n' % ('\n'.join(outlist)))
-    cp._info('save cleaned proteome to %s' % outfile)
+    cp._info('save %d sequences to %s' % (len(outlist), outfile))
     
 
+# getting longest protein for each gene 20260121
+# input: tsv file with format "group_by_id, out_id, original_id, seq, length"
+# output.klog2::- sponge proteome curation orthofinder 20260121
+def longest_by_flat(args):
+    assert len(args) == 2, 'Usage: python proc_coral_samap.py longest_by_flat 03.proteome.format.flat outfile'
+    flatfile = args[0]
+    outfile = args[1]
 
+    seqs = cp.loadtuples(flatfile, delimiter='\t')
+    df = pd.DataFrame(seqs, columns=['group_by_id','out_id', 'original_id', 'seq', 'length'])
+    cp._info('%d sequences loaded.' % len(df))
+    idx = df.groupby(['group_by_id'])['length'].idxmax()
+    df_filtered = df.loc[idx]
+    outlist = ['>%s\n%s' % (df_filtered.loc[i]['out_id'], df_filtered.loc[i]['seq']) for i in df_filtered.index]
 
+    with open(outfile, 'w') as fout:
+        fout.write('%s\n' % ('\n'.join(outlist)))
+    cp._info('%d sequences saved to %s' % (len(outlist), outfile))
 
 
 
